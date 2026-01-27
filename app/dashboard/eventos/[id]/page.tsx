@@ -72,7 +72,7 @@ export default async function EventPage({ params }: EventPageProps) {
   const { data: unavailableVolunteers } = await supabase
     .from("volunteer_unavailability")
     .select("user_id")
-    .eq("date", event.date);
+    .eq("unavailable_date", event.date);
 
   const unavailableIds = unavailableVolunteers?.map((u) => u.user_id) || [];
 

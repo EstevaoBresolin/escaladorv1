@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 
 interface Unavailability {
   id: string;
-  date: string;
+  unavailable_date: string;
   reason: string | null;
   created_at: string;
 }
@@ -63,54 +63,39 @@ export default function DisponibilidadePage() {
       .from("volunteer_unavailability")
       .select("*")
       .eq("user_id", user.id)
-      .gte("date", startOfToday().toISOString().split("T")[0])
-      .order("date", { ascending: true });
+      .gte("unavailable_date", startOfToday().toISOString().split("T")[0])
+      .order("unavailable_date", { ascending: true });
 
     setUnavailabilities(data || []);
     setLoading(false);
   }
 
   async function handleAddUnavailability() {
-    console.log("[v0] handleAddUnavailability called, selectedDate:", selectedDate);
-    if (!selectedDate) {
-      console.log("[v0] No date selected, returning");
-      return;
-    }
+    if (!selectedDate) return;
     setSaving(true);
 
-    try {
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      console.log("[v0] User data:", user, "Auth error:", authError);
+    if (!user) {
+      setSaving(false);
+      return;
+    }
 
-      if (!user) {
-        console.log("[v0] No user found, returning");
-        setSaving(false);
-        return;
-      }
+    const formattedDate = format(selectedDate, "yyyy-MM-dd");
 
-      const formattedDate = format(selectedDate, "yyyy-MM-dd");
-      console.log("[v0] Inserting unavailability for date:", formattedDate);
+    const { error } = await supabase.from("volunteer_unavailability").insert({
+      user_id: user.id,
+      unavailable_date: formattedDate,
+      reason: reason || null,
+    });
 
-      const { error } = await supabase.from("volunteer_unavailability").insert({
-        user_id: user.id,
-        date: formattedDate,
-        reason: reason || null,
-      });
-
-      console.log("[v0] Insert result, error:", error);
-
-      if (!error) {
-        setOpen(false);
-        setSelectedDate(undefined);
-        setReason("");
-        await loadUnavailabilities();
-      }
-    } catch (err) {
-      console.log("[v0] Caught error:", err);
+    if (!error) {
+      setOpen(false);
+      setSelectedDate(undefined);
+      setReason("");
+      await loadUnavailabilities();
     }
 
     setSaving(false);
@@ -124,7 +109,7 @@ export default function DisponibilidadePage() {
   }
 
   // Get all unavailable dates for calendar highlighting
-  const unavailableDates = unavailabilities.map((u) => parseISO(u.date));
+  const unavailableDates = unavailabilities.map((u) => parseISO(u.unavailable_date));
 
   if (loading) {
     return (
@@ -257,7 +242,7 @@ export default function DisponibilidadePage() {
                       </div>
                       <div>
                         <p className="font-medium text-foreground">
-                          {format(parseISO(item.date), "EEEE, d 'de' MMMM", {
+                          {format(parseISO(item.unavailable_date), "EEEE, d 'de' MMMM", {
                             locale: ptBR,
                           })}
                         </p>
