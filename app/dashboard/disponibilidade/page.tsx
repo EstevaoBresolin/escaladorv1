@@ -71,31 +71,46 @@ export default function DisponibilidadePage() {
   }
 
   async function handleAddUnavailability() {
-    if (!selectedDate) return;
-    setSaving(true);
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setSaving(false);
+    console.log("[v0] handleAddUnavailability called, selectedDate:", selectedDate);
+    if (!selectedDate) {
+      console.log("[v0] No date selected, returning");
       return;
     }
+    setSaving(true);
 
-    const formattedDate = format(selectedDate, "yyyy-MM-dd");
+    try {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
 
-    const { error } = await supabase.from("volunteer_unavailability").insert({
-      user_id: user.id,
-      date: formattedDate,
-      reason: reason || null,
-    });
+      console.log("[v0] User data:", user, "Auth error:", authError);
 
-    if (!error) {
-      setOpen(false);
-      setSelectedDate(undefined);
-      setReason("");
-      await loadUnavailabilities();
+      if (!user) {
+        console.log("[v0] No user found, returning");
+        setSaving(false);
+        return;
+      }
+
+      const formattedDate = format(selectedDate, "yyyy-MM-dd");
+      console.log("[v0] Inserting unavailability for date:", formattedDate);
+
+      const { error } = await supabase.from("volunteer_unavailability").insert({
+        user_id: user.id,
+        date: formattedDate,
+        reason: reason || null,
+      });
+
+      console.log("[v0] Insert result, error:", error);
+
+      if (!error) {
+        setOpen(false);
+        setSelectedDate(undefined);
+        setReason("");
+        await loadUnavailabilities();
+      }
+    } catch (err) {
+      console.log("[v0] Caught error:", err);
     }
 
     setSaving(false);
