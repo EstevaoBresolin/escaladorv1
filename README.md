@@ -20,7 +20,7 @@ Sistema de gerenciamento de escalas para ministérios de igrejas, desenvolvido c
 
 ## 📦 Instalação
 
-```bash
+\`\`\`bash
 # Clone o repositório
 git clone https://github.com/EstevaoBresolin/escaladorv1.git
 
@@ -39,16 +39,16 @@ cp .env.example .env.local
 pnpm dev
 # ou
 npm run dev
-```
+\`\`\`
 
 ## ⚙️ Variáveis de Ambiente
 
 Crie um arquivo `.env.local` na raiz do projeto com as seguintes variáveis:
 
-```env
+\`\`\`env
 NEXT_PUBLIC_SUPABASE_URL=seu_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=seu_supabase_anon_key
-```
+\`\`\`
 
 Obtenha essas credenciais no [Supabase Dashboard](https://supabase.com/dashboard).
 
