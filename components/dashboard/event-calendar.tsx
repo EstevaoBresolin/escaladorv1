@@ -3,9 +3,16 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Event } from "@/lib/types"
+import Link from "next/link"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface EventCalendarProps {
   events: Event[]
@@ -41,7 +48,11 @@ export function EventCalendar({ events }: EventCalendarProps) {
 
   const getEventsForDay = (day: number) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-    return events.filter((e) => e.date === dateStr)
+    return events.filter((e) => {
+      // Handle both string dates and Date objects
+      const eventDate = typeof e.date === 'string' ? e.date : new Date(e.date).toISOString().split('T')[0]
+      return eventDate === dateStr
+    })
   }
 
   const today = new Date()
@@ -110,16 +121,30 @@ export function EventCalendar({ events }: EventCalendarProps) {
                     </div>
                     <div className="space-y-1">
                       {dayEvents.slice(0, 2).map((event) => (
-                        <div
-                          key={event.id}
-                          className="truncate rounded bg-primary/10 px-1 py-0.5 text-[10px] font-medium text-primary md:text-xs"
-                          title={event.name}
-                        >
-                          {event.name}
-                        </div>
+                        <TooltipProvider key={event.id}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Link
+                                href={`/dashboard/eventos/${event.id}`}
+                                className="group flex items-center gap-1 rounded-md bg-primary px-1.5 py-1 text-[10px] font-medium text-primary-foreground transition-all hover:bg-primary/90 md:text-xs"
+                              >
+                                <Calendar className="h-2.5 w-2.5 shrink-0 md:h-3 md:w-3" />
+                                <span className="truncate">{event.name}</span>
+                              </Link>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[200px]">
+                              <p className="font-medium">{event.name}</p>
+                              {event.time && (
+                                <p className="text-xs text-muted-foreground">
+                                  {event.time.slice(0, 5)}
+                                </p>
+                              )}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       ))}
                       {dayEvents.length > 2 && (
-                        <div className="text-[10px] text-muted-foreground md:text-xs">
+                        <div className="rounded-md bg-muted px-1.5 py-0.5 text-center text-[10px] font-medium text-muted-foreground md:text-xs">
                           +{dayEvents.length - 2} mais
                         </div>
                       )}
