@@ -9,15 +9,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, User } from "lucide-react"
+import { Loader2, User, Plus } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 export default function PerfilPage() {
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
+  const [churchId, setChurchId] = useState<string | null>(null)
+  const [churches, setChurches] = useState<{ id: string; name: string }[]>([])
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showNewChurchDialog, setShowNewChurchDialog] = useState(false)
+  const [newChurchName, setNewChurchName] = useState("")
+  const [newChurchAddress, setNewChurchAddress] = useState("")
+  const [newChurchPhone, setNewChurchPhone] = useState("")
+  const [creatingChurch, setCreatingChurch] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -29,6 +37,7 @@ export default function PerfilPage() {
 
       if (!user) return
 
+      // Carregar perfil do usuário
       const { data: profile } = await supabase
         .from("profiles")
         .select("*")
@@ -39,11 +48,55 @@ export default function PerfilPage() {
         setFullName(profile.name || "")
         setEmail(profile.email || user.email || "")
         setPhone(profile.phone || "")
+        setChurchId(profile.church_id || null)
+      }
+
+      // Carregar todas as igrejas
+      const { data: churchesData } = await supabase
+        .from("churches")
+        .select("id, name")
+        .order("name")
+
+      if (churchesData) {
+        setChurches(churchesData)
       }
     }
 
     loadProfile()
   }, [supabase])
+
+  async function handleCreateChurch(e: React.FormEvent) {
+    e.preventDefault()
+    setCreatingChurch(true)
+    setError(null)
+
+    const { data: newChurch, error: createError } = await supabase
+      .from("churches")
+      .insert({
+        name: newChurchName,
+        address: newChurchAddress || null,
+        phone: newChurchPhone || null,
+      })
+      .select()
+      .single()
+
+    if (createError) {
+      setError("Erro ao criar igreja. Tente novamente.")
+      setCreatingChurch(false)
+      return
+    }
+
+    if (newChurch) {
+      setChurches([...churches, { id: newChurch.id, name: newChurch.name }])
+      setChurchId(newChurch.id)
+      setNewChurchName("")
+      setNewChurchAddress("")
+      setNewChurchPhone("")
+      setShowNewChurchDialog(false)
+    }
+
+    setCreatingChurch(false)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -66,6 +119,7 @@ export default function PerfilPage() {
       .update({
         name: fullName,
         phone: phone || null,
+        church_id: churchId,
       })
       .eq("id", user.id)
 
@@ -144,6 +198,82 @@ export default function PerfilPage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="church">Igreja</Label>
+                  <Dialog open={showNewChurchDialog} onOpenChange={setShowNewChurchDialog}>
+                    <DialogTrigger asChild>
+                      <Button type="button" variant="outline" size="sm">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Nova Igreja
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Cadastrar Nova Igreja</DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleCreateChurch} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="newChurchName">Nome da Igreja *</Label>
+                          <Input
+                            id="newChurchName"
+                            value={newChurchName}
+                            onChange={(e) => setNewChurchName(e.target.value)}
+                            placeholder="Ex: Igreja Batista Central"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="newChurchAddress">Endereço</Label>
+                          <Input
+                            id="newChurchAddress"
+                            value={newChurchAddress}
+                            onChange={(e) => setNewChurchAddress(e.target.value)}
+                            placeholder="Rua, número, bairro, cidade"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="newChurchPhone">Telefone</Label>
+                          <Input
+                            id="newChurchPhone"
+                            type="tel"
+                            value={newChurchPhone}
+                            onChange={(e) => setNewChurchPhone(e.target.value)}
+                            placeholder="(00) 00000-0000"
+                          />
+                        </div>
+                        <Button type="submit" className="w-full" disabled={creatingChurch}>
+                          {creatingChurch ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Criando...
+                            </>
+                          ) : (
+                            "Criar Igreja"
+                          )}
+                        </Button>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                <select
+                  id="church"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={churchId || ""}
+                  onChange={(e) => setChurchId(e.target.value || null)}
+                >
+                  <option value="">Selecione uma igreja</option>
+                  {churches.map((church) => (
+                    <option key={church.id} value={church.id}>
+                      {church.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Selecione a igreja à qual você pertence ou cadastre uma nova.
+                </p>
               </div>
 
               <Button type="submit" disabled={loading}>

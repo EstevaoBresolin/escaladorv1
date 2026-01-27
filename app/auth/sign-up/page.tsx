@@ -13,7 +13,6 @@ import { CalendarCheck, Loader2 } from "lucide-react"
 
 export default function SignUpPage() {
   const [fullName, setFullName] = useState("")
-  const [churchName, setChurchName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -41,7 +40,6 @@ export default function SignUpPage() {
           `${window.location.origin}/dashboard`,
         data: {
           full_name: fullName,
-          church_name: churchName,
         },
       },
     })
@@ -92,18 +90,6 @@ export default function SignUpPage() {
               onChange={(e) => setFullName(e.target.value)}
               required
               autoComplete="name"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="churchName">Nome da igreja</Label>
-            <Input
-              id="churchName"
-              type="text"
-              placeholder="Ex: Igreja Batista Central"
-              value={churchName}
-              onChange={(e) => setChurchName(e.target.value)}
-              required
             />
           </div>
 
