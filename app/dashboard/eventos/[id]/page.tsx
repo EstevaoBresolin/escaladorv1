@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { VolunteerSlotManager } from "@/components/dashboard/volunteer-slot-manager";
+import { SendReminderButton } from "@/components/dashboard/send-reminder-button";
 
 interface EventPageProps {
   params: Promise<{ id: string }>;
@@ -105,12 +106,15 @@ export default async function EventPage({ params }: EventPageProps) {
             <p className="text-muted-foreground">Detalhes do evento</p>
           </div>
         </div>
-        <Button variant="outline" asChild>
-          <Link href={`/dashboard/eventos/${id}/editar`}>
-            <Edit className="mr-2 h-4 w-4" />
-            Editar
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <SendReminderButton eventId={event.id} eventTitle={event.title} />
+          <Button variant="outline" asChild>
+            <Link href={`/dashboard/eventos/${id}/editar`}>
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
