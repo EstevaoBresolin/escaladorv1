@@ -20,7 +20,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Loader2, Trash2, Check, Clock, X } from "lucide-react";
+import { Plus, Loader2, Trash2, Check, Clock, X, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface VolunteerSlot {
   id: string;
@@ -43,16 +44,20 @@ interface Ministry {
 
 interface VolunteerSlotManagerProps {
   eventId: string;
+  eventDate: string;
   slots: VolunteerSlot[];
   volunteers: Volunteer[];
   ministries: Ministry[];
+  unavailableIds: string[];
 }
 
 export function VolunteerSlotManager({
   eventId,
+  eventDate,
   slots,
   volunteers,
   ministries,
+  unavailableIds,
 }: VolunteerSlotManagerProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -60,6 +65,14 @@ export function VolunteerSlotManager({
   const [selectedMinistry, setSelectedMinistry] = useState("");
   const router = useRouter();
   const supabase = createClient();
+
+  // Separate available and unavailable volunteers
+  const availableVolunteers = volunteers.filter(
+    (v) => !unavailableIds.includes(v.id)
+  );
+  const unavailableVolunteersForDate = volunteers.filter((v) =>
+    unavailableIds.includes(v.id)
+  );
 
   async function handleAddSlot() {
     if (!selectedVolunteer || !selectedMinistry) return;
@@ -213,13 +226,50 @@ export function VolunteerSlotManager({
                   <SelectValue placeholder="Selecione um voluntário" />
                 </SelectTrigger>
                 <SelectContent>
-                  {volunteers.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.name}
-                    </SelectItem>
-                  ))}
+                  {availableVolunteers.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-emerald-600">
+                        Disponiveis ({availableVolunteers.length})
+                      </div>
+                      {availableVolunteers.map((v) => (
+                        <SelectItem key={v.id} value={v.id}>
+                          <div className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                            {v.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                  {unavailableVolunteersForDate.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-destructive mt-2">
+                        Indisponiveis ({unavailableVolunteersForDate.length})
+                      </div>
+                      {unavailableVolunteersForDate.map((v) => (
+                        <SelectItem
+                          key={v.id}
+                          value={v.id}
+                          className="text-muted-foreground"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full bg-destructive" />
+                            {v.name}
+                            <span className="text-xs">(indisponivel)</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
                 </SelectContent>
               </Select>
+              {selectedVolunteer &&
+                unavailableIds.includes(selectedVolunteer) && (
+                  <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-2 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    Este voluntario esta marcado como indisponivel nesta data.
+                  </div>
+                )}
             </div>
 
             <div className="space-y-2">

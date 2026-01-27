@@ -35,9 +35,10 @@ export default async function EventosPage() {
     .eq("church_id", profile?.church_id)
     .order("date", { ascending: true });
 
-  const upcomingEvents = events?.filter(
-    (e) => new Date(e.date) >= new Date(new Date().setHours(0, 0, 0, 0)),
-  );
+  // Compare dates as strings to avoid timezone issues
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const upcomingEvents = events?.filter((e) => e.date >= todayStr);
 
   return (
     <div className="space-y-6">
@@ -79,7 +80,7 @@ export default async function EventosPage() {
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Calendar className="h-3.5 w-3.5" />
                             <span>
-                              {new Date(event.date).toLocaleDateString(
+                              {new Date(event.date + "T12:00:00").toLocaleDateString(
                                 "pt-BR",
                                 {
                                   weekday: "short",

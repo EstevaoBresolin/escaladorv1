@@ -13,6 +13,7 @@ import {
   UserCircle,
   Menu,
   X,
+  CalendarOff,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -52,6 +53,11 @@ const navItems = [
 ]
 
 const bottomNavItems = [
+  {
+    label: "Disponibilidade",
+    href: "/dashboard/disponibilidade",
+    icon: CalendarOff,
+  },
   {
     label: "Meu Perfil",
     href: "/dashboard/perfil",

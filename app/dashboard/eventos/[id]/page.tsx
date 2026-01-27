@@ -56,17 +56,37 @@ export default async function EventPage({ params }: EventPageProps) {
     .eq("id", user?.id)
     .single();
 
-  const { data: volunteers } = await supabase
-    .from("profiles")
-    .select("id, name, email")
-    .eq("church_id", profile?.church_id)
-    .order("name");
+  // Get ministry IDs from the event
+  const eventMinistryIds = event.event_ministries?.map((em: { ministry_id: string }) => em.ministry_id) || [];
+
+  // Get volunteers that belong to the ministries involved in this event
+  const { data: ministryVolunteers } = await supabase
+    .from("user_ministries")
+    .select("user_id, profiles(id, name, email)")
+    .in("ministry_id", eventMinistryIds.length > 0 ? eventMinistryIds : ['none']);
+
+  // Remove duplicates (volunteers might be in multiple ministries)
+  const volunteersMap = new Map();
+  ministryVolunteers?.forEach((mv: { user_id: string; profiles: { id: string; name: string; email: string } | null }) => {
+    if (mv.profiles) {
+      volunteersMap.set(mv.profiles.id, mv.profiles);
+    }
+  });
+  const volunteers = Array.from(volunteersMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
   const { data: ministries } = await supabase
     .from("ministries")
     .select("id, name, color")
     .eq("church_id", profile?.church_id)
     .order("name");
+
+  // Get unavailable volunteers for this event date
+  const { data: unavailableVolunteers } = await supabase
+    .from("volunteer_unavailability")
+    .select("user_id")
+    .eq("unavailable_date", event.date);
+
+  const unavailableIds = unavailableVolunteers?.map((u) => u.user_id) || [];
 
   return (
     <div className="space-y-6">
@@ -107,7 +127,7 @@ export default async function EventPage({ params }: EventPageProps) {
                 <div>
                   <p className="text-sm text-muted-foreground">Data</p>
                   <p className="font-medium text-card-foreground">
-                    {new Date(event.date).toLocaleDateString("pt-BR", {
+                    {new Date(event.date + "T12:00:00").toLocaleDateString("pt-BR", {
                       weekday: "long",
                       day: "numeric",
                       month: "long",
@@ -193,9 +213,11 @@ export default async function EventPage({ params }: EventPageProps) {
             <CardContent>
               <VolunteerSlotManager
                 eventId={event.id}
+                eventDate={event.date}
                 slots={event.volunteer_slots || []}
                 volunteers={volunteers || []}
                 ministries={ministries || []}
+                unavailableIds={unavailableIds}
               />
             </CardContent>
           </Card>

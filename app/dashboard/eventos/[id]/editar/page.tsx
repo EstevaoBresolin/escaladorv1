@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 
@@ -20,6 +21,12 @@ interface Event {
   location: string | null;
 }
 
+interface Ministry {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export default function EditarEventoPage() {
   const [event, setEvent] = useState<Event | null>(null);
   const [title, setTitle] = useState("");
@@ -27,6 +34,8 @@ export default function EditarEventoPage() {
   const [date, setDate] = useState("");
   const [start_time, setStartTime] = useState("");
   const [location, setLocation] = useState("");
+  const [ministries, setMinistries] = useState<Ministry[]>([]);
+  const [selectedMinistries, setSelectedMinistries] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +48,7 @@ export default function EditarEventoPage() {
     async function loadEvent() {
       const { data: eventData } = await supabase
         .from("events")
-        .select("*")
+        .select("*, event_ministries(ministry_id)")
         .eq("id", eventId)
         .single();
 
@@ -55,6 +64,34 @@ export default function EditarEventoPage() {
       setDate(eventData.date);
       setStartTime(eventData.start_time || "");
       setLocation(eventData.location || "");
+      
+      // Set selected ministries
+      const ministryIds = eventData.event_ministries?.map((em: { ministry_id: string }) => em.ministry_id) || [];
+      setSelectedMinistries(ministryIds);
+
+      // Load all ministries from the church
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("church_id")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.church_id) {
+          const { data: ministriesData } = await supabase
+            .from("ministries")
+            .select("id, name, color")
+            .eq("church_id", profile.church_id)
+            .order("name");
+
+          if (ministriesData) setMinistries(ministriesData);
+        }
+      }
+
       setLoading(false);
     }
 
@@ -83,8 +120,27 @@ export default function EditarEventoPage() {
       return;
     }
 
+    // Update ministries - first delete existing, then insert new ones
+    await supabase.from("event_ministries").delete().eq("event_id", eventId);
+
+    if (selectedMinistries.length > 0) {
+      const eventMinistries = selectedMinistries.map((ministryId) => ({
+        event_id: eventId,
+        ministry_id: ministryId,
+      }));
+      await supabase.from("event_ministries").insert(eventMinistries);
+    }
+
     router.push(`/dashboard/eventos/${eventId}`);
     router.refresh();
+  }
+
+  function toggleMinistry(ministryId: string) {
+    setSelectedMinistries((prev) =>
+      prev.includes(ministryId)
+        ? prev.filter((id) => id !== ministryId)
+        : [...prev, ministryId],
+    );
   }
 
   if (loading) {
@@ -193,6 +249,36 @@ export default function EditarEventoPage() {
                 rows={3}
               />
             </div>
+
+            {ministries.length > 0 && (
+              <div className="space-y-3">
+                <Label>Ministérios Envolvidos</Label>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {ministries.map((ministry) => (
+                    <div
+                      key={ministry.id}
+                      className="flex items-center space-x-2"
+                    >
+                      <Checkbox
+                        id={ministry.id}
+                        checked={selectedMinistries.includes(ministry.id)}
+                        onCheckedChange={() => toggleMinistry(ministry.id)}
+                      />
+                      <label
+                        htmlFor={ministry.id}
+                        className="flex items-center gap-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        <span
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: ministry.color }}
+                        />
+                        {ministry.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-3">
               <Button type="submit" disabled={saving}>
