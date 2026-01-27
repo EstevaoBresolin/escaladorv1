@@ -68,6 +68,14 @@ export default async function EventPage({ params }: EventPageProps) {
     .eq("church_id", profile?.church_id)
     .order("name");
 
+  // Get unavailable volunteers for this event date
+  const { data: unavailableVolunteers } = await supabase
+    .from("volunteer_unavailability")
+    .select("user_id")
+    .eq("date", event.date);
+
+  const unavailableIds = unavailableVolunteers?.map((u) => u.user_id) || [];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -193,9 +201,11 @@ export default async function EventPage({ params }: EventPageProps) {
             <CardContent>
               <VolunteerSlotManager
                 eventId={event.id}
+                eventDate={event.date}
                 slots={event.volunteer_slots || []}
                 volunteers={volunteers || []}
                 ministries={ministries || []}
+                unavailableIds={unavailableIds}
               />
             </CardContent>
           </Card>

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Edit } from "lucide-react";
 import Link from "next/link";
+import { MinistryVolunteerManager } from "@/components/dashboard/ministry-volunteer-manager";
 
 interface MinistryPageProps {
   params: Promise<{ id: string }>;
@@ -39,6 +40,24 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
     `,
     )
     .eq("ministry_id", id);
+
+  // Get the current user's church to fetch all available volunteers
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("church_id")
+    .eq("id", user?.id)
+    .single();
+
+  // Get all volunteers from the same church
+  const { data: allVolunteers } = await supabase
+    .from("profiles")
+    .select("id, name, email")
+    .eq("church_id", profile?.church_id)
+    .order("name");
 
   return (
     <div className="space-y-6">
@@ -117,32 +136,18 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
         </Card>
       </div>
 
-      {volunteers && volunteers.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Voluntários</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {volunteers.map((vm: any) => (
-                <div
-                  key={vm.id}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
-                  <div>
-                    <p className="font-medium text-foreground">
-                      {vm.profiles?.name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {vm.profiles?.email}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Voluntários do Ministério</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MinistryVolunteerManager
+            ministryId={id}
+            members={volunteers || []}
+            availableVolunteers={allVolunteers || []}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }
