@@ -9,11 +9,11 @@ import {
   MapPin,
   Edit,
   Users,
-  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { VolunteerSlotManager } from "@/components/dashboard/volunteer-slot-manager";
 import { SendReminderButton } from "@/components/dashboard/send-reminder-button";
+import { getUserPermissions, getAssignableVolunteers, getManageableMinistries } from "@/lib/permissions";
 
 interface EventPageProps {
   params: Promise<{ id: string }>;
@@ -57,29 +57,32 @@ export default async function EventPage({ params }: EventPageProps) {
     .eq("id", user?.id)
     .single();
 
+  // Get user permissions
+  const permissions = await getUserPermissions(supabase);
+  const isAdmin = permissions?.isAdmin || false;
+  const canManageEvent = isAdmin || (permissions?.ledMinistryIds.some(
+    (lid) => event.event_ministries?.some((em: { ministry_id: string }) => em.ministry_id === lid)
+  ) || false);
+
   // Get ministry IDs from the event
   const eventMinistryIds = event.event_ministries?.map((em: { ministry_id: string }) => em.ministry_id) || [];
 
-  // Get volunteers that belong to the ministries involved in this event
-  const { data: ministryVolunteers } = await supabase
-    .from("user_ministries")
-    .select("user_id, profiles(id, name, email)")
-    .in("ministry_id", eventMinistryIds.length > 0 ? eventMinistryIds : ['none']);
-
-  // Remove duplicates (volunteers might be in multiple ministries)
-  const volunteersMap = new Map();
-  ministryVolunteers?.forEach((mv: { user_id: string; profiles: { id: string; name: string; email: string } | null }) => {
-    if (mv.profiles) {
-      volunteersMap.set(mv.profiles.id, mv.profiles);
-    }
-  });
-  const volunteers = Array.from(volunteersMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-
-  const { data: ministries } = await supabase
+  // Get all ministries for the church
+  const { data: allMinistries } = await supabase
     .from("ministries")
     .select("id, name, color")
     .eq("church_id", profile?.church_id)
     .order("name");
+
+  // Get manageable ministries based on permissions
+  const manageableMinistries = permissions 
+    ? getManageableMinistries(eventMinistryIds, permissions, allMinistries || [])
+    : [];
+
+  // Get assignable volunteers based on permissions
+  const volunteers = permissions 
+    ? await getAssignableVolunteers(supabase, eventMinistryIds, permissions)
+    : [];
 
   // Get unavailable volunteers for this event date
   const { data: unavailableVolunteers } = await supabase
@@ -106,15 +109,17 @@ export default async function EventPage({ params }: EventPageProps) {
             <p className="text-muted-foreground">Detalhes do evento</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <SendReminderButton eventId={event.id} eventTitle={event.title} />
-          <Button variant="outline" asChild>
-            <Link href={`/dashboard/eventos/${id}/editar`}>
-              <Edit className="mr-2 h-4 w-4" />
-              Editar
-            </Link>
-          </Button>
-        </div>
+        {canManageEvent && (
+          <div className="flex gap-2">
+            <SendReminderButton eventId={event.id} eventTitle={event.title} />
+            <Button variant="outline" asChild>
+              <Link href={`/dashboard/eventos/${id}/editar`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Editar
+              </Link>
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -219,9 +224,12 @@ export default async function EventPage({ params }: EventPageProps) {
                 eventId={event.id}
                 eventDate={event.date}
                 slots={event.volunteer_slots || []}
-                volunteers={volunteers || []}
-                ministries={ministries || []}
+                volunteers={volunteers.map(v => ({ id: v.id, name: v.name, email: v.email })) || []}
+                ministries={manageableMinistries || []}
                 unavailableIds={unavailableIds}
+                canManage={canManageEvent}
+                isAdmin={isAdmin}
+                ledMinistryIds={permissions?.ledMinistryIds || []}
               />
             </CardContent>
           </Card>

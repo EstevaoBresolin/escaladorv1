@@ -129,3 +129,36 @@ export interface VolunteerApplicationForm {
   event_id: string
   ministry_id: string
 }
+
+// Ministry leadership
+export interface MinistryLeader {
+  id: string
+  ministry_id: string
+  user_id: string
+  created_at: string
+  user?: Profile
+  ministry?: Ministry
+}
+
+// User permissions context
+export interface UserPermissions {
+  isAdmin: boolean
+  isLeader: boolean
+  ledMinistryIds: string[]
+}
+
+// Helper to check if user can manage a specific ministry
+export function canManageMinistry(
+  permissions: UserPermissions,
+  ministryId: string
+): boolean {
+  return permissions.isAdmin || permissions.ledMinistryIds.includes(ministryId)
+}
+
+// Helper to check if user can add volunteers to an event for a specific ministry
+export function canAddVolunteerToMinistry(
+  permissions: UserPermissions,
+  ministryId: string
+): boolean {
+  return permissions.isAdmin || permissions.ledMinistryIds.includes(ministryId)
+}

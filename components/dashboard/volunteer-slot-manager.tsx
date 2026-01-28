@@ -49,6 +49,9 @@ interface VolunteerSlotManagerProps {
   volunteers: Volunteer[];
   ministries: Ministry[];
   unavailableIds: string[];
+  canManage: boolean;
+  isAdmin: boolean;
+  ledMinistryIds: string[];
 }
 
 export function VolunteerSlotManager({
@@ -58,6 +61,9 @@ export function VolunteerSlotManager({
   volunteers,
   ministries,
   unavailableIds,
+  canManage,
+  isAdmin,
+  ledMinistryIds,
 }: VolunteerSlotManagerProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -65,6 +71,12 @@ export function VolunteerSlotManager({
   const [selectedMinistry, setSelectedMinistry] = useState("");
   const router = useRouter();
   const supabase = createClient();
+
+  // Determine if user needs to select ministry or if it's auto-selected
+  const needsMinistrySelection = isAdmin || ledMinistryIds.length > 1;
+  const autoSelectedMinistry = !needsMinistrySelection && ministries.length === 1 
+    ? ministries[0] 
+    : null;
 
   // Separate available and unavailable volunteers
   const availableVolunteers = volunteers.filter(
@@ -74,14 +86,20 @@ export function VolunteerSlotManager({
     unavailableIds.includes(v.id)
   );
 
+  // Check if user can manage a specific slot based on its ministry
+  const canManageSlot = (ministryId: string) => {
+    return isAdmin || ledMinistryIds.includes(ministryId);
+  };
+
   async function handleAddSlot() {
-    if (!selectedVolunteer || !selectedMinistry) return;
+    const ministryToUse = autoSelectedMinistry?.id || selectedMinistry;
+    if (!selectedVolunteer || !ministryToUse) return;
     setLoading(true);
 
     await supabase.from("volunteer_slots").insert({
       event_id: eventId,
       user_id: selectedVolunteer,
-      ministry_id: selectedMinistry,
+      ministry_id: ministryToUse,
       status: "pending",
     });
 
@@ -154,46 +172,55 @@ export function VolunteerSlotManager({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Select
-                  value={slot.status}
-                  onValueChange={(value) => handleUpdateStatus(slot.id, value)}
-                >
-                  <SelectTrigger className="w-[130px]">
-                    <div className="flex items-center gap-2">
-                      {statusIcons[slot.status as keyof typeof statusIcons]}
-                      <SelectValue />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-amber-500" />
-                        Pendente
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="confirmed">
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-emerald-500" />
-                        Confirmado
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="declined">
-                      <div className="flex items-center gap-2">
-                        <X className="h-4 w-4 text-destructive" />
-                        Recusado
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  onClick={() => handleRemoveSlot(slot.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  <span className="sr-only">Remover</span>
-                </Button>
+                {canManageSlot(slot.ministries?.id || "") ? (
+                  <>
+                    <Select
+                      value={slot.status}
+                      onValueChange={(value) => handleUpdateStatus(slot.id, value)}
+                    >
+                      <SelectTrigger className="w-[130px]">
+                        <div className="flex items-center gap-2">
+                          {statusIcons[slot.status as keyof typeof statusIcons]}
+                          <SelectValue />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-amber-500" />
+                            Pendente
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="confirmed">
+                          <div className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-emerald-500" />
+                            Confirmado
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="declined">
+                          <div className="flex items-center gap-2">
+                            <X className="h-4 w-4 text-destructive" />
+                            Recusado
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleRemoveSlot(slot.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Remover</span>
+                    </Button>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    {statusIcons[slot.status as keyof typeof statusIcons]}
+                    <span>{statusLabels[slot.status as keyof typeof statusLabels]}</span>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -204,13 +231,14 @@ export function VolunteerSlotManager({
         </p>
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline" className="w-full bg-transparent">
-            <Plus className="mr-2 h-4 w-4" />
-            Adicionar Voluntário
-          </Button>
-        </DialogTrigger>
+      {canManage && ministries.length > 0 && (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="w-full bg-transparent">
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar Voluntario
+            </Button>
+          </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Adicionar Voluntário à Escala</DialogTitle>
@@ -272,35 +300,48 @@ export function VolunteerSlotManager({
                 )}
             </div>
 
-            <div className="space-y-2">
-              <Label>Ministério *</Label>
-              <Select
-                value={selectedMinistry}
-                onValueChange={setSelectedMinistry}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um ministério" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ministries.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="h-2 w-2 rounded-full"
-                          style={{ backgroundColor: m.color }}
-                        />
-                        {m.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {needsMinistrySelection ? (
+              <div className="space-y-2">
+                <Label>Ministerio *</Label>
+                <Select
+                  value={selectedMinistry}
+                  onValueChange={setSelectedMinistry}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um ministerio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ministries.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: m.color }}
+                          />
+                          {m.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : autoSelectedMinistry && (
+              <div className="space-y-2">
+                <Label>Ministerio</Label>
+                <div className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: autoSelectedMinistry.color }}
+                  />
+                  {autoSelectedMinistry.name}
+                </div>
+              </div>
+            )}
 
             <Button
               className="w-full"
               onClick={handleAddSlot}
-              disabled={!selectedVolunteer || !selectedMinistry || loading}
+              disabled={!selectedVolunteer || (!autoSelectedMinistry && !selectedMinistry) || loading}
             >
               {loading ? (
                 <>
@@ -314,6 +355,13 @@ export function VolunteerSlotManager({
           </div>
         </DialogContent>
       </Dialog>
+      )}
+
+      {!canManage && (
+        <p className="text-sm text-muted-foreground text-center py-2">
+          Apenas administradores e lideres dos ministerios podem gerenciar a escala.
+        </p>
+      )}
     </div>
   );
 }
