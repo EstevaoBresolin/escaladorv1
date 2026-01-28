@@ -1,69 +1,81 @@
-"use client"
+"use client";
 
-import React from "react"
+import React from "react";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Loader2, User } from "lucide-react"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Loader2, User, Plus } from "lucide-react";
 
 export default function PerfilPage() {
-  const [fullName, setFullName] = useState("")
-  const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
-  const [churchId, setChurchId] = useState<string | null>(null)
-  const [churches, setChurches] = useState<{ id: string; name: string }[]>([])
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  
-  const router = useRouter()
-  const supabase = createClient()
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [churchId, setChurchId] = useState<string | null>(null);
+  const [churches, setChurches] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showNewChurchDialog, setShowNewChurchDialog] = useState(false);
+  const [newChurchName, setNewChurchName] = useState("");
+  const [newChurchAddress, setNewChurchAddress] = useState("");
+  const [newChurchPhone, setNewChurchPhone] = useState("");
+  const [creatingChurch, setCreatingChurch] = useState(false);
+
+  const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
     async function loadProfile() {
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await supabase.auth.getUser();
 
-      if (!user) return
+      if (!user) return;
 
       // Carregar perfil do usuário
       const { data: profile } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .single()
+        .single();
 
       if (profile) {
-        setFullName(profile.name || "")
-        setEmail(profile.email || user.email || "")
-        setPhone(profile.phone || "")
-        setChurchId(profile.church_id || null)
+        setFullName(profile.name || "");
+        setEmail(profile.email || user.email || "");
+        setPhone(profile.phone || "");
+        setChurchId(profile.church_id || null);
       }
 
       // Carregar todas as igrejas
       const { data: churchesData } = await supabase
         .from("churches")
         .select("id, name")
-        .order("name")
+        .order("name");
 
       if (churchesData) {
-        setChurches(churchesData)
+        setChurches(churchesData);
       }
     }
 
-    loadProfile()
-  }, [supabase])
+    loadProfile();
+  }, [supabase]);
 
   async function handleCreateChurch(e: React.FormEvent) {
-    e.preventDefault()
-    setCreatingChurch(true)
-    setError(null)
+    e.preventDefault();
+    setCreatingChurch(true);
+    setError(null);
 
     const { data: newChurch, error: createError } = await supabase
       .from("churches")
@@ -73,40 +85,40 @@ export default function PerfilPage() {
         phone: newChurchPhone || null,
       })
       .select()
-      .single()
+      .single();
 
     if (createError) {
-      setError("Erro ao criar igreja. Tente novamente.")
-      setCreatingChurch(false)
-      return
+      setError("Erro ao criar igreja. Tente novamente.");
+      setCreatingChurch(false);
+      return;
     }
 
     if (newChurch) {
-      setChurches([...churches, { id: newChurch.id, name: newChurch.name }])
-      setChurchId(newChurch.id)
-      setNewChurchName("")
-      setNewChurchAddress("")
-      setNewChurchPhone("")
-      setShowNewChurchDialog(false)
+      setChurches([...churches, { id: newChurch.id, name: newChurch.name }]);
+      setChurchId(newChurch.id);
+      setNewChurchName("");
+      setNewChurchAddress("");
+      setNewChurchPhone("");
+      setShowNewChurchDialog(false);
     }
 
-    setCreatingChurch(false)
+    setCreatingChurch(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-    setSuccess(false)
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
 
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      setError("Você precisa estar logado.")
-      setLoading(false)
-      return
+      setError("Você precisa estar logado.");
+      setLoading(false);
+      return;
     }
 
     const { error: updateError } = await supabase
@@ -116,17 +128,17 @@ export default function PerfilPage() {
         phone: phone || null,
         church_id: churchId,
       })
-      .eq("id", user.id)
+      .eq("id", user.id);
 
     if (updateError) {
-      setError("Erro ao atualizar perfil. Tente novamente.")
-      setLoading(false)
-      return
+      setError("Erro ao atualizar perfil. Tente novamente.");
+      setLoading(false);
+      return;
     }
 
-    setSuccess(true)
-    setLoading(false)
-    router.refresh()
+    setSuccess(true);
+    setLoading(false);
+    router.refresh();
   }
 
   const initials = fullName
@@ -136,7 +148,7 @@ export default function PerfilPage() {
         .join("")
         .slice(0, 2)
         .toUpperCase()
-    : "U"
+    : "U";
 
   return (
     <div className="space-y-6">
@@ -198,60 +210,6 @@ export default function PerfilPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="church">Igreja</Label>
-                  <Dialog open={showNewChurchDialog} onOpenChange={setShowNewChurchDialog}>
-                    <DialogTrigger asChild>
-                      <Button type="button" variant="outline" size="sm">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Nova Igreja
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Cadastrar Nova Igreja</DialogTitle>
-                      </DialogHeader>
-                      <form onSubmit={handleCreateChurch} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="newChurchName">Nome da Igreja *</Label>
-                          <Input
-                            id="newChurchName"
-                            value={newChurchName}
-                            onChange={(e) => setNewChurchName(e.target.value)}
-                            placeholder="Ex: Igreja Batista Central"
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="newChurchAddress">Endereço</Label>
-                          <Input
-                            id="newChurchAddress"
-                            value={newChurchAddress}
-                            onChange={(e) => setNewChurchAddress(e.target.value)}
-                            placeholder="Rua, número, bairro, cidade"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="newChurchPhone">Telefone</Label>
-                          <Input
-                            id="newChurchPhone"
-                            type="tel"
-                            value={newChurchPhone}
-                            onChange={(e) => setNewChurchPhone(e.target.value)}
-                            placeholder="(00) 00000-0000"
-                          />
-                        </div>
-                        <Button type="submit" className="w-full" disabled={creatingChurch}>
-                          {creatingChurch ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Criando...
-                            </>
-                          ) : (
-                            "Criar Igreja"
-                          )}
-                        </Button>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
                 </div>
                 <select
                   id="church"
@@ -267,7 +225,7 @@ export default function PerfilPage() {
                   ))}
                 </select>
                 <p className="text-xs text-muted-foreground">
-                  Selecione a igreja à qual você pertence ou cadastre uma nova.
+                  Selecione a igreja à qual você pertence.
                 </p>
               </div>
 
@@ -300,5 +258,5 @@ export default function PerfilPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

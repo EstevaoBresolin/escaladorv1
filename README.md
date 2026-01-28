@@ -21,23 +21,33 @@ Sistema de gerenciamento de escalas para ministérios de igrejas, desenvolvido c
 ## 📦 Instalação
 
 \`\`\`bash
+
 # Clone o repositório
+
 git clone https://github.com/EstevaoBresolin/escaladorv1.git
 
 # Entre na pasta
+
 cd escaladorv1
 
 # Instale as dependências
+
 pnpm install
+
 # ou
+
 npm install
 
 # Configure as variáveis de ambiente
+
 cp .env.example .env.local
 
 # Execute o projeto em desenvolvimento
+
 pnpm dev
+
 # ou
+
 npm run dev
 \`\`\`
 
