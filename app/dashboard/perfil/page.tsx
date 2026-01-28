@@ -9,8 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, User, Plus } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Loader2, User } from "lucide-react"
 
 export default function PerfilPage() {
   const [fullName, setFullName] = useState("")
@@ -21,11 +20,7 @@ export default function PerfilPage() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showNewChurchDialog, setShowNewChurchDialog] = useState(false)
-  const [newChurchName, setNewChurchName] = useState("")
-  const [newChurchAddress, setNewChurchAddress] = useState("")
-  const [newChurchPhone, setNewChurchPhone] = useState("")
-  const [creatingChurch, setCreatingChurch] = useState(false)
+  
   const router = useRouter()
   const supabase = createClient()
 
