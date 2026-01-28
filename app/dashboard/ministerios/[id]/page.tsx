@@ -2,9 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit } from "lucide-react";
+import { ArrowLeft, Edit, Crown, Users } from "lucide-react";
 import Link from "next/link";
 import { MinistryVolunteerManager } from "@/components/dashboard/ministry-volunteer-manager";
+import { MinistryLeaderManager } from "@/components/dashboard/ministry-leader-manager";
+import { getUserPermissions } from "@/lib/permissions";
 
 interface MinistryPageProps {
   params: Promise<{ id: string }>;
@@ -48,9 +50,15 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("church_id")
+    .select("church_id, role")
     .eq("id", user?.id)
     .single();
+
+  // Get user permissions
+  const permissions = await getUserPermissions(supabase);
+  const isAdmin = permissions?.isAdmin || false;
+  const isLeaderOfThisMinistry = permissions?.ledMinistryIds.includes(id) || false;
+  const canManage = isAdmin || isLeaderOfThisMinistry;
 
   // Get all volunteers from the same church
   const { data: allVolunteers } = await supabase
@@ -58,6 +66,16 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
     .select("id, name, email")
     .eq("church_id", profile?.church_id)
     .order("name");
+
+  // Get ministry leaders
+  const { data: leaders } = await supabase
+    .from("ministry_leaders")
+    .select(`
+      id,
+      user_id,
+      profiles(id, name, email)
+    `)
+    .eq("ministry_id", id);
 
   return (
     <div className="space-y-6">
@@ -76,12 +94,14 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
             <p className="text-muted-foreground">Detalhes do ministério</p>
           </div>
         </div>
-        <Button variant="outline" asChild>
-          <Link href={`/dashboard/ministerios/${id}/editar`}>
-            <Edit className="mr-2 h-4 w-4" />
-            Editar
-          </Link>
-        </Button>
+        {canManage && (
+          <Button variant="outline" asChild>
+            <Link href={`/dashboard/ministerios/${id}/editar`}>
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -121,31 +141,109 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Voluntários</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-primary">
-              {volunteers?.length || 0}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              voluntários neste ministério
-            </p>
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Crown className="h-4 w-4 text-amber-500" />
+                Lideres
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-amber-500">
+                {leaders?.length || 0}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                lideres deste ministerio
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                Voluntarios
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-primary">
+                {volunteers?.length || 0}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                voluntarios neste ministerio
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Voluntários do Ministério</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Crown className="h-5 w-5 text-amber-500" />
+            Lideres do Ministerio
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <MinistryVolunteerManager
+          <MinistryLeaderManager
             ministryId={id}
-            members={volunteers || []}
+            leaders={leaders || []}
             availableVolunteers={allVolunteers || []}
+            isAdmin={isAdmin}
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Voluntarios do Ministerio
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {canManage ? (
+            <MinistryVolunteerManager
+              ministryId={id}
+              members={volunteers || []}
+              availableVolunteers={allVolunteers || []}
+            />
+          ) : (
+            <div className="space-y-2">
+              {(volunteers || []).length > 0 ? (
+                (volunteers || []).map((member: { id: string; profiles: { id: string; name: string; email: string } | null }) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center gap-3 rounded-lg border border-border p-3"
+                  >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                      {member.profiles?.name
+                        ? member.profiles.name
+                            .split(" ")
+                            .map((n: string) => n[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()
+                        : "?"}
+                    </div>
+                    <div>
+                      <p className="font-medium text-card-foreground">
+                        {member.profiles?.name || "Voluntario nao encontrado"}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {member.profiles?.email}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-4">
+                  Nenhum voluntario neste ministerio.
+                </p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
