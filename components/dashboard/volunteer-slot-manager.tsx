@@ -72,6 +72,12 @@ export function VolunteerSlotManager({
   const router = useRouter();
   const supabase = createClient();
 
+  // Determine if user needs to select ministry or if it's auto-selected
+  const needsMinistrySelection = isAdmin || ledMinistryIds.length > 1;
+  const autoSelectedMinistry = !needsMinistrySelection && ministries.length === 1 
+    ? ministries[0] 
+    : null;
+
   // Separate available and unavailable volunteers
   const availableVolunteers = volunteers.filter(
     (v) => !unavailableIds.includes(v.id)
@@ -86,13 +92,14 @@ export function VolunteerSlotManager({
   };
 
   async function handleAddSlot() {
-    if (!selectedVolunteer || !selectedMinistry) return;
+    const ministryToUse = autoSelectedMinistry?.id || selectedMinistry;
+    if (!selectedVolunteer || !ministryToUse) return;
     setLoading(true);
 
     await supabase.from("volunteer_slots").insert({
       event_id: eventId,
       user_id: selectedVolunteer,
-      ministry_id: selectedMinistry,
+      ministry_id: ministryToUse,
       status: "pending",
     });
 
@@ -293,35 +300,48 @@ export function VolunteerSlotManager({
                 )}
             </div>
 
-            <div className="space-y-2">
-              <Label>Ministério *</Label>
-              <Select
-                value={selectedMinistry}
-                onValueChange={setSelectedMinistry}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um ministério" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ministries.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="h-2 w-2 rounded-full"
-                          style={{ backgroundColor: m.color }}
-                        />
-                        {m.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {needsMinistrySelection ? (
+              <div className="space-y-2">
+                <Label>Ministerio *</Label>
+                <Select
+                  value={selectedMinistry}
+                  onValueChange={setSelectedMinistry}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um ministerio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ministries.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ backgroundColor: m.color }}
+                          />
+                          {m.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : autoSelectedMinistry && (
+              <div className="space-y-2">
+                <Label>Ministerio</Label>
+                <div className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: autoSelectedMinistry.color }}
+                  />
+                  {autoSelectedMinistry.name}
+                </div>
+              </div>
+            )}
 
             <Button
               className="w-full"
               onClick={handleAddSlot}
-              disabled={!selectedVolunteer || !selectedMinistry || loading}
+              disabled={!selectedVolunteer || (!autoSelectedMinistry && !selectedMinistry) || loading}
             >
               {loading ? (
                 <>
