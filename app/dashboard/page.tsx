@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Church, Users, Calendar, Bell, Plus, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { getUserPermissions } from "@/lib/permissions"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -15,6 +16,10 @@ export default async function DashboardPage() {
     .select("church_id")
     .eq("id", user?.id)
     .single()
+
+  // Get user permissions
+  const permissions = await getUserPermissions(supabase)
+  const isAdmin = permissions?.isAdmin || false
 
   const [ministriesResult, volunteersResult, eventsResult] = await Promise.all([
     supabase
@@ -84,14 +89,16 @@ export default async function DashboardPage() {
             Visão geral da sua igreja
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button asChild>
-            <Link href="/dashboard/eventos/novo">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Evento
-            </Link>
-          </Button>
-        </div>
+        {isAdmin && (
+          <div className="flex gap-2">
+            <Button asChild>
+              <Link href="/dashboard/eventos/novo">
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Evento
+              </Link>
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -121,94 +128,60 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Próximos Eventos</CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard/eventos">Ver todos</Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {upcomingEvents && upcomingEvents.length > 0 ? (
-              <div className="space-y-4">
-                {upcomingEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-3"
-                  >
-                    <div>
-                      <p className="font-medium text-card-foreground">
-                        {event.name}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(event.date + "T12:00:00").toLocaleDateString("pt-BR", {
-                          weekday: "long",
-                          day: "numeric",
-                          month: "long",
-                        })}
-                        {event.time && ` às ${event.time.slice(0, 5)}`}
-                      </p>
-                    </div>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/dashboard/eventos/${event.id}`}>
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </Button>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Próximos Eventos</CardTitle>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/dashboard/eventos">Ver todos</Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {upcomingEvents && upcomingEvents.length > 0 ? (
+            <div className="space-y-4">
+              {upcomingEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex items-center justify-between rounded-lg border border-border p-3"
+                >
+                  <div>
+                    <p className="font-medium text-card-foreground">
+                      {event.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(event.date + "T12:00:00").toLocaleDateString("pt-BR", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                      })}
+                      {event.time && ` às ${event.time.slice(0, 5)}`}
+                    </p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Calendar className="mb-4 h-12 w-12 text-muted-foreground/50" />
-                <p className="text-muted-foreground">
-                  Nenhum evento programado
-                </p>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/dashboard/eventos/${event.id}`}>
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Calendar className="mb-4 h-12 w-12 text-muted-foreground/50" />
+              <p className="text-muted-foreground">
+                Nenhum evento programado
+              </p>
+              {isAdmin && (
                 <Button asChild className="mt-4 bg-transparent" variant="outline">
                   <Link href="/dashboard/eventos/novo">
                     <Plus className="mr-2 h-4 w-4" />
                     Criar Evento
                   </Link>
                 </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Ações Rápidas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Button variant="outline" asChild className="justify-start bg-transparent">
-                <Link href="/dashboard/ministerios/novo">
-                  <Church className="mr-2 h-4 w-4" />
-                  Novo Ministério
-                </Link>
-              </Button>
-              <Button variant="outline" asChild className="justify-start bg-transparent">
-                <Link href="/dashboard/voluntarios/novo">
-                  <Users className="mr-2 h-4 w-4" />
-                  Novo Voluntário
-                </Link>
-              </Button>
-              <Button variant="outline" asChild className="justify-start bg-transparent">
-                <Link href="/dashboard/eventos/novo">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Novo Evento
-                </Link>
-              </Button>
-              <Button variant="outline" asChild className="justify-start bg-transparent">
-                <Link href="/dashboard/notificacoes">
-                  <Bell className="mr-2 h-4 w-4" />
-                  Notificações
-                </Link>
-              </Button>
+              )}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
