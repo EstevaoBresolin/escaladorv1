@@ -94,7 +94,7 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
             <p className="text-muted-foreground">Detalhes do ministério</p>
           </div>
         </div>
-        {canManage && (
+        {isAdmin && (
           <Button variant="outline" asChild>
             <Link href={`/dashboard/ministerios/${id}/editar`}>
               <Edit className="mr-2 h-4 w-4" />

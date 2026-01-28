@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EventCalendar } from "@/components/dashboard/event-calendar";
 import { DeleteEventButton } from "@/components/dashboard/delete-event-button";
+import { getUserPermissions } from "@/lib/permissions";
 
 export default async function EventosPage() {
   const supabase = await createClient();
@@ -23,6 +24,10 @@ export default async function EventosPage() {
     .select("church_id")
     .eq("id", user?.id)
     .single();
+
+  // Get user permissions
+  const permissions = await getUserPermissions(supabase);
+  const isAdmin = permissions?.isAdmin || false;
 
   const { data: events } = await supabase
     .from("events")
@@ -49,12 +54,14 @@ export default async function EventosPage() {
             Gerencie os eventos e escalas da sua igreja
           </p>
         </div>
-        <Button asChild>
-          <Link href="/dashboard/eventos/novo">
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Evento
-          </Link>
-        </Button>
+        {isAdmin && (
+          <Button asChild>
+            <Link href="/dashboard/eventos/novo">
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Evento
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -143,17 +150,21 @@ export default async function EventosPage() {
                               Ver detalhes
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link
-                              href={`/dashboard/eventos/${event.id}/editar`}
-                            >
-                              Editar
-                            </Link>
-                          </DropdownMenuItem>
-                          <DeleteEventButton
-                            eventId={event.id}
-                            eventName={event.title}
-                          />
+                          {isAdmin && (
+                            <>
+                              <DropdownMenuItem asChild>
+                                <Link
+                                  href={`/dashboard/eventos/${event.id}/editar`}
+                                >
+                                  Editar
+                                </Link>
+                              </DropdownMenuItem>
+                              <DeleteEventButton
+                                eventId={event.id}
+                                eventName={event.title}
+                              />
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -168,17 +179,19 @@ export default async function EventosPage() {
                 <p className="text-center text-muted-foreground">
                   Nenhum evento programado
                 </p>
-                <Button
-                  asChild
-                  className="mt-4 bg-transparent"
-                  variant="outline"
-                  size="sm"
-                >
-                  <Link href="/dashboard/eventos/novo">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Criar Evento
-                  </Link>
-                </Button>
+                {isAdmin && (
+                  <Button
+                    asChild
+                    className="mt-4 bg-transparent"
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Link href="/dashboard/eventos/novo">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Criar Evento
+                    </Link>
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}

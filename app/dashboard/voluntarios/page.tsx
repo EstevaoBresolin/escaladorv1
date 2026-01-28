@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, Users, Mail, Phone, MoreVertical } from "lucide-react"
+import { Users, Mail, Phone, MoreVertical } from "lucide-react"
 import Link from "next/link"
 import {
   DropdownMenu,
@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { getUserPermissions } from "@/lib/permissions"
 
 export default async function VoluntariosPage() {
   const supabase = await createClient()
@@ -29,6 +30,11 @@ export default async function VoluntariosPage() {
     .select("church_id")
     .eq("id", user?.id)
     .single()
+
+  // Get user permissions
+  const permissions = await getUserPermissions(supabase)
+  const isAdmin = permissions?.isAdmin || false
+  const currentUserId = user?.id
 
   const { data: volunteers } = await supabase
     .from("profiles")
@@ -48,12 +54,6 @@ export default async function VoluntariosPage() {
             Gerencie os voluntários da sua igreja
           </p>
         </div>
-        <Button asChild>
-          <Link href="/dashboard/voluntarios/novo">
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Voluntário
-          </Link>
-        </Button>
       </div>
 
       {volunteers && volunteers.length > 0 ? (
@@ -146,13 +146,15 @@ export default async function VoluntariosPage() {
                               Ver perfil
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link
-                              href={`/dashboard/voluntarios/${volunteer.id}/editar`}
-                            >
-                              Editar
-                            </Link>
-                          </DropdownMenuItem>
+                          {(isAdmin || currentUserId === volunteer.id) && (
+                            <DropdownMenuItem asChild>
+                              <Link
+                                href={`/dashboard/voluntarios/${volunteer.id}/editar`}
+                              >
+                                Editar
+                              </Link>
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -169,15 +171,9 @@ export default async function VoluntariosPage() {
             <h3 className="mb-2 text-lg font-semibold text-card-foreground">
               Nenhum voluntário cadastrado
             </h3>
-            <p className="mb-4 text-center text-muted-foreground">
-              Adicione voluntários para começar a criar escalas.
+            <p className="text-center text-muted-foreground">
+              Os voluntários são criados através do cadastro (sign up).
             </p>
-            <Button asChild>
-              <Link href="/dashboard/voluntarios/novo">
-                <Plus className="mr-2 h-4 w-4" />
-                Adicionar Voluntário
-              </Link>
-            </Button>
           </CardContent>
         </Card>
       )}

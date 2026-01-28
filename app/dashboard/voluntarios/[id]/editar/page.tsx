@@ -15,6 +15,7 @@ interface Volunteer {
   name: string;
   email: string;
   phone: string | null;
+  role: string;
 }
 
 export default function EditarVoluntarioPage() {
@@ -25,6 +26,7 @@ export default function EditarVoluntarioPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [canEdit, setCanEdit] = useState(false);
   const router = useRouter();
   const params = useParams();
   const volunteerId = params.id as string;
@@ -32,6 +34,27 @@ export default function EditarVoluntarioPage() {
 
   useEffect(() => {
     async function loadVolunteer() {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Get current user's profile to check if admin
+      const { data: currentProfile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user?.id)
+        .single();
+      
+      const isAdmin = currentProfile?.role === "admin";
+      const isOwnProfile = user?.id === volunteerId;
+      
+      if (!isAdmin && !isOwnProfile) {
+        setError("Você não tem permissão para editar este perfil.");
+        setLoading(false);
+        return;
+      }
+      
+      setCanEdit(true);
+
       const { data: volunteerData } = await supabase
         .from("profiles")
         .select("*")
@@ -86,7 +109,7 @@ export default function EditarVoluntarioPage() {
     );
   }
 
-  if (!volunteer) {
+  if (!canEdit || !volunteer) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -96,7 +119,7 @@ export default function EditarVoluntarioPage() {
             </Link>
           </Button>
           <h1 className="text-2xl font-bold text-foreground">
-            Voluntário não encontrado
+            {error || "Voluntário não encontrado"}
           </h1>
         </div>
       </div>

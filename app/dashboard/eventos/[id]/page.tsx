@@ -109,7 +109,7 @@ export default async function EventPage({ params }: EventPageProps) {
             <p className="text-muted-foreground">Detalhes do evento</p>
           </div>
         </div>
-        {canManageEvent && (
+        {isAdmin && (
           <div className="flex gap-2">
             <SendReminderButton eventId={event.id} eventTitle={event.title} />
             <Button variant="outline" asChild>

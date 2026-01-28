@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Edit, Mail, Phone } from "lucide-react";
 import Link from "next/link";
+import { getUserPermissions } from "@/lib/permissions";
 
 interface VolunteerPageProps {
   params: Promise<{ id: string }>;
@@ -12,6 +13,12 @@ interface VolunteerPageProps {
 export default async function VolunteerPage({ params }: VolunteerPageProps) {
   const { id } = await params;
   const supabase = await createClient();
+
+  // Get current user and permissions
+  const { data: { user } } = await supabase.auth.getUser();
+  const permissions = await getUserPermissions(supabase);
+  const isAdmin = permissions?.isAdmin || false;
+  const canEdit = isAdmin || user?.id === id;
 
   const { data: volunteer } = await supabase
     .from("profiles")
@@ -50,12 +57,14 @@ export default async function VolunteerPage({ params }: VolunteerPageProps) {
             <p className="text-muted-foreground">Detalhes do voluntário</p>
           </div>
         </div>
-        <Button variant="outline" asChild>
-          <Link href={`/dashboard/voluntarios/${id}/editar`}>
-            <Edit className="mr-2 h-4 w-4" />
-            Editar
-          </Link>
-        </Button>
+        {canEdit && (
+          <Button variant="outline" asChild>
+            <Link href={`/dashboard/voluntarios/${id}/editar`}>
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

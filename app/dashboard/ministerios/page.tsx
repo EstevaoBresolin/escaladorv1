@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { DeleteMinistryButton } from "@/components/dashboard/delete-ministry-button"
+import { getUserPermissions } from "@/lib/permissions"
 
 export default async function MinisteriosPage() {
   const supabase = await createClient()
@@ -22,6 +23,10 @@ export default async function MinisteriosPage() {
     .select("church_id")
     .eq("id", user?.id)
     .single()
+
+  // Get user permissions
+  const permissions = await getUserPermissions(supabase);
+  const isAdmin = permissions?.isAdmin || false;
 
   const { data: ministries } = await supabase
     .from("ministries")
@@ -41,12 +46,14 @@ export default async function MinisteriosPage() {
             Gerencie os ministérios da sua igreja
           </p>
         </div>
-        <Button asChild>
-          <Link href="/dashboard/ministerios/novo">
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Ministério
-          </Link>
-        </Button>
+        {isAdmin && (
+          <Button asChild>
+            <Link href="/dashboard/ministerios/novo">
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Ministério
+            </Link>
+          </Button>
+        )}
       </div>
 
       {ministries && ministries.length > 0 ? (
@@ -81,12 +88,16 @@ export default async function MinisteriosPage() {
                         Ver detalhes
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href={`/dashboard/ministerios/${ministry.id}/editar`}>
-                        Editar
-                      </Link>
-                    </DropdownMenuItem>
-                    <DeleteMinistryButton ministryId={ministry.id} ministryName={ministry.name} />
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/dashboard/ministerios/${ministry.id}/editar`}>
+                            Editar
+                          </Link>
+                        </DropdownMenuItem>
+                        <DeleteMinistryButton ministryId={ministry.id} ministryName={ministry.name} />
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </CardHeader>
@@ -114,14 +125,18 @@ export default async function MinisteriosPage() {
               Nenhum ministério cadastrado
             </h3>
             <p className="mb-4 text-center text-muted-foreground">
-              Comece criando o primeiro ministério da sua igreja.
+              {isAdmin 
+                ? "Comece criando o primeiro ministério da sua igreja."
+                : "Nenhum ministério disponível no momento."}
             </p>
-            <Button asChild>
-              <Link href="/dashboard/ministerios/novo">
-                <Plus className="mr-2 h-4 w-4" />
-                Criar Ministério
-              </Link>
-            </Button>
+            {isAdmin && (
+              <Button asChild>
+                <Link href="/dashboard/ministerios/novo">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Criar Ministério
+                </Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
