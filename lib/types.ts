@@ -95,7 +95,7 @@ export interface Notification {
   message: string
   type: NotificationType
   read: boolean
-  sent_via?: 'app' | 'whatsapp' | 'email'
+  sent_via?: 'app' | 'whatsapp' | 'email' | null
   created_at: string
 }
 
