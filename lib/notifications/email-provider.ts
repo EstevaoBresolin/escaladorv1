@@ -166,7 +166,9 @@ export class EmailNotificationProvider implements NotificationProvider {
   private fromEmail: string
 
   constructor() {
-    this.fromEmail = process.env.RESEND_FROM_EMAIL || 'noreply@conecteescalas.com'
+    // Use Resend test email if no custom domain is configured
+    // You can use 'onboarding@resend.dev' for testing before verifying a domain
+    this.fromEmail = process.env.RESEND_FROM_EMAIL || 'Conecte Escalas <onboarding@resend.dev>'
   }
 
   canSend(recipient: NotificationRecipient): boolean {
