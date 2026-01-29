@@ -6,7 +6,7 @@ import type {
   NotificationChannel,
 } from './types'
 
-// Resend API via fetch (sem dependência de pacote)
+// Resend API via fetch - sem dependencia de pacote externo
 async function sendEmailViaResend(options: {
   from: string
   to: string
