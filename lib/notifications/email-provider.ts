@@ -16,7 +16,13 @@ async function sendEmailViaResend(options: {
 }): Promise<{ data?: { id: string }; error?: { message: string } }> {
   const apiKey = process.env.RESEND_API_KEY
 
+  console.log('[v0] Attempting to send email via Resend')
+  console.log('[v0] From:', options.from)
+  console.log('[v0] To:', options.to)
+  console.log('[v0] API Key exists:', !!apiKey)
+
   if (!apiKey) {
+    console.log('[v0] ERROR: RESEND_API_KEY not configured')
     throw new Error('RESEND_API_KEY not configured')
   }
 
@@ -36,13 +42,17 @@ async function sendEmailViaResend(options: {
   })
 
   const result = await response.json()
+  console.log('[v0] Resend API response status:', response.status)
+  console.log('[v0] Resend API response:', JSON.stringify(result))
 
   if (!response.ok) {
+    console.log('[v0] Resend API error:', result.message || result)
     return {
       error: { message: result.message || 'Failed to send email' },
     }
   }
 
+  console.log('[v0] Email sent successfully, ID:', result.id)
   return { data: { id: result.id } }
 }
 
