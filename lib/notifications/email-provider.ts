@@ -166,9 +166,10 @@ export class EmailNotificationProvider implements NotificationProvider {
   private fromEmail: string
 
   constructor() {
-    // Use Resend test email if no custom domain is configured
-    // You can use 'onboarding@resend.dev' for testing before verifying a domain
-    this.fromEmail = process.env.RESEND_FROM_EMAIL || 'Conecte Escalas <onboarding@resend.dev>'
+    // IMPORTANT: Use 'onboarding@resend.dev' for testing before verifying a domain
+    // Once you verify your domain in Resend, set RESEND_FROM_EMAIL to your verified email
+    // For now, always use the test email to avoid "Domain not verified" errors
+    this.fromEmail = 'Conecte Escalas <onboarding@resend.dev>'
   }
 
   canSend(recipient: NotificationRecipient): boolean {
