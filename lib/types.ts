@@ -2,7 +2,7 @@
 
 export type UserRole = 'admin' | 'leader' | 'volunteer'
 
-export type VolunteerStatus = 'pending' | 'confirmed' | 'declined' | 'absent'
+export type VolunteerStatus = 'scheduled' | 'declined' | 'absent'
 
 export type NotificationType = 'info' | 'warning' | 'success' | 'error'
 
