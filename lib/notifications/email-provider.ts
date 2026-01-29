@@ -1,4 +1,3 @@
-import { Resend } from 'resend'
 import type {
   NotificationProvider,
   NotificationRecipient,
@@ -7,20 +6,44 @@ import type {
   NotificationChannel,
 } from './types'
 
-let resendClient: Resend | null = null
+// Resend API via fetch (sem dependência de pacote)
+async function sendEmailViaResend(options: {
+  from: string
+  to: string
+  subject: string
+  html: string
+  text: string
+}): Promise<{ data?: { id: string }; error?: { message: string } }> {
+  const apiKey = process.env.RESEND_API_KEY
 
-function getResendClient(): Resend {
-  if (!resendClient) {
-    const apiKey = process.env.RESEND_API_KEY
-
-    if (!apiKey) {
-      throw new Error('RESEND_API_KEY not configured')
-    }
-
-    resendClient = new Resend(apiKey)
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY not configured')
   }
 
-  return resendClient
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: options.from,
+      to: [options.to],
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
+    }),
+  })
+
+  const result = await response.json()
+
+  if (!response.ok) {
+    return {
+      error: { message: result.message || 'Failed to send email' },
+    }
+  }
+
+  return { data: { id: result.id } }
 }
 
 export function formatEmailHtml(
@@ -156,9 +179,7 @@ export class EmailNotificationProvider implements NotificationProvider {
     }
 
     try {
-      const resend = getResendClient()
-
-      const result = await resend.emails.send({
+      const result = await sendEmailViaResend({
         from: this.fromEmail,
         to: recipient.email,
         subject: `Lembrete: ${reminder.eventTitle} - Amanha`,
