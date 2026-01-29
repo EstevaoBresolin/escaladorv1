@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { cn } from "@/lib/utils"
 import { Switch } from "@/components/ui/switch"
 import {
   Select,
@@ -193,46 +193,36 @@ export function ReminderManager() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <RadioGroup
-            value={channel}
-            onValueChange={(value) => setChannel(value as NotificationChannel)}
-            className="grid gap-4 sm:grid-cols-2"
-          >
-            <div>
-              <RadioGroupItem
-                value="email"
-                id="email"
-                className="peer sr-only"
-              />
-              <Label
-                htmlFor="email"
-                className="flex cursor-pointer flex-col items-center justify-between rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-              >
-                <Mail className="mb-3 h-6 w-6" />
-                <span className="font-semibold">Email</span>
-                <span className="text-xs text-muted-foreground text-center mt-1">
-                  Envia emails formatados com Resend
-                </span>
-              </Label>
-            </div>
-            <div>
-              <RadioGroupItem
-                value="whatsapp"
-                id="whatsapp"
-                className="peer sr-only"
-              />
-              <Label
-                htmlFor="whatsapp"
-                className="flex cursor-pointer flex-col items-center justify-between rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-              >
-                <MessageCircle className="mb-3 h-6 w-6" />
-                <span className="font-semibold">WhatsApp</span>
-                <span className="text-xs text-muted-foreground text-center mt-1">
-                  Envia mensagens via Twilio
-                </span>
-              </Label>
-            </div>
-          </RadioGroup>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setChannel("email")}
+              className={cn(
+                "flex cursor-pointer flex-col items-center justify-between rounded-lg border-2 bg-popover p-4 transition-colors hover:bg-accent hover:text-accent-foreground",
+                channel === "email" ? "border-primary" : "border-muted"
+              )}
+            >
+              <Mail className="mb-3 h-6 w-6" />
+              <span className="font-semibold">Email</span>
+              <span className="text-xs text-muted-foreground text-center mt-1">
+                Envia emails formatados com Resend
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setChannel("whatsapp")}
+              className={cn(
+                "flex cursor-pointer flex-col items-center justify-between rounded-lg border-2 bg-popover p-4 transition-colors hover:bg-accent hover:text-accent-foreground",
+                channel === "whatsapp" ? "border-primary" : "border-muted"
+              )}
+            >
+              <MessageCircle className="mb-3 h-6 w-6" />
+              <span className="font-semibold">WhatsApp</span>
+              <span className="text-xs text-muted-foreground text-center mt-1">
+                Envia mensagens via Twilio
+              </span>
+            </button>
+          </div>
 
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
