@@ -9,13 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Loader2, Building2, MessageCircle, Clock } from "lucide-react"
+
+import { Loader2, Building2 } from "lucide-react"
+import { ReminderManager } from "@/components/dashboard/reminder-manager"
 
 export default function ConfiguracoesPage() {
   const [churchName, setChurchName] = useState("")
   const [churchId, setChurchId] = useState<string | null>(null)
-  const [emailNotifications, setEmailNotifications] = useState(true)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -131,72 +131,7 @@ export default function ConfiguracoesPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Notificações</CardTitle>
-            <CardDescription>
-              Configure como você deseja receber notificações
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Notificações por Email</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receba lembretes de escalas por email
-                </p>
-              </div>
-              <Switch
-                checked={emailNotifications}
-                onCheckedChange={setEmailNotifications}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageCircle className="h-5 w-5" />
-              Lembretes via WhatsApp
-            </CardTitle>
-            <CardDescription>
-              Configure o envio automatico de lembretes para voluntarios escalados
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-lg bg-muted/50 p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Envio automatico</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Os lembretes sao enviados automaticamente todos os dias as 18h para 
-                voluntarios escalados em eventos do dia seguinte.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Variaveis de ambiente necessarias:</p>
-              <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                <li><code className="text-xs bg-muted px-1 py-0.5 rounded">TWILIO_ACCOUNT_SID</code> - SID da sua conta Twilio</li>
-                <li><code className="text-xs bg-muted px-1 py-0.5 rounded">TWILIO_AUTH_TOKEN</code> - Token de autenticacao Twilio</li>
-                <li><code className="text-xs bg-muted px-1 py-0.5 rounded">TWILIO_WHATSAPP_FROM</code> - Numero do WhatsApp Twilio (ex: +14155238886)</li>
-                <li><code className="text-xs bg-muted px-1 py-0.5 rounded">CRON_SECRET</code> - Chave secreta para proteger o endpoint do cron</li>
-              </ul>
-            </div>
-
-            <div className="rounded-lg border p-4 space-y-2">
-              <p className="text-sm font-medium">Como configurar:</p>
-              <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                <li>Crie uma conta no <a href="https://www.twilio.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Twilio</a></li>
-                <li>Ative o WhatsApp Sandbox ou configure um numero aprovado</li>
-                <li>Copie as credenciais e adicione nas variaveis de ambiente do Vercel</li>
-                <li>Certifique-se de que os voluntarios tenham telefone cadastrado</li>
-              </ol>
-            </div>
-          </CardContent>
-        </Card>
+        <ReminderManager />
 
         <Card className="border-destructive/50">
           <CardHeader>

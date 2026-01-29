@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server"
-import { sendWhatsAppMessage, formatReminderMessage } from "@/lib/twilio"
+import { getNotificationService } from "@/lib/notifications"
+import type { NotificationRecipient, EventReminder } from "@/lib/notifications"
 import { NextResponse } from "next/server"
 
 // Manual endpoint to send reminder for a specific event
+// Uses the same notification service as the cron job
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
@@ -29,17 +31,20 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check if Twilio is configured
-    if (
-      !process.env.TWILIO_ACCOUNT_SID ||
-      !process.env.TWILIO_AUTH_TOKEN ||
-      !process.env.TWILIO_WHATSAPP_FROM
-    ) {
+    // Initialize notification service
+    const notificationService = getNotificationService()
+
+    if (!notificationService.isConfigured()) {
       return NextResponse.json(
-        { error: "Twilio nao configurado. Configure as variaveis de ambiente." },
+        {
+          error:
+            "Sistema de notificacao nao configurado. Configure RESEND_API_KEY para email ou variaveis do Twilio para WhatsApp.",
+        },
         { status: 400 }
       )
     }
+
+    const activeChannel = notificationService.getActiveChannel()
 
     const { eventId } = await request.json()
 
@@ -68,7 +73,7 @@ export async function POST(request: Request) {
         `
         id,
         status,
-        profiles!inner(id, name, phone),
+        profiles!inner(id, name, email, phone),
         ministries!inner(id, name)
       `
       )
@@ -91,39 +96,51 @@ export async function POST(request: Request) {
       sent: 0,
       failed: 0,
       skipped: 0,
-      details: [] as { volunteer: string; status: string; error?: string }[],
+      details: [] as {
+        volunteer: string
+        status: string
+        channel?: string
+        error?: string
+      }[],
     }
 
     for (const slot of slots) {
-      const profileData = slot.profiles as { id: string; name: string; phone: string | null }
+      const profileData = slot.profiles as {
+        id: string
+        name: string
+        email: string | null
+        phone: string | null
+      }
       const ministry = slot.ministries as { id: string; name: string }
 
-      if (!profileData.phone) {
-        results.skipped++
-        results.details.push({
-          volunteer: profileData.name,
-          status: "skipped",
-          error: "Sem telefone cadastrado",
-        })
-        continue
+      // Prepare recipient and reminder data
+      const recipient: NotificationRecipient = {
+        id: profileData.id,
+        name: profileData.name,
+        email: profileData.email,
+        phone: profileData.phone,
       }
 
-      const message = formatReminderMessage(
-        profileData.name,
-        event.title,
-        event.date,
-        event.start_time,
-        event.location || undefined,
-        ministry.name
-      )
+      const reminder: EventReminder = {
+        eventTitle: event.title,
+        eventDate: event.date,
+        eventTime: event.start_time,
+        eventLocation: event.location || undefined,
+        ministryName: ministry.name,
+      }
 
-      const sendResult = await sendWhatsAppMessage(profileData.phone, message)
+      // Send notification
+      const sendResult = await notificationService.sendReminder(
+        recipient,
+        reminder
+      )
 
       if (sendResult.success) {
         results.sent++
         results.details.push({
           volunteer: profileData.name,
           status: "sent",
+          channel: sendResult.channel,
         })
 
         // Create notification record
@@ -132,21 +149,40 @@ export async function POST(request: Request) {
           title: "Lembrete de Escala",
           message: `Voce foi lembrado sobre o evento "${event.title}".`,
           type: "info",
-          sent_via: "whatsapp",
+          sent_via: sendResult.channel,
         })
       } else {
-        results.failed++
-        results.details.push({
-          volunteer: profileData.name,
-          status: "failed",
-          error: sendResult.error,
-        })
+        // Check if it's a missing contact info issue
+        const isMissingContact =
+          sendResult.error?.includes("missing") ||
+          sendResult.error?.includes("no email") ||
+          sendResult.error?.includes("no phone")
+
+        if (isMissingContact) {
+          results.skipped++
+          results.details.push({
+            volunteer: profileData.name,
+            status: "skipped",
+            error:
+              activeChannel === "email"
+                ? "Sem email cadastrado"
+                : "Sem telefone cadastrado",
+          })
+        } else {
+          results.failed++
+          results.details.push({
+            volunteer: profileData.name,
+            status: "failed",
+            error: sendResult.error,
+          })
+        }
       }
     }
 
     return NextResponse.json({
       message: "Lembretes processados",
       event: event.title,
+      channel: activeChannel,
       ...results,
     })
   } catch (error) {

@@ -100,7 +100,7 @@ export function VolunteerSlotManager({
       event_id: eventId,
       user_id: selectedVolunteer,
       ministry_id: ministryToUse,
-      status: "pending",
+      status: "scheduled",
     });
 
     setLoading(false);
@@ -121,15 +121,15 @@ export function VolunteerSlotManager({
   }
 
   const statusIcons = {
-    pending: <Clock className="h-4 w-4 text-amber-500" />,
-    confirmed: <Check className="h-4 w-4 text-emerald-500" />,
+    scheduled: <Check className="h-4 w-4 text-emerald-500" />,
     declined: <X className="h-4 w-4 text-destructive" />,
+    absent: <X className="h-4 w-4 text-amber-500" />,
   };
 
   const statusLabels = {
-    pending: "Pendente",
-    confirmed: "Confirmado",
+    scheduled: "Escalado",
     declined: "Recusado",
+    absent: "Ausente",
   };
 
   return (
@@ -185,22 +185,22 @@ export function VolunteerSlotManager({
                         </div>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending">
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-amber-500" />
-                            Pendente
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="confirmed">
+                        <SelectItem value="scheduled">
                           <div className="flex items-center gap-2">
                             <Check className="h-4 w-4 text-emerald-500" />
-                            Confirmado
+                            Escalado
                           </div>
                         </SelectItem>
                         <SelectItem value="declined">
                           <div className="flex items-center gap-2">
                             <X className="h-4 w-4 text-destructive" />
                             Recusado
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="absent">
+                          <div className="flex items-center gap-2">
+                            <X className="h-4 w-4 text-amber-500" />
+                            Ausente
                           </div>
                         </SelectItem>
                       </SelectContent>
