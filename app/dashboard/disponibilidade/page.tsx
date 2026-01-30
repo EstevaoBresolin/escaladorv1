@@ -20,7 +20,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Loader2, Plus, Trash2, CalendarOff, CalendarIcon, Info } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  Trash2,
+  CalendarOff,
+  CalendarIcon,
+  Info,
+} from "lucide-react";
 import { format, parseISO, isAfter, startOfToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -28,19 +35,24 @@ import { cn } from "@/lib/utils";
 interface Unavailability {
   id: string;
   unavailable_date: string;
+  period: string;
   reason: string | null;
   created_at: string;
 }
 
 export default function DisponibilidadePage() {
-  const [unavailabilities, setUnavailabilities] = useState<Unavailability[]>([]);
+  const [unavailabilities, setUnavailabilities] = useState<Unavailability[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("all_day");
   const [reason, setReason] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -73,6 +85,7 @@ export default function DisponibilidadePage() {
   async function handleAddUnavailability() {
     if (!selectedDate) return;
     setSaving(true);
+    setError(null);
 
     const {
       data: { user },
@@ -85,17 +98,77 @@ export default function DisponibilidadePage() {
 
     const formattedDate = format(selectedDate, "yyyy-MM-dd");
 
-    const { error } = await supabase.from("volunteer_unavailability").insert({
-      user_id: user.id,
-      unavailable_date: formattedDate,
-      reason: reason || null,
+    // Helper to get event period based on start time
+    function getEventPeriod(startTime?: string): string {
+      if (!startTime) return "all_day";
+      const [hours] = startTime.split(":").map(Number);
+      if (hours >= 6 && hours < 12) return "morning";
+      if (hours >= 12 && hours < 18) return "afternoon";
+      return "evening";
+    }
+
+    // Check if user is already scheduled for any event on this date/period
+    const { data: scheduledSlots } = await supabase
+      .from("volunteer_slots")
+      .select("id, events!inner(date, start_time, title)")
+      .eq("user_id", user.id);
+
+    // Filter slots for the selected date
+    const conflictingSlots = scheduledSlots?.filter((slot: any) => {
+      const event = Array.isArray(slot.events) ? slot.events[0] : slot.events;
+      if (event?.date !== formattedDate) return false;
+
+      const eventPeriod = getEventPeriod(event?.start_time);
+
+      // If trying to mark all day unavailable, conflict with any event
+      if (selectedPeriod === "all_day") return true;
+
+      // If event is all day, conflict with any period
+      if (eventPeriod === "all_day") return true;
+
+      // If periods match, there's a conflict
+      return eventPeriod === selectedPeriod;
     });
 
-    if (!error) {
+    if (conflictingSlots && conflictingSlots.length > 0) {
+      const event = Array.isArray(conflictingSlots[0].events)
+        ? conflictingSlots[0].events[0]
+        : conflictingSlots[0].events;
+      const eventTitle = event?.title || "um evento";
+      const periodText =
+        selectedPeriod === "all_day"
+          ? "dia todo"
+          : selectedPeriod === "morning"
+            ? "manhã"
+            : selectedPeriod === "afternoon"
+              ? "tarde"
+              : "noite";
+
+      setError(
+        `Você já está escalado para "${eventTitle}" neste dia/horário (${periodText}). Entre em contato com o líder do ministério para ser removido da escala antes de marcar indisponibilidade.`,
+      );
+      setSaving(false);
+      return;
+    }
+
+    const { error: insertError } = await supabase
+      .from("volunteer_unavailability")
+      .insert({
+        user_id: user.id,
+        unavailable_date: formattedDate,
+        period: selectedPeriod,
+        reason: reason || null,
+      });
+
+    if (!insertError) {
       setOpen(false);
       setSelectedDate(undefined);
+      setSelectedPeriod("all_day");
       setReason("");
+      setError(null);
       await loadUnavailabilities();
+    } else {
+      setError("Erro ao salvar indisponibilidade. Tente novamente.");
     }
 
     setSaving(false);
@@ -109,7 +182,9 @@ export default function DisponibilidadePage() {
   }
 
   // Get all unavailable dates for calendar highlighting
-  const unavailableDates = unavailabilities.map((u) => parseISO(u.unavailable_date));
+  const unavailableDates = unavailabilities.map((u) =>
+    parseISO(u.unavailable_date),
+  );
 
   if (loading) {
     return (
@@ -122,7 +197,9 @@ export default function DisponibilidadePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Minha Disponibilidade</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          Minha Disponibilidade
+        </h1>
         <p className="text-muted-foreground">
           Marque os dias em que você NAO pode servir como voluntário
         </p>
@@ -136,9 +213,9 @@ export default function DisponibilidadePage() {
               Como funciona?
             </p>
             <p className="text-sm text-amber-700 dark:text-amber-400">
-              Adicione aqui apenas os dias em que voce NAO estara disponivel. 
-              Nos demais dias, voce sera considerado disponivel para ser escalado 
-              em eventos.
+              Adicione aqui apenas os dias em que voce NAO estara disponivel.
+              Nos demais dias, voce sera considerado disponivel para ser
+              escalado em eventos.
             </p>
           </div>
         </CardContent>
@@ -148,7 +225,18 @@ export default function DisponibilidadePage() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Dias Indisponiveis</CardTitle>
-            <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog
+              open={open}
+              onOpenChange={(isOpen) => {
+                setOpen(isOpen);
+                if (!isOpen) {
+                  setError(null);
+                  setSelectedDate(undefined);
+                  setSelectedPeriod("all_day");
+                  setReason("");
+                }
+              }}
+            >
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
@@ -160,6 +248,12 @@ export default function DisponibilidadePage() {
                   <DialogTitle>Adicionar Indisponibilidade</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
+                  {error && (
+                    <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                      {error}
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label>Data *</Label>
                     <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -168,7 +262,7 @@ export default function DisponibilidadePage() {
                           variant="outline"
                           className={cn(
                             "w-full justify-start text-left font-normal",
-                            !selectedDate && "text-muted-foreground"
+                            !selectedDate && "text-muted-foreground",
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
@@ -190,7 +284,7 @@ export default function DisponibilidadePage() {
                             unavailableDates.some(
                               (d) =>
                                 d.toISOString().split("T")[0] ===
-                                date.toISOString().split("T")[0]
+                                date.toISOString().split("T")[0],
                             )
                           }
                           initialFocus
@@ -198,6 +292,52 @@ export default function DisponibilidadePage() {
                         />
                       </PopoverContent>
                     </Popover>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Período *</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant={
+                          selectedPeriod === "all_day" ? "default" : "outline"
+                        }
+                        onClick={() => setSelectedPeriod("all_day")}
+                        className="w-full"
+                      >
+                        Dia Todo
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={
+                          selectedPeriod === "morning" ? "default" : "outline"
+                        }
+                        onClick={() => setSelectedPeriod("morning")}
+                        className="w-full"
+                      >
+                        Manhã
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={
+                          selectedPeriod === "afternoon" ? "default" : "outline"
+                        }
+                        onClick={() => setSelectedPeriod("afternoon")}
+                        className="w-full"
+                      >
+                        Tarde
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={
+                          selectedPeriod === "evening" ? "default" : "outline"
+                        }
+                        onClick={() => setSelectedPeriod("evening")}
+                        className="w-full"
+                      >
+                        Noite
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -242,9 +382,23 @@ export default function DisponibilidadePage() {
                       </div>
                       <div>
                         <p className="font-medium text-foreground">
-                          {format(parseISO(item.unavailable_date), "EEEE, d 'de' MMMM", {
-                            locale: ptBR,
-                          })}
+                          {format(
+                            parseISO(item.unavailable_date),
+                            "EEEE, d 'de' MMMM",
+                            {
+                              locale: ptBR,
+                            },
+                          )}{" "}
+                          -{" "}
+                          <span className="text-sm text-muted-foreground">
+                            {item.period === "all_day"
+                              ? "Dia todo"
+                              : item.period === "morning"
+                                ? "Manhã"
+                                : item.period === "afternoon"
+                                  ? "Tarde"
+                                  : "Noite"}
+                          </span>
                         </p>
                         {item.reason && (
                           <p className="text-sm text-muted-foreground">

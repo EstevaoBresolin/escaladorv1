@@ -35,6 +35,26 @@ export default function LoginPage() {
       return
     }
 
+    // Check if profile is complete
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("phone, church_id")
+        .eq("id", user.id)
+        .single()
+
+      // If profile is incomplete, redirect to complete-profile page
+      if (!profile?.phone || !profile?.church_id) {
+        router.push("/complete-profile")
+        router.refresh()
+        return
+      }
+    }
+
     router.push("/dashboard")
     router.refresh()
   }

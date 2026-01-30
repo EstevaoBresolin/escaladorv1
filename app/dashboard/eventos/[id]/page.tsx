@@ -2,18 +2,15 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  MapPin,
-  Edit,
-  Users,
-} from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Edit, Users } from "lucide-react";
 import Link from "next/link";
 import { VolunteerSlotManager } from "@/components/dashboard/volunteer-slot-manager";
 import { SendReminderButton } from "@/components/dashboard/send-reminder-button";
-import { getUserPermissions, getAssignableVolunteers, getManageableMinistries } from "@/lib/permissions";
+import {
+  getUserPermissions,
+  getAssignableVolunteers,
+  getManageableMinistries,
+} from "@/lib/permissions";
 
 interface EventPageProps {
   params: Promise<{ id: string }>;
@@ -36,7 +33,8 @@ export default async function EventPage({ params }: EventPageProps) {
         id,
         status,
         profiles(id, name, email),
-        ministries(id, name, color)
+        ministries(id, name, color),
+        ministry_functions(id, name)
       )
     `,
     )
@@ -60,12 +58,20 @@ export default async function EventPage({ params }: EventPageProps) {
   // Get user permissions
   const permissions = await getUserPermissions(supabase);
   const isAdmin = permissions?.isAdmin || false;
-  const canManageEvent = isAdmin || (permissions?.ledMinistryIds.some(
-    (lid) => event.event_ministries?.some((em: { ministry_id: string }) => em.ministry_id === lid)
-  ) || false);
+  const canManageEvent =
+    isAdmin ||
+    permissions?.ledMinistryIds.some((lid) =>
+      event.event_ministries?.some(
+        (em: { ministry_id: string }) => em.ministry_id === lid,
+      ),
+    ) ||
+    false;
 
   // Get ministry IDs from the event
-  const eventMinistryIds = event.event_ministries?.map((em: { ministry_id: string }) => em.ministry_id) || [];
+  const eventMinistryIds =
+    event.event_ministries?.map(
+      (em: { ministry_id: string }) => em.ministry_id,
+    ) || [];
 
   // Get all ministries for the church
   const { data: allMinistries } = await supabase
@@ -75,22 +81,24 @@ export default async function EventPage({ params }: EventPageProps) {
     .order("name");
 
   // Get manageable ministries based on permissions
-  const manageableMinistries = permissions 
-    ? getManageableMinistries(eventMinistryIds, permissions, allMinistries || [])
+  const manageableMinistries = permissions
+    ? getManageableMinistries(
+        eventMinistryIds,
+        permissions,
+        allMinistries || [],
+      )
     : [];
 
   // Get assignable volunteers based on permissions
-  const volunteers = permissions 
+  const volunteers = permissions
     ? await getAssignableVolunteers(supabase, eventMinistryIds, permissions)
     : [];
 
-  // Get unavailable volunteers for this event date
+  // Get unavailable volunteers for this event date with period information
   const { data: unavailableVolunteers } = await supabase
     .from("volunteer_unavailability")
-    .select("user_id")
+    .select("user_id, unavailable_date, period")
     .eq("unavailable_date", event.date);
-
-  const unavailableIds = unavailableVolunteers?.map((u) => u.user_id) || [];
 
   return (
     <div className="space-y-6">
@@ -136,12 +144,15 @@ export default async function EventPage({ params }: EventPageProps) {
                 <div>
                   <p className="text-sm text-muted-foreground">Data</p>
                   <p className="font-medium text-card-foreground">
-                    {new Date(event.date + "T12:00:00").toLocaleDateString("pt-BR", {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
+                    {new Date(event.date + "T12:00:00").toLocaleDateString(
+                      "pt-BR",
+                      {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      },
+                    )}
                   </p>
                 </div>
               </div>
@@ -223,10 +234,17 @@ export default async function EventPage({ params }: EventPageProps) {
               <VolunteerSlotManager
                 eventId={event.id}
                 eventDate={event.date}
+                eventStartTime={event.start_time}
                 slots={event.volunteer_slots || []}
-                volunteers={volunteers.map(v => ({ id: v.id, name: v.name, email: v.email })) || []}
+                volunteers={
+                  volunteers.map((v) => ({
+                    id: v.id,
+                    name: v.name,
+                    email: v.email,
+                  })) || []
+                }
                 ministries={manageableMinistries || []}
-                unavailableIds={unavailableIds}
+                unavailableData={unavailableVolunteers || []}
                 canManage={canManageEvent}
                 isAdmin={isAdmin}
                 ledMinistryIds={permissions?.ledMinistryIds || []}

@@ -1,17 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Plus, Calendar, Clock, MapPin, MoreVertical } from "lucide-react";
-import Link from "next/link";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { EventCalendar } from "@/components/dashboard/event-calendar";
-import { DeleteEventButton } from "@/components/dashboard/delete-event-button";
 import { getUserPermissions } from "@/lib/permissions";
+import { EventsPageClient } from "@/components/dashboard/eventos-page-client";
 
 export default async function EventosPage() {
   const supabase = await createClient();
@@ -29,174 +18,34 @@ export default async function EventosPage() {
   const permissions = await getUserPermissions(supabase);
   const isAdmin = permissions?.isAdmin || false;
 
-  const { data: events } = await supabase
+  const { data: eventsRaw } = await supabase
     .from("events")
     .select(
       `
-      *,
+      id,
+      title,
+      date,
+      start_time,
+      location,
       event_ministries(ministry_id, ministries(name, color))
     `,
     )
     .eq("church_id", profile?.church_id)
     .order("date", { ascending: true });
 
-  // Compare dates as strings to avoid timezone issues
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  const upcomingEvents = events?.filter((e) => e.date >= todayStr);
+  const events = (eventsRaw || []).map((event: any) => ({
+    id: event.id,
+    title: event.title,
+    date: event.date,
+    start_time: event.start_time,
+    location: event.location,
+    event_ministries: (event.event_ministries || []).map((em: any) => ({
+      ministry_id: em.ministry_id,
+      ministries: Array.isArray(em.ministries)
+        ? em.ministries[0]
+        : em.ministries,
+    })),
+  }));
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Eventos</h1>
-          <p className="text-muted-foreground">
-            Gerencie os eventos e escalas da sua igreja
-          </p>
-        </div>
-        {isAdmin && (
-          <Button asChild>
-            <Link href="/dashboard/eventos/novo">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Evento
-            </Link>
-          </Button>
-        )}
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <EventCalendar events={events || []} />
-        </div>
-
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-foreground">
-            Próximos Eventos
-          </h2>
-          {upcomingEvents && upcomingEvents.length > 0 ? (
-            <div className="space-y-3">
-              {upcomingEvents.slice(0, 8).map((event) => (
-                <Card key={event.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-card-foreground">
-                          {event.title}
-                        </h3>
-                        <div className="mt-2 space-y-1">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span>
-                              {new Date(event.date + "T12:00:00").toLocaleDateString(
-                                "pt-BR",
-                                {
-                                  weekday: "short",
-                                  day: "numeric",
-                                  month: "short",
-                                },
-                              )}
-                            </span>
-                          </div>
-                          {event.start_time && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Clock className="h-3.5 w-3.5" />
-                              <span>{event.start_time.slice(0, 5)}</span>
-                            </div>
-                          )}
-                          {event.location && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <MapPin className="h-3.5 w-3.5" />
-                              <span className="truncate">{event.location}</span>
-                            </div>
-                          )}
-                        </div>
-                        {event.event_ministries &&
-                          event.event_ministries.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              {event.event_ministries.map(
-                                (em: {
-                                  ministry_id: string;
-                                  ministries: { name: string; color: string };
-                                }) => (
-                                  <span
-                                    key={em.ministry_id}
-                                    className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                                    style={{
-                                      backgroundColor: `${em.ministries.color}20`,
-                                      color: em.ministries.color,
-                                    }}
-                                  >
-                                    {em.ministries.name}
-                                  </span>
-                                ),
-                              )}
-                            </div>
-                          )}
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 flex-shrink-0"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                            <span className="sr-only">Ações</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/dashboard/eventos/${event.id}`}>
-                              Ver detalhes
-                            </Link>
-                          </DropdownMenuItem>
-                          {isAdmin && (
-                            <>
-                              <DropdownMenuItem asChild>
-                                <Link
-                                  href={`/dashboard/eventos/${event.id}/editar`}
-                                >
-                                  Editar
-                                </Link>
-                              </DropdownMenuItem>
-                              <DeleteEventButton
-                                eventId={event.id}
-                                eventName={event.title}
-                              />
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-8">
-                <Calendar className="mb-4 h-10 w-10 text-muted-foreground/50" />
-                <p className="text-center text-muted-foreground">
-                  Nenhum evento programado
-                </p>
-                {isAdmin && (
-                  <Button
-                    asChild
-                    className="mt-4 bg-transparent"
-                    variant="outline"
-                    size="sm"
-                  >
-                    <Link href="/dashboard/eventos/novo">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Criar Evento
-                    </Link>
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  return <EventsPageClient events={events || []} isAdmin={isAdmin} />;
 }
