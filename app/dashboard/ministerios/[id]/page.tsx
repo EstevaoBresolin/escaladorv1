@@ -6,6 +6,7 @@ import { ArrowLeft, Edit, Crown, Users } from "lucide-react";
 import Link from "next/link";
 import { MinistryVolunteerManager } from "@/components/dashboard/ministry-volunteer-manager";
 import { MinistryLeaderManager } from "@/components/dashboard/ministry-leader-manager";
+import { MinistryFunctionManager } from "@/components/dashboard/ministry-function-manager";
 import { getUserPermissions } from "@/lib/permissions";
 
 interface MinistryPageProps {
@@ -33,7 +34,7 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
     notFound();
   }
 
-  const { data: volunteers } = await supabase
+  const { data: volunteersRaw } = await supabase
     .from("user_ministries")
     .select(
       `
@@ -42,6 +43,11 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
     `,
     )
     .eq("ministry_id", id);
+
+  const volunteers = (volunteersRaw || []).map((v: any) => ({
+    id: v.id,
+    profiles: Array.isArray(v.profiles) ? v.profiles[0] : v.profiles,
+  }));
 
   // Get the current user's church to fetch all available volunteers
   const {
@@ -57,7 +63,8 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
   // Get user permissions
   const permissions = await getUserPermissions(supabase);
   const isAdmin = permissions?.isAdmin || false;
-  const isLeaderOfThisMinistry = permissions?.ledMinistryIds.includes(id) || false;
+  const isLeaderOfThisMinistry =
+    permissions?.ledMinistryIds.includes(id) || false;
   const canManage = isAdmin || isLeaderOfThisMinistry;
 
   // Get all volunteers from the same church
@@ -68,14 +75,31 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
     .order("name");
 
   // Get ministry leaders
-  const { data: leaders } = await supabase
+  const { data: leadersRaw } = await supabase
     .from("ministry_leaders")
-    .select(`
+    .select(
+      `
       id,
       user_id,
       profiles(id, name, email)
-    `)
+    `,
+    )
     .eq("ministry_id", id);
+
+  const leaders = (leadersRaw || []).map((leader: any) => ({
+    id: leader.id,
+    user_id: leader.user_id,
+    profiles: Array.isArray(leader.profiles)
+      ? leader.profiles[0]
+      : leader.profiles,
+  }));
+
+  // Get ministry functions
+  const { data: ministryFunctions } = await supabase
+    .from("ministry_functions")
+    .select("id, name")
+    .eq("ministry_id", id)
+    .order("name");
 
   return (
     <div className="space-y-6">
@@ -197,6 +221,19 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
 
       <Card>
         <CardHeader>
+          <CardTitle>Funções do Ministério</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MinistryFunctionManager
+            ministryId={id}
+            initialFunctions={ministryFunctions || []}
+            canManage={canManage}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
             Voluntarios do Ministerio
@@ -212,31 +249,40 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
           ) : (
             <div className="space-y-2">
               {(volunteers || []).length > 0 ? (
-                (volunteers || []).map((member: { id: string; profiles: { id: string; name: string; email: string } | null }) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center gap-3 rounded-lg border border-border p-3"
-                  >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                      {member.profiles?.name
-                        ? member.profiles.name
-                            .split(" ")
-                            .map((n: string) => n[0])
-                            .join("")
-                            .slice(0, 2)
-                            .toUpperCase()
-                        : "?"}
+                (volunteers || []).map(
+                  (member: {
+                    id: string;
+                    profiles: {
+                      id: string;
+                      name: string;
+                      email: string;
+                    } | null;
+                  }) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center gap-3 rounded-lg border border-border p-3"
+                    >
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                        {member.profiles?.name
+                          ? member.profiles.name
+                              .split(" ")
+                              .map((n: string) => n[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase()
+                          : "?"}
+                      </div>
+                      <div>
+                        <p className="font-medium text-card-foreground">
+                          {member.profiles?.name || "Voluntario nao encontrado"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {member.profiles?.email}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-card-foreground">
-                        {member.profiles?.name || "Voluntario nao encontrado"}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {member.profiles?.email}
-                      </p>
-                    </div>
-                  </div>
-                ))
+                  ),
+                )
               ) : (
                 <p className="text-center text-muted-foreground py-4">
                   Nenhum voluntario neste ministerio.

@@ -1,30 +1,30 @@
-"use client"
+"use client";
 
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Bell, LogOut, Settings, User } from "lucide-react"
-import type { Profile } from "@/lib/types"
+} from "@/components/ui/dropdown-menu";
+import { Bell, LogOut, Settings, User } from "lucide-react";
+import type { Profile } from "@/lib/types";
 
 interface DashboardTopbarProps {
-  profile: (Profile & { churches: { name: string } | null }) | null
+  profile: (Profile & { churches: { name: string } | null }) | null;
 }
 
 export function DashboardTopbar({ profile }: DashboardTopbarProps) {
-  const router = useRouter()
-  const supabase = createClient()
+  const router = useRouter();
+  const supabase = createClient();
 
   async function handleSignOut() {
-    await supabase.auth.signOut()
-    router.push("/")
-    router.refresh()
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
   }
 
   const initials = profile?.name
@@ -34,7 +34,7 @@ export function DashboardTopbar({ profile }: DashboardTopbarProps) {
         .join("")
         .slice(0, 2)
         .toUpperCase()
-    : "U"
+    : "U";
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6">
@@ -45,11 +45,11 @@ export function DashboardTopbar({ profile }: DashboardTopbarProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="relative">
+        {/* <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5 text-muted-foreground" />
           <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
           <span className="sr-only">Notificações</span>
-        </Button>
+        </Button> */}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -82,13 +82,6 @@ export function DashboardTopbar({ profile }: DashboardTopbarProps) {
               <User className="mr-2 h-4 w-4" />
               Meu Perfil
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => router.push("/dashboard/configuracoes")}
-              className="cursor-pointer"
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              Configurações
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleSignOut}
@@ -101,5 +94,5 @@ export function DashboardTopbar({ profile }: DashboardTopbarProps) {
         </DropdownMenu>
       </div>
     </header>
-  )
+  );
 }

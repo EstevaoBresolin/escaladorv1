@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   CalendarCheck,
   LayoutDashboard,
@@ -14,14 +14,14 @@ import {
   Menu,
   X,
   CalendarOff,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { useState } from "react"
-import type { Profile } from "@/lib/types"
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import type { Profile } from "@/lib/types";
 
 interface DashboardSidebarProps {
-  profile: (Profile & { churches: { name: string } | null }) | null
+  profile: (Profile & { churches: { name: string } | null }) | null;
 }
 
 const navItems = [
@@ -45,12 +45,12 @@ const navItems = [
     href: "/dashboard/eventos",
     icon: Calendar,
   },
-  {
-    label: "Notificações",
-    href: "/dashboard/notificacoes",
-    icon: Bell,
-  },
-]
+  // {
+  //   label: "Notificações",
+  //   href: "/dashboard/notificacoes",
+  //   icon: Bell,
+  // },
+];
 
 const bottomNavItems = [
   {
@@ -68,11 +68,11 @@ const bottomNavItems = [
     href: "/dashboard/configuracoes",
     icon: Settings,
   },
-]
+];
 
 export function DashboardSidebar({ profile }: DashboardSidebarProps) {
-  const pathname = usePathname()
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <>
@@ -100,7 +100,7 @@ export function DashboardSidebar({ profile }: DashboardSidebarProps) {
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-300 lg:translate-x-0",
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-4">
@@ -121,7 +121,7 @@ export function DashboardSidebar({ profile }: DashboardSidebarProps) {
           {navItems.map((item) => {
             const isActive =
               pathname === item.href ||
-              (item.href !== "/dashboard" && pathname.startsWith(item.href))
+              (item.href !== "/dashboard" && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.href}
@@ -131,19 +131,19 @@ export function DashboardSidebar({ profile }: DashboardSidebarProps) {
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-sidebar-accent text-sidebar-primary"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )}
               >
                 <item.icon className="h-5 w-5" />
                 {item.label}
               </Link>
-            )
+            );
           })}
         </nav>
 
         <div className="border-t border-sidebar-border p-3">
           {bottomNavItems.map((item) => {
-            const isActive = pathname === item.href
+            const isActive = pathname === item.href;
             return (
               <Link
                 key={item.href}
@@ -153,16 +153,16 @@ export function DashboardSidebar({ profile }: DashboardSidebarProps) {
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-sidebar-accent text-sidebar-primary"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )}
               >
                 <item.icon className="h-5 w-5" />
                 {item.label}
               </Link>
-            )
+            );
           })}
         </div>
       </aside>
     </>
-  )
+  );
 }

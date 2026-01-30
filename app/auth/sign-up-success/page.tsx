@@ -29,6 +29,9 @@ export default function SignUpSuccessPage() {
         </div>
 
         <div className="mt-8 space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Após confirmar seu email, você será redirecionado para completar seu perfil.
+          </p>
           <Button asChild className="w-full">
             <Link href="/auth/login">Ir para Login</Link>
           </Button>
