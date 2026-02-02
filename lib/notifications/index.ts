@@ -1,5 +1,6 @@
 import { EmailNotificationProvider } from './email-provider'
 import { WhatsAppNotificationProvider } from './whatsapp-provider'
+import { getRateLimiter, RateLimiter } from './rate-limiter'
 import type {
   NotificationProvider,
   NotificationRecipient,
@@ -11,6 +12,7 @@ import type {
 import { DEFAULT_NOTIFICATION_CONFIG } from './types'
 
 export * from './types'
+export * from './rate-limiter'
 
 // Factory to get the appropriate provider
 function getProvider(channel: NotificationChannel): NotificationProvider {
@@ -60,9 +62,11 @@ export class NotificationService {
   private config: NotificationConfig
   private primaryProvider: NotificationProvider | null = null
   private fallbackProvider: NotificationProvider | null = null
+  private rateLimiter: RateLimiter
 
   constructor(config: NotificationConfig = DEFAULT_NOTIFICATION_CONFIG) {
     this.config = config
+    this.rateLimiter = getRateLimiter(2) // 2 requests per second
 
     if (isChannelConfigured(config.primaryChannel)) {
       this.primaryProvider = getProvider(config.primaryChannel)
@@ -89,64 +93,67 @@ export class NotificationService {
     recipient: NotificationRecipient,
     reminder: EventReminder
   ): Promise<SendResult & { channel?: NotificationChannel }> {
-    // Try primary provider
-    if (this.primaryProvider && this.primaryProvider.canSend(recipient)) {
-      const result = await this.primaryProvider.send(recipient, reminder)
+    // Encapsula o envio no rate limiter
+    return this.rateLimiter.execute(async () => {
+      // Try primary provider
+      if (this.primaryProvider && this.primaryProvider.canSend(recipient)) {
+        const result = await this.primaryProvider.send(recipient, reminder)
 
-      if (result.success) {
-        return {
-          ...result,
-          channel: this.primaryProvider.getChannelType(),
+        if (result.success) {
+          return {
+            ...result,
+            channel: this.primaryProvider.getChannelType(),
+          }
+        }
+
+        // If primary failed and fallback is enabled, try fallback
+        if (this.config.enableFallback && this.fallbackProvider) {
+          console.log(
+            `Primary channel (${this.primaryProvider.getChannelType()}) failed, trying fallback...`
+          )
+        } else {
+          return {
+            ...result,
+            channel: this.primaryProvider.getChannelType(),
+          }
         }
       }
 
-      // If primary failed and fallback is enabled, try fallback
-      if (this.config.enableFallback && this.fallbackProvider) {
-        console.log(
-          `Primary channel (${this.primaryProvider.getChannelType()}) failed, trying fallback...`
-        )
-      } else {
+      // Try fallback provider
+      if (this.fallbackProvider && this.fallbackProvider.canSend(recipient)) {
+        const result = await this.fallbackProvider.send(recipient, reminder)
         return {
           ...result,
-          channel: this.primaryProvider.getChannelType(),
+          channel: this.fallbackProvider.getChannelType(),
         }
       }
-    }
 
-    // Try fallback provider
-    if (this.fallbackProvider && this.fallbackProvider.canSend(recipient)) {
-      const result = await this.fallbackProvider.send(recipient, reminder)
-      return {
-        ...result,
-        channel: this.fallbackProvider.getChannelType(),
-      }
-    }
+      // No provider could send
+      const reasons: string[] = []
 
-    // No provider could send
-    const reasons: string[] = []
-
-    if (!this.primaryProvider) {
-      reasons.push(`${this.config.primaryChannel} not configured`)
-    } else if (!this.primaryProvider.canSend(recipient)) {
-      reasons.push(
-        `recipient missing ${this.config.primaryChannel === 'email' ? 'email' : 'phone'}`
-      )
-    }
-
-    if (this.config.enableFallback) {
-      if (!this.fallbackProvider) {
-        reasons.push(`${this.config.fallbackChannel} not configured`)
-      } else if (!this.fallbackProvider.canSend(recipient)) {
+      if (!this.primaryProvider) {
+        reasons.push(`${this.config.primaryChannel} not configured`)
+      } else if (!this.primaryProvider.canSend(recipient)) {
         reasons.push(
-          `recipient missing ${this.config.fallbackChannel === 'email' ? 'email' : 'phone'}`
+          `recipient missing ${this.config.primaryChannel === 'email' ? 'email' : 'phone'}`
         )
       }
-    }
 
-    return {
-      success: false,
-      error: reasons.join(', '),
-    }
+      if (this.config.enableFallback) {
+        if (!this.fallbackProvider) {
+          reasons.push(`${this.config.fallbackChannel} not configured`)
+        } else if (!this.fallbackProvider.canSend(recipient)) {
+          reasons.push(
+            `recipient missing ${this.config.fallbackChannel === 'email' ? 'email' : 'phone'}`
+          )
+        }
+      }
+
+      return {
+        success: false,
+        error: reasons.join(', '),
+      }
+    })
   }
 }
 
