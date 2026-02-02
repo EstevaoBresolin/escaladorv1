@@ -1,7 +1,7 @@
-import { createClient } from "@/lib/supabase/server"
-import { getNotificationService } from "@/lib/notifications"
-import type { NotificationRecipient, EventReminder } from "@/lib/notifications"
-import { NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server";
+import { getNotificationService } from "@/lib/notifications";
+import type { NotificationRecipient, EventReminder } from "@/lib/notifications";
+import { NextResponse } from "next/server";
 
 // This endpoint is called by Vercel Cron every day at 10:00 AM (Brasilia time / UTC-3)
 // to send reminders to volunteers scheduled for events tomorrow.
@@ -13,17 +13,17 @@ export async function GET(request: Request) {
   // Vercel Cron is secured by Vercel's infrastructure
   // It does NOT send authentication headers
   // Manual requests should send: Authorization: Bearer {CRON_SECRET}
-  
-  const cronSecret = process.env.CRON_SECRET
-  const authHeader = request.headers.get("authorization")
-  
+
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = request.headers.get("authorization");
+
   // Only require auth if CRON_SECRET is configured AND auth header was provided
   if (cronSecret && authHeader && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Initialize notification service
-  const notificationService = getNotificationService()
+  const notificationService = getNotificationService();
 
   if (!notificationService.isConfigured()) {
     return NextResponse.json(
@@ -32,19 +32,19 @@ export async function GET(request: Request) {
         hint: "Configure RESEND_API_KEY for email or Twilio environment variables for WhatsApp",
         sent: 0,
       },
-      { status: 200 }
-    )
+      { status: 200 },
+    );
   }
 
-  const activeChannel = notificationService.getActiveChannel()
+  const activeChannel = notificationService.getActiveChannel();
 
   try {
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     // Get tomorrow's date
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    const tomorrowStr = tomorrow.toISOString().split("T")[0]
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split("T")[0];
 
     // Get all volunteer slots for tomorrow's events with status confirmed or pending
     const { data: slots, error } = await supabase
@@ -57,14 +57,14 @@ export async function GET(request: Request) {
         profiles!inner(id, name, email, phone),
         events!inner(id, title, date, start_time, location),
         ministries!inner(id, name)
-      `
+      `,
       )
       .eq("events.date", tomorrowStr)
-      .in("status", ["confirmed", "pending"])
+      .in("status", ["confirmed", "pending"]);
 
     if (error) {
-      console.error("Error fetching volunteer slots:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error("Error fetching volunteer slots:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     if (!slots || slots.length === 0) {
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
         message: "No volunteers scheduled for tomorrow",
         channel: activeChannel,
         sent: 0,
-      })
+      });
     }
 
     // Send reminders
@@ -81,28 +81,17 @@ export async function GET(request: Request) {
       failed: 0,
       skipped: 0,
       details: [] as {
-        volunteer: string
-        status: string
-        channel?: string
-        error?: string
+        volunteer: string;
+        status: string;
+        channel?: string;
+        error?: string;
       }[],
-    }
+    };
 
     for (const slot of slots) {
-      const profile = slot.profiles as {
-        id: string
-        name: string
-        email: string | null
-        phone: string | null
-      }
-      const event = slot.events as {
-        id: string
-        title: string
-        date: string
-        start_time: string
-        location: string | null
-      }
-      const ministry = slot.ministries as { id: string; name: string }
+      const profile = (slot.profiles as any) || {};
+      const event = (slot.events as any) || {};
+      const ministry = (slot.ministries as any) || {};
 
       // Prepare recipient and reminder data
       const recipient: NotificationRecipient = {
@@ -110,7 +99,7 @@ export async function GET(request: Request) {
         name: profile.name,
         email: profile.email,
         phone: profile.phone,
-      }
+      };
 
       const reminder: EventReminder = {
         eventTitle: event.title,
@@ -118,21 +107,20 @@ export async function GET(request: Request) {
         eventTime: event.start_time,
         eventLocation: event.location || undefined,
         ministryName: ministry.name,
-      }
+      };
 
-      // Send notification
       const sendResult = await notificationService.sendReminder(
         recipient,
-        reminder
-      )
+        reminder,
+      );
 
       if (sendResult.success) {
-        results.sent++
+        results.sent++;
         results.details.push({
           volunteer: profile.name,
           status: "sent",
           channel: sendResult.channel,
-        })
+        });
 
         // Create notification record
         await supabase.from("notifications").insert({
@@ -141,28 +129,28 @@ export async function GET(request: Request) {
           message: `Voce foi lembrado sobre o evento "${event.title}" de amanha.`,
           type: "info",
           sent_via: sendResult.channel,
-        })
+        });
       } else {
         // Check if it's a missing contact info issue
         const isMissingContact =
           sendResult.error?.includes("missing") ||
           sendResult.error?.includes("no email") ||
-          sendResult.error?.includes("no phone")
+          sendResult.error?.includes("no phone");
 
         if (isMissingContact) {
-          results.skipped++
+          results.skipped++;
           results.details.push({
             volunteer: profile.name,
             status: "skipped",
             error: sendResult.error,
-          })
+          });
         } else {
-          results.failed++
+          results.failed++;
           results.details.push({
             volunteer: profile.name,
             status: "failed",
             error: sendResult.error,
-          })
+          });
         }
       }
     }
@@ -172,12 +160,12 @@ export async function GET(request: Request) {
       date: tomorrowStr,
       channel: activeChannel,
       ...results,
-    })
+    });
   } catch (error) {
-    console.error("Error in send-reminders cron:", error)
+    console.error("Error in send-reminders cron:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
-    )
+      { status: 500 },
+    );
   }
 }
