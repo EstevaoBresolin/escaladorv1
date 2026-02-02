@@ -10,18 +10,15 @@ import { NextResponse } from "next/server"
 // To switch from email to WhatsApp, simply change DEFAULT_NOTIFICATION_CONFIG.primaryChannel
 
 export async function GET(request: Request) {
-  // Verify request is from Vercel Cron or has valid secret
-  const authHeader = request.headers.get("authorization")
+  // Vercel Cron is secured by Vercel's infrastructure
+  // It does NOT send authentication headers
+  // Manual requests should send: Authorization: Bearer {CRON_SECRET}
+  
   const cronSecret = process.env.CRON_SECRET
+  const authHeader = request.headers.get("authorization")
   
-  // Vercel Cron sends a special header to authenticate
-  const isVercelCron = request.headers.get("user-agent")?.includes("vercel-cron")
-  
-  // Allow if: 1) It's from Vercel Cron, OR 2) Has valid CRON_SECRET
-  const isAuthorized = isVercelCron || 
-    (cronSecret && authHeader === `Bearer ${cronSecret}`)
-
-  if (!isAuthorized && cronSecret) {
+  // Only require auth if CRON_SECRET is configured AND auth header was provided
+  if (cronSecret && authHeader && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
