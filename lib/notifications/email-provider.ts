@@ -4,33 +4,33 @@ import type {
   EventReminder,
   SendResult,
   NotificationChannel,
-} from './types'
+} from "./types";
 
 // Resend API via fetch - sem dependencia de pacote externo
 async function sendEmailViaResend(options: {
-  from: string
-  to: string
-  subject: string
-  html: string
-  text: string
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
 }): Promise<{ data?: { id: string }; error?: { message: string } }> {
-  const apiKey = process.env.RESEND_API_KEY
+  const apiKey = process.env.RESEND_API_KEY;
 
-  console.log('[v0] Attempting to send email via Resend')
-  console.log('[v0] From:', options.from)
-  console.log('[v0] To:', options.to)
-  console.log('[v0] API Key exists:', !!apiKey)
+  console.log("[v0] Attempting to send email via Resend");
+  console.log("[v0] From:", options.from);
+  console.log("[v0] To:", options.to);
+  console.log("[v0] API Key exists:", !!apiKey);
 
   if (!apiKey) {
-    console.log('[v0] ERROR: RESEND_API_KEY not configured')
-    throw new Error('RESEND_API_KEY not configured')
+    console.log("[v0] ERROR: RESEND_API_KEY not configured");
+    throw new Error("RESEND_API_KEY not configured");
   }
 
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       from: options.from,
@@ -39,36 +39,35 @@ async function sendEmailViaResend(options: {
       html: options.html,
       text: options.text,
     }),
-  })
+  });
 
-  const result = await response.json()
-  console.log('[v0] Resend API response status:', response.status)
-  console.log('[v0] Resend API response:', JSON.stringify(result))
+  const result = await response.json();
+  console.log("[v0] Resend API response status:", response.status);
+  console.log("[v0] Resend API response:", JSON.stringify(result));
 
   if (!response.ok) {
-    console.log('[v0] Resend API error:', result.message || result)
+    console.log("[v0] Resend API error:", result.message || result);
     return {
-      error: { message: result.message || 'Failed to send email' },
-    }
+      error: { message: result.message || "Failed to send email" },
+    };
   }
 
-  console.log('[v0] Email sent successfully, ID:', result.id)
-  return { data: { id: result.id } }
+  console.log("[v0] Email sent successfully, ID:", result.id);
+  return { data: { id: result.id } };
 }
 
 export function formatEmailHtml(
   volunteerName: string,
-  reminder: EventReminder
+  reminder: EventReminder,
 ): string {
-  const formattedDate = new Date(reminder.eventDate + 'T12:00:00').toLocaleDateString(
-    'pt-BR',
-    {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }
-  )
+  const formattedDate = new Date(
+    reminder.eventDate + "T12:00:00",
+  ).toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   return `
     <!DOCTYPE html>
@@ -105,11 +104,15 @@ export function formatEmailHtml(
               <p style="margin: 8px 0;">
                 <strong>Horario:</strong> ${reminder.eventTime.slice(0, 5)}
               </p>
-              ${reminder.eventLocation ? `
+              ${
+                reminder.eventLocation
+                  ? `
               <p style="margin: 8px 0;">
                 <strong>Local:</strong> ${reminder.eventLocation}
               </p>
-              ` : ''}
+              `
+                  : ""
+              }
               <p style="margin: 8px 0;">
                 <strong>Ministerio:</strong> ${reminder.ministryName}
               </p>
@@ -129,66 +132,65 @@ export function formatEmailHtml(
       </div>
     </body>
     </html>
-  `
+  `;
 }
 
 export function formatEmailText(
   volunteerName: string,
-  reminder: EventReminder
+  reminder: EventReminder,
 ): string {
-  const formattedDate = new Date(reminder.eventDate + 'T12:00:00').toLocaleDateString(
-    'pt-BR',
-    {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    }
-  )
+  const formattedDate = new Date(
+    reminder.eventDate + "T12:00:00",
+  ).toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
 
-  let message = `Ola ${volunteerName}!\n\n`
-  message += `Este e um lembrete de que voce esta escalado(a) para amanha:\n\n`
-  message += `EVENTO: ${reminder.eventTitle}\n`
-  message += `DATA: ${formattedDate}\n`
-  message += `HORARIO: ${reminder.eventTime.slice(0, 5)}\n`
+  let message = `Ola ${volunteerName}!\n\n`;
+  message += `Este e um lembrete de que voce esta escalado(a) para amanha:\n\n`;
+  message += `EVENTO: ${reminder.eventTitle}\n`;
+  message += `DATA: ${formattedDate}\n`;
+  message += `HORARIO: ${reminder.eventTime.slice(0, 5)}\n`;
 
   if (reminder.eventLocation) {
-    message += `LOCAL: ${reminder.eventLocation}\n`
+    message += `LOCAL: ${reminder.eventLocation}\n`;
   }
 
-  message += `MINISTERIO: ${reminder.ministryName}\n`
-  message += `\nContamos com voce! Deus abencoe.\n`
-  message += `\n---\nConecte Escalas`
+  message += `MINISTERIO: ${reminder.ministryName}\n`;
+  message += `\nContamos com voce! Deus abencoe.\n`;
+  message += `\n---\nConecte Escalas`;
 
-  return message
+  return message;
 }
 
 export class EmailNotificationProvider implements NotificationProvider {
-  private fromEmail: string
+  private fromEmail: string;
 
   constructor() {
     // IMPORTANT: Use 'onboarding@resend.dev' for testing before verifying a domain
     // Once you verify your domain in Resend, set RESEND_FROM_EMAIL to your verified email
     // For now, always use the test email to avoid "Domain not verified" errors
-    this.fromEmail = 'Conecte Escalas <onboarding@resend.dev>'
+    this.fromEmail = "Conecte Escalas <contato@openhelp.com>";
   }
 
   canSend(recipient: NotificationRecipient): boolean {
-    return !!recipient.email
+    return !!recipient.email;
   }
 
   getChannelType(): NotificationChannel {
-    return 'email'
+    return "email";
   }
 
   async send(
     recipient: NotificationRecipient,
-    reminder: EventReminder
+    reminder: EventReminder,
   ): Promise<SendResult> {
     if (!recipient.email) {
       return {
         success: false,
-        error: 'Recipient has no email address',
-      }
+        error: "Recipient has no email address",
+      };
     }
 
     try {
@@ -198,25 +200,25 @@ export class EmailNotificationProvider implements NotificationProvider {
         subject: `Lembrete: ${reminder.eventTitle} - Amanha`,
         html: formatEmailHtml(recipient.name, reminder),
         text: formatEmailText(recipient.name, reminder),
-      })
+      });
 
       if (result.error) {
         return {
           success: false,
           error: result.error.message,
-        }
+        };
       }
 
       return {
         success: true,
         messageId: result.data?.id,
-      }
+      };
     } catch (error) {
-      console.error('Error sending email:', error)
+      console.error("Error sending email:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
     }
   }
 }
