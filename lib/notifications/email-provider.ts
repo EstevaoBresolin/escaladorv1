@@ -171,7 +171,7 @@ export class EmailNotificationProvider implements NotificationProvider {
     // IMPORTANT: Use 'onboarding@resend.dev' for testing before verifying a domain
     // Once you verify your domain in Resend, set RESEND_FROM_EMAIL to your verified email
     // For now, always use the test email to avoid "Domain not verified" errors
-    this.fromEmail = "Conecte Escalas <contato@openhelp.com>";
+    this.fromEmail = "Conecte Escalas <contato@openhelp.com.br>";
   }
 
   canSend(recipient: NotificationRecipient): boolean {
