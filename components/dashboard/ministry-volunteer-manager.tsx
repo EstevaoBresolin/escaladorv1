@@ -4,14 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -19,9 +11,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Loader2, Trash2, UserPlus } from "lucide-react";
+import { Plus, Loader2, Trash2, UserPlus, ChevronsUpDown } from "lucide-react";
+import { VolunteerSearch } from "./volunteer-search";
 
-interface Volunteer {
+export interface Volunteer {
   id: string;
   name: string;
   email: string;
@@ -53,7 +46,7 @@ export function MinistryVolunteerManager({
   // Filter out volunteers already in the ministry
   const memberIds = members.map((m) => m.profiles?.id).filter(Boolean);
   const filteredVolunteers = availableVolunteers.filter(
-    (v) => !memberIds.includes(v.id)
+    (v) => !memberIds.includes(v.id),
   );
 
   async function handleAddVolunteer() {
@@ -153,29 +146,11 @@ export function MinistryVolunteerManager({
           <div className="space-y-4 pt-4">
             {filteredVolunteers.length > 0 ? (
               <>
-                <div className="space-y-2">
-                  <Label>Voluntário *</Label>
-                  <Select
-                    value={selectedVolunteer}
-                    onValueChange={setSelectedVolunteer}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um voluntário" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredVolunteers.map((v) => (
-                        <SelectItem key={v.id} value={v.id}>
-                          <div className="flex flex-col">
-                            <span>{v.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {v.email}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <VolunteerSearch
+                  volunteers={filteredVolunteers}
+                  selectedVolunteerId={selectedVolunteer}
+                  onSelectVolunteer={setSelectedVolunteer}
+                />
 
                 <Button
                   className="w-full"

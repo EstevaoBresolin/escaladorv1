@@ -90,7 +90,7 @@ export function MinistryFunctionManager({
             <Label htmlFor="functionName">Nova função *</Label>
             <Input
               id="functionName"
-              placeholder="Ex: Baterista, Cantor, Violão..."
+              placeholder="Escreva o nome da função"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
