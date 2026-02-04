@@ -12,11 +12,11 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Loader2, User, Plus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export default function PerfilPage() {
   const [fullName, setFullName] = useState("");
@@ -32,6 +32,10 @@ export default function PerfilPage() {
   const [newChurchAddress, setNewChurchAddress] = useState("");
   const [newChurchPhone, setNewChurchPhone] = useState("");
   const [creatingChurch, setCreatingChurch] = useState(false);
+  const [loadingResetPassword, setLoadingResetPassword] = useState(false);
+  const [successResetPassword, setSuccessResetPassword] = useState(false);
+  const [errorResetPassword, setErrorPassword] = useState<string | null>(null);
+  const [openDialogResetPassword, setOpenDialogResetPassword] = useState(false);
 
   const router = useRouter();
   const supabase = createClient();
@@ -150,6 +154,26 @@ export default function PerfilPage() {
         .toUpperCase()
     : "U";
 
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setLoadingResetPassword(true);
+    setErrorPassword(null);
+
+    const { error: errorResetPassword } =
+      await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: "https://escaladorv1.vercel.app/auth/reset-password",
+      });
+
+    if (errorResetPassword) {
+      setErrorPassword("Erro ao enviar email de recuperacao. Tente novamente.");
+      setLoadingResetPassword(false);
+      return;
+    }
+
+    setSuccessResetPassword(true);
+    setLoadingResetPassword(false);
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -229,6 +253,26 @@ export default function PerfilPage() {
                 </p>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <div>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={"***********"}
+                    disabled
+                  />
+                  <Button
+                    variant="link"
+                    type="button"
+                    className="p-0 m-0 cursor-pointer text-xs text-muted-foreground"
+                    onClick={() => setOpenDialogResetPassword(true)}
+                  >
+                    Alterar a senha.
+                  </Button>
+                </div>
+              </div>
+
               <Button type="submit" disabled={loading}>
                 {loading ? (
                   <>
@@ -257,6 +301,44 @@ export default function PerfilPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog
+        open={openDialogResetPassword}
+        onOpenChange={setOpenDialogResetPassword}
+      >
+        <DialogContent className="sm:max-w-sm">
+          {successResetPassword ? (
+            <DialogHeader>
+              <DialogTitle>Email enviado!</DialogTitle>
+              <DialogDescription>
+                Email de redefinição de senha enviado com sucesso!
+              </DialogDescription>
+            </DialogHeader>
+          ) : loadingResetPassword ? (
+            <div className="flex items-center justify-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Enviando...
+            </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Alteração de senha</DialogTitle>
+                <DialogDescription>
+                  Um link de redefinição de senha será enviado para o seu email.
+                </DialogDescription>
+              </DialogHeader>
+              {errorResetPassword && (
+                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  {errorResetPassword}
+                </div>
+              )}
+              <Button onClick={handleResetPassword} className="w-full">
+                Enviar link de redefinição de senha
+              </Button>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

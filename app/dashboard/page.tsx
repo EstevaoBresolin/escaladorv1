@@ -1,25 +1,25 @@
-import { createClient } from "@/lib/supabase/server"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Church, Users, Calendar, Bell, Plus, ArrowRight } from "lucide-react"
-import Link from "next/link"
-import { getUserPermissions } from "@/lib/permissions"
+import { createClient } from "@/lib/supabase/server";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Church, Users, Calendar, Bell, Plus, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { getUserPermissions } from "@/lib/permissions";
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("church_id")
     .eq("id", user?.id)
-    .single()
+    .single();
 
   // Get user permissions
-  const permissions = await getUserPermissions(supabase)
-  const isAdmin = permissions?.isAdmin || false
+  const permissions = await getUserPermissions(supabase);
+  const isAdmin = permissions?.isAdmin || false;
 
   const [ministriesResult, volunteersResult, eventsResult] = await Promise.all([
     supabase
@@ -35,7 +35,7 @@ export default async function DashboardPage() {
       .select("id", { count: "exact" })
       .eq("church_id", profile?.church_id)
       .gte("date", new Date().toISOString().split("T")[0]),
-  ])
+  ]);
 
   const stats = [
     {
@@ -66,11 +66,11 @@ export default async function DashboardPage() {
       href: "/dashboard/notificacoes",
       color: "bg-chart-3/20 text-chart-3",
     },
-  ]
+  ];
 
   // Get today's date in local timezone (not UTC)
-  const today = new Date()
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   const { data: upcomingEvents } = await supabase
     .from("events")
@@ -78,16 +78,16 @@ export default async function DashboardPage() {
     .eq("church_id", profile?.church_id)
     .gte("date", todayStr)
     .order("date", { ascending: true })
-    .limit(5)
+    .limit(5);
+
+  console.log(upcomingEvents);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Visão geral da sua igreja
-          </p>
+          <p className="text-muted-foreground">Visão geral da sua igreja</p>
         </div>
         {isAdmin && (
           <div className="flex gap-2">
@@ -145,14 +145,17 @@ export default async function DashboardPage() {
                 >
                   <div>
                     <p className="font-medium text-card-foreground">
-                      {event.name}
+                      {event.title}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(event.date + "T12:00:00").toLocaleDateString("pt-BR", {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                      })}
+                      {new Date(event.date + "T12:00:00").toLocaleDateString(
+                        "pt-BR",
+                        {
+                          weekday: "long",
+                          day: "numeric",
+                          month: "long",
+                        },
+                      )}
                       {event.time && ` às ${event.time.slice(0, 5)}`}
                     </p>
                   </div>
@@ -167,11 +170,13 @@ export default async function DashboardPage() {
           ) : (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Calendar className="mb-4 h-12 w-12 text-muted-foreground/50" />
-              <p className="text-muted-foreground">
-                Nenhum evento programado
-              </p>
+              <p className="text-muted-foreground">Nenhum evento programado</p>
               {isAdmin && (
-                <Button asChild className="mt-4 bg-transparent" variant="outline">
+                <Button
+                  asChild
+                  className="mt-4 bg-transparent"
+                  variant="outline"
+                >
                   <Link href="/dashboard/eventos/novo">
                     <Plus className="mr-2 h-4 w-4" />
                     Criar Evento
@@ -183,5 +188,5 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

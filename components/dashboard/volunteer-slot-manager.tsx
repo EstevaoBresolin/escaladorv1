@@ -29,6 +29,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { VolunteerSearch } from "./volunteer-search";
 
 interface VolunteerSlot {
   id: string;
@@ -370,65 +371,11 @@ export function VolunteerSlotManager({
               <DialogTitle>Adicionar Voluntário à Escala</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label>Voluntário *</Label>
-                <Select
-                  value={selectedVolunteer}
-                  onValueChange={setSelectedVolunteer}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um voluntário" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sortedAvailableVolunteers.length > 0 ? (
-                      <>
-                        {sortedAvailableVolunteers.map((v) => {
-                          const availableCount =
-                            volunteerAvailabilityCount[v.id];
-                          const eventCount = volunteerEventCount[v.id];
-                          const isCritical = availableCount
-                            ? availableCount <= 5
-                            : false;
-
-                          let priorityNote = "";
-                          if (
-                            availableCount !== undefined &&
-                            eventCount !== undefined
-                          ) {
-                            if (availableCount <= 5) {
-                              priorityNote = ` (${availableCount} dias · ${eventCount} eventos)`;
-                            } else {
-                              priorityNote = ` (${eventCount} eventos)`;
-                            }
-                          }
-
-                          return (
-                            <SelectItem key={v.id} value={v.id}>
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`h-2 w-2 rounded-full ${
-                                    isCritical ? "bg-red-500" : "bg-emerald-500"
-                                  }`}
-                                />
-                                {v.name}
-                                {priorityNote && (
-                                  <span className="ml-2 text-xs text-muted-foreground">
-                                    {priorityNote}
-                                  </span>
-                                )}
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </>
-                    ) : (
-                      <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                        Nenhum voluntário disponível para este horário
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
+              <VolunteerSearch
+                volunteers={availableVolunteers}
+                selectedVolunteerId={selectedVolunteer}
+                onSelectVolunteer={setSelectedVolunteer}
+              />
 
               {needsMinistrySelection ? (
                 <div className="space-y-2">
@@ -437,7 +384,7 @@ export function VolunteerSlotManager({
                     value={selectedMinistry}
                     onValueChange={setSelectedMinistry}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Selecione um ministerio" />
                     </SelectTrigger>
                     <SelectContent>
@@ -484,7 +431,7 @@ export function VolunteerSlotManager({
                       value={selectedFunction}
                       onValueChange={setSelectedFunction}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecione uma função" />
                       </SelectTrigger>
                       <SelectContent>
