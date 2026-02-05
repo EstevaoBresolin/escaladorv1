@@ -68,7 +68,7 @@ export default function SignUpPage() {
       return;
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -80,7 +80,21 @@ export default function SignUpPage() {
     });
 
     if (error) {
-      setError(error.message);
+      // Detectar se o email já está em uso
+      if (error.message.toLowerCase().includes("user already registered") || 
+          error.message.toLowerCase().includes("email already") ||
+          error.message.toLowerCase().includes("already registered")) {
+        setError("Este email já está cadastrado. Por favor, faça login ou use outro email.");
+      } else {
+        setError(error.message);
+      }
+      setLoading(false);
+      return;
+    }
+
+    // Verificar se o usuário já existe (Supabase retorna data.user mesmo se já existe)
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      setError("Este email já está cadastrado. Por favor, faça login ou use outro email.");
       setLoading(false);
       return;
     }
@@ -112,6 +126,16 @@ export default function SignUpPage() {
           {error && (
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
               {error}
+              {error.includes("já está cadastrado") && (
+                <div className="mt-2">
+                  <Link 
+                    href="/auth/login" 
+                    className="font-medium underline hover:text-destructive/80"
+                  >
+                    Ir para página de login →
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 

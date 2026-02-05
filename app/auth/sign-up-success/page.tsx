@@ -1,8 +1,58 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { CalendarCheck, Mail } from "lucide-react"
+import { CalendarCheck, Mail, Loader2, CheckCircle } from "lucide-react"
 
 export default function SignUpSuccessPage() {
+  const searchParams = useSearchParams()
+  const [email, setEmail] = useState("")
+  const [resending, setResending] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
+  const [resendError, setResendError] = useState<string | null>(null)
+  const supabase = createClient()
+
+  useEffect(() => {
+    // Tenta obter o email do usuário da sessão
+    async function getEmail() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.email) {
+        setEmail(user.email)
+      }
+    }
+    getEmail()
+  }, [supabase])
+
+  async function handleResendEmail() {
+    if (!email) {
+      setResendError("Email não encontrado. Tente criar sua conta novamente.")
+      return
+    }
+
+    setResending(true)
+    setResendError(null)
+    setResendSuccess(false)
+
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email,
+      options: {
+        emailRedirectTo: "https://escaladorv1.vercel.app/auth/login",
+      },
+    })
+
+    if (error) {
+      setResendError("Erro ao reenviar email. Tente novamente em alguns minutos.")
+    } else {
+      setResendSuccess(true)
+    }
+
+    setResending(false)
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm text-center">
@@ -23,12 +73,25 @@ export default function SignUpSuccessPage() {
             Verifique seu email
           </h1>
           <p className="mt-4 text-muted-foreground">
-            Enviamos um link de confirmação para o seu email. Clique no link
+            Enviamos um link de confirmação para {email && <strong>{email}</strong>}. Clique no link
             para ativar sua conta e começar a usar o Conecte Escalas.
           </p>
         </div>
 
         <div className="mt-8 space-y-3">
+          {resendSuccess && (
+            <div className="rounded-md bg-emerald-500/10 p-3 text-sm text-emerald-600 flex items-center justify-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              Email reenviado com sucesso!
+            </div>
+          )}
+
+          {resendError && (
+            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              {resendError}
+            </div>
+          )}
+
           <p className="text-sm text-muted-foreground">
             Após confirmar seu email, você será redirecionado para completar seu perfil.
           </p>
@@ -39,9 +102,20 @@ export default function SignUpSuccessPage() {
             Não recebeu o email?{" "}
             <button
               type="button"
-              className="text-primary hover:underline"
+              onClick={handleResendEmail}
+              disabled={resending || resendSuccess}
+              className="text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
             >
-              Reenviar
+              {resending ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Reenviando...
+                </>
+              ) : resendSuccess ? (
+                "Email reenviado"
+              ) : (
+                "Reenviar"
+              )}
             </button>
           </p>
         </div>
