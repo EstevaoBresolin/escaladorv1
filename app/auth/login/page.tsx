@@ -43,7 +43,7 @@ export default function LoginPage() {
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("phone, church_id")
+        .select("phone, church_id, role")
         .eq("id", user.id)
         .single()
 
@@ -53,10 +53,35 @@ export default function LoginPage() {
         router.refresh()
         return
       }
-    }
 
-    router.push("/dashboard")
-    router.refresh()
+      if (profile?.role === "admin") {
+        router.push("/dashboard")
+        router.refresh()
+        return
+      }
+
+      if (profile?.role === "leader") {
+        router.push("/dashboard/eventos")
+        router.refresh()
+        return
+      }
+
+      const { data: ledMinistries } = await supabase
+        .from("ministry_leaders")
+        .select("ministry_id")
+        .eq("user_id", user.id)
+        .limit(1)
+
+      if (ledMinistries && ledMinistries.length > 0) {
+        router.push("/dashboard/eventos")
+        router.refresh()
+        return
+      }
+
+      router.push("/dashboard/disponibilidade")
+      router.refresh()
+      return
+    }
   }
 
   return (

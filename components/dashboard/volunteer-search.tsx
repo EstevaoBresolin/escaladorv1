@@ -12,17 +12,24 @@ import { Label } from "../ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Volunteer } from "./ministry-volunteer-manager";
 import { useState } from "react";
+import { Badge } from "../ui/badge";
 
 interface VolunteerProps {
   volunteers: Volunteer[];
   selectedVolunteerId?: string;
   onSelectVolunteer?: (volunteerId: string) => void;
+  availabilityCountMap?: Record<string, number>;
+  monthlyEventsCount?: number;
+  eventCountMap?: Record<string, number>;
 }
 
 export function VolunteerSearch({
   volunteers,
   selectedVolunteerId,
   onSelectVolunteer,
+  availabilityCountMap = {},
+  monthlyEventsCount = 0,
+  eventCountMap = {},
 }: VolunteerProps) {
   const [open, setOpen] = useState(false);
 
@@ -64,11 +71,27 @@ export function VolunteerSearch({
                     value={v.name}
                     onSelect={() => handleSelectVolunteer(v.id)}
                   >
-                    <div className="flex flex-col">
-                      <span>{v.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {v.email}
-                      </span>
+                    <div className="flex w-full items-center justify-between gap-3">
+                      <div className="flex flex-col">
+                        <span>{v.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {v.email}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {monthlyEventsCount > 1 &&
+                          availabilityCountMap[v.id] === 1 && (
+                            <Badge
+                              variant="destructive"
+                              className="text-[10px]"
+                            >
+                              Só pode nesse dia
+                            </Badge>
+                          )}
+                        <Badge variant="secondary" className="text-[10px]">
+                          {eventCountMap[v.id] ?? 0} eventos
+                        </Badge>
+                      </div>
                     </div>
                   </CommandItem>
                 ))}

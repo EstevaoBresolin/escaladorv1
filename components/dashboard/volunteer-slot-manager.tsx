@@ -103,6 +103,10 @@ export function VolunteerSlotManager({
     Record<string, number>
   >({});
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [conflictingVolunteerIds, setConflictingVolunteerIds] = useState<
+    string[]
+  >([]);
+  const [monthlyEventsCount, setMonthlyEventsCount] = useState(0);
   const router = useRouter();
   const supabase = createClient();
 
@@ -114,7 +118,10 @@ export function VolunteerSlotManager({
 
   // Separate available and unavailable volunteers
   const availableVolunteers = volunteers.filter(
-    (v) => !isVolunteerUnavailable(v.id),
+    (v) =>
+      !isVolunteerUnavailable(v.id) &&
+      !conflictingVolunteerIds.includes(v.id) &&
+      !slots.some((s) => s.profiles?.id === v.id),
   );
 
   // Sort available volunteers by priority (least available dates first = highest priority)
@@ -122,14 +129,11 @@ export function VolunteerSlotManager({
     const availCountA = volunteerAvailabilityCount[a.id] ?? Infinity;
     const availCountB = volunteerAvailabilityCount[b.id] ?? Infinity;
 
-    // Primary sort: lower availability count = higher priority (appears first)
-    if (availCountA !== Infinity && availCountB !== Infinity) {
-      if (availCountA !== availCountB) {
-        return availCountA - availCountB;
-      }
-    }
+    // Primary sort: volunteers available in only one event of the month first
+    if (availCountA === 1 && availCountB !== 1) return -1;
+    if (availCountB === 1 && availCountA !== 1) return 1;
 
-    // Secondary sort: if availability is equal, prioritize those with fewer scheduled events
+    // Secondary sort: prioritize those with fewer scheduled events
     const eventCountA = volunteerEventCount[a.id] ?? 0;
     const eventCountB = volunteerEventCount[b.id] ?? 0;
     if (eventCountA !== eventCountB) {
@@ -174,50 +178,119 @@ export function VolunteerSlotManager({
 
     // Load volunteer availability and event count data
     loadVolunteerPriorityData();
-  }, [open]);
+    loadConflictingVolunteers();
+  }, [open, selectedMinistryId, volunteers]);
 
   async function loadVolunteerPriorityData() {
     setAvailabilityLoading(true);
     const availabilityMap: Record<string, number> = {};
     const eventCountMap: Record<string, number> = {};
 
-    // Count how many different dates each volunteer is available
-    const availableDates = new Set<string>();
-    const now = new Date();
-
-    // Check next 30 days
-    for (let i = 0; i < 30; i++) {
-      const checkDate = new Date(now);
-      checkDate.setDate(checkDate.getDate() + i);
-      const dateStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, "0")}-${String(checkDate.getDate()).padStart(2, "0")}`;
-      availableDates.add(dateStr);
+    const volunteerIds = volunteers.map((v) => v.id);
+    if (volunteerIds.length === 0) {
+      setVolunteerAvailabilityCount({});
+      setVolunteerEventCount({});
+      setMonthlyEventsCount(0);
+      setAvailabilityLoading(false);
+      return;
     }
 
-    for (const volunteer of volunteers) {
-      let availableDateCount = 0;
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-      // Count dates where volunteer is available
-      availableDates.forEach((dateStr) => {
-        const isUnavailable = unavailableData.some(
-          (u) => u.user_id === volunteer.id && u.unavailable_date === dateStr,
+    const startDateStr = `${startDate.getFullYear()}-${String(
+      startDate.getMonth() + 1,
+    ).padStart(2, "0")}-${String(startDate.getDate()).padStart(2, "0")}`;
+    const endDateStr = `${endDate.getFullYear()}-${String(
+      endDate.getMonth() + 1,
+    ).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
+
+    const [
+      { data: ministryEvents },
+      { data: unavailabilityData },
+      { data: eventCountData },
+    ] = await Promise.all([
+      supabase
+        .from("events")
+        .select("id, date, start_time, event_ministries!inner(ministry_id)")
+        .eq("event_ministries.ministry_id", selectedMinistryId)
+        .gte("date", startDateStr)
+        .lte("date", endDateStr),
+      supabase
+        .from("volunteer_unavailability")
+        .select("user_id, unavailable_date")
+        .in("user_id", volunteerIds)
+        .gte("unavailable_date", startDateStr)
+        .lte("unavailable_date", endDateStr),
+      supabase
+        .from("volunteer_slots")
+        .select("user_id, events!inner(id, date)")
+        .in("user_id", volunteerIds)
+        .gte("events.date", startDateStr)
+        .lte("events.date", endDateStr),
+    ]);
+
+    const ministryEventsList = (ministryEvents || []).map((ev: any) => ({
+      date: ev.date,
+      start_time: ev.start_time,
+    }));
+    setMonthlyEventsCount(ministryEventsList.length);
+
+    const unavailableByUser: Record<string, Set<string>> = {};
+    (unavailabilityData || []).forEach((u: any) => {
+      if (!unavailableByUser[u.user_id]) {
+        unavailableByUser[u.user_id] = new Set<string>();
+      }
+      unavailableByUser[u.user_id].add(u.unavailable_date);
+    });
+
+    volunteerIds.forEach((id) => {
+      let availableEvents = 0;
+      ministryEventsList.forEach((ev: any) => {
+        const eventPeriod = getEventPeriod(ev.start_time);
+        const isUnavailable = (unavailabilityData || []).some(
+          (u: any) =>
+            u.user_id === id &&
+            u.unavailable_date === ev.date &&
+            (u.period === "all_day" || u.period === eventPeriod),
         );
         if (!isUnavailable) {
-          availableDateCount++;
+          availableEvents++;
         }
       });
+      availabilityMap[id] = availableEvents;
+    });
 
-      availabilityMap[volunteer.id] = availableDateCount;
-
-      // Count how many events volunteer is already scheduled for
-      const eventCount = slots.filter(
-        (slot) => slot.profiles?.id === volunteer.id,
-      ).length;
-      eventCountMap[volunteer.id] = eventCount;
-    }
+    (eventCountData || []).forEach((item: any) => {
+      eventCountMap[item.user_id] = (eventCountMap[item.user_id] || 0) + 1;
+    });
 
     setVolunteerAvailabilityCount(availabilityMap);
     setVolunteerEventCount(eventCountMap);
     setAvailabilityLoading(false);
+  }
+
+  async function loadConflictingVolunteers() {
+    if (!eventDate) return;
+
+    let conflictsQuery = supabase
+      .from("volunteer_slots")
+      .select("user_id, events!inner(id, date, start_time)")
+      .eq("events.date", eventDate)
+      .neq("event_id", eventId);
+
+    if (eventStartTime) {
+      conflictsQuery = conflictsQuery.eq("events.start_time", eventStartTime);
+    } else {
+      conflictsQuery = conflictsQuery.is("events.start_time", null);
+    }
+
+    const { data: conflictsData } = await conflictsQuery;
+    const conflictIds = (conflictsData || [])
+      .map((item: any) => item.user_id)
+      .filter(Boolean);
+    setConflictingVolunteerIds(Array.from(new Set(conflictIds)));
   }
 
   useEffect(() => {
@@ -281,11 +354,19 @@ export function VolunteerSlotManager({
     router.refresh();
   }
 
+  const visibleSlots = isAdmin
+    ? slots
+    : slots.filter((slot) =>
+        slot.ministries?.id
+          ? ledMinistryIds.includes(slot.ministries.id)
+          : false,
+      );
+
   return (
     <div className="space-y-4">
-      {slots.length > 0 ? (
+      {visibleSlots.length > 0 ? (
         <div className="space-y-2">
-          {slots.map((slot) => (
+          {visibleSlots.map((slot) => (
             <div
               key={slot.id}
               className="flex items-center justify-between rounded-lg border border-border p-3"
@@ -358,7 +439,7 @@ export function VolunteerSlotManager({
         </p>
       )}
 
-      {canManage && ministries.length > 0 && (
+      {/* {canManage && ministries.length > 0 && (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" className="w-full bg-transparent">
@@ -372,9 +453,12 @@ export function VolunteerSlotManager({
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <VolunteerSearch
-                volunteers={availableVolunteers}
+                volunteers={sortedAvailableVolunteers}
                 selectedVolunteerId={selectedVolunteer}
                 onSelectVolunteer={setSelectedVolunteer}
+                availabilityCountMap={volunteerAvailabilityCount}
+                monthlyEventsCount={monthlyEventsCount}
+                eventCountMap={volunteerEventCount}
               />
 
               {needsMinistrySelection ? (
@@ -474,7 +558,7 @@ export function VolunteerSlotManager({
             </div>
           </DialogContent>
         </Dialog>
-      )}
+      )} */}
 
       {!canManage && (
         <p className="text-sm text-muted-foreground text-center py-2">

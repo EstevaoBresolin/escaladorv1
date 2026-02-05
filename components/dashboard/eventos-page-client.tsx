@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EventCalendar } from "@/components/dashboard/event-calendar";
 import { DeleteEventButton } from "@/components/dashboard/delete-event-button";
+import { EventQuickSchedule } from "@/components/dashboard/event-quick-schedule";
 
 interface EventWithMinistries {
   id: string;
@@ -22,16 +23,23 @@ interface EventWithMinistries {
   location: string | null;
   event_ministries: Array<{
     ministry_id: string;
-    ministries: { name: string; color: string };
+    ministries: { id: string; name: string; color: string };
   }>;
 }
 
 interface EventsPageClientProps {
   events: EventWithMinistries[];
   isAdmin: boolean;
+  isLeader: boolean;
+  ledMinistryIds: string[];
 }
 
-export function EventsPageClient({ events, isAdmin }: EventsPageClientProps) {
+export function EventsPageClient({
+  events,
+  isAdmin,
+  isLeader,
+  ledMinistryIds,
+}: EventsPageClientProps) {
   const [selectedDate, setSelectedDate] = useState<string>("");
 
   // Set initial selected date to today on mount
@@ -55,7 +63,13 @@ export function EventsPageClient({ events, isAdmin }: EventsPageClientProps) {
         </div>
         {isAdmin && (
           <Button asChild>
-            <Link href="/dashboard/eventos/novo">
+            <Link
+              href={
+                selectedDate
+                  ? `/dashboard/eventos/novo?date=${selectedDate}`
+                  : "/dashboard/eventos/novo"
+              }
+            >
               <Plus className="mr-2 h-4 w-4" />
               Novo Evento
             </Link>
@@ -120,7 +134,11 @@ export function EventsPageClient({ events, isAdmin }: EventsPageClientProps) {
                               {event.event_ministries.map(
                                 (em: {
                                   ministry_id: string;
-                                  ministries: { name: string; color: string };
+                                  ministries: {
+                                    id: string;
+                                    name: string;
+                                    color: string;
+                                  };
                                 }) => (
                                   <span
                                     key={em.ministry_id}
@@ -136,6 +154,14 @@ export function EventsPageClient({ events, isAdmin }: EventsPageClientProps) {
                               )}
                             </div>
                           )}
+
+                        {(isAdmin || isLeader) && (
+                          <EventQuickSchedule
+                            event={event}
+                            isAdmin={isAdmin}
+                            ledMinistryIds={ledMinistryIds}
+                          />
+                        )}
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -190,7 +216,13 @@ export function EventsPageClient({ events, isAdmin }: EventsPageClientProps) {
                     variant="outline"
                     size="sm"
                   >
-                    <Link href="/dashboard/eventos/novo">
+                    <Link
+                      href={
+                        selectedDate
+                          ? `/dashboard/eventos/novo?date=${selectedDate}`
+                          : "/dashboard/eventos/novo"
+                      }
+                    >
                       <Plus className="mr-2 h-4 w-4" />
                       Criar Evento
                     </Link>

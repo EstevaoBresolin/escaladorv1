@@ -17,6 +17,8 @@ export default async function EventosPage() {
   // Get user permissions
   const permissions = await getUserPermissions(supabase);
   const isAdmin = permissions?.isAdmin || false;
+  const isLeader = permissions?.isLeader || false;
+  const ledMinistryIds = permissions?.ledMinistryIds || [];
 
   const { data: eventsRaw } = await supabase
     .from("events")
@@ -27,7 +29,7 @@ export default async function EventosPage() {
       date,
       start_time,
       location,
-      event_ministries(ministry_id, ministries(name, color))
+      event_ministries(ministry_id, ministries(id, name, color))
     `,
     )
     .eq("church_id", profile?.church_id)
@@ -47,5 +49,12 @@ export default async function EventosPage() {
     })),
   }));
 
-  return <EventsPageClient events={events || []} isAdmin={isAdmin} />;
+  return (
+    <EventsPageClient
+      events={events || []}
+      isAdmin={isAdmin}
+      isLeader={isLeader}
+      ledMinistryIds={ledMinistryIds}
+    />
+  );
 }

@@ -73,6 +73,14 @@ const bottomNavItems = [
 export function DashboardSidebar({ profile }: DashboardSidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const isVolunteerOnly = profile?.role === "volunteer";
+
+  const visibleNavItems = isVolunteerOnly
+    ? navItems.filter((item) =>
+        ["Voluntários", "Eventos", "Ministérios"].includes(item.label),
+      )
+    : navItems;
+
 
   return (
     <>
@@ -118,7 +126,7 @@ export function DashboardSidebar({ profile }: DashboardSidebarProps) {
         </div>
 
         <nav className="flex-1 space-y-1 p-3">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive =
               pathname === item.href ||
               (item.href !== "/dashboard" && pathname.startsWith(item.href));

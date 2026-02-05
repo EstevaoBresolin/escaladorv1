@@ -27,6 +27,7 @@ export default async function MinisteriosPage() {
   // Get user permissions
   const permissions = await getUserPermissions(supabase);
   const isAdmin = permissions?.isAdmin || false;
+  const isLeader = permissions?.isLeader || false;
 
   const { data: ministries } = await supabase
     .from("ministries")
@@ -36,6 +37,15 @@ export default async function MinisteriosPage() {
     `)
     .eq("church_id", profile?.church_id)
     .order("name")
+
+  const { data: userMinistries } = await supabase
+    .from("user_ministries")
+    .select("ministry_id")
+    .eq("user_id", user?.id)
+
+  const memberMinistryIds = new Set(
+    (userMinistries || []).map((m: { ministry_id: string }) => m.ministry_id),
+  )
 
   return (
     <div className="space-y-6">
@@ -83,11 +93,13 @@ export default async function MinisteriosPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link href={`/dashboard/ministerios/${ministry.id}`}>
-                        Ver detalhes
-                      </Link>
-                    </DropdownMenuItem>
+                    {(isAdmin || isLeader || memberMinistryIds.has(ministry.id)) && (
+                      <DropdownMenuItem asChild>
+                        <Link href={`/dashboard/ministerios/${ministry.id}`}>
+                          Ver detalhes
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     {isAdmin && (
                       <>
                         <DropdownMenuItem asChild>

@@ -3,7 +3,7 @@
 import React from "react";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,9 +26,15 @@ export default function NovoEventoPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   useEffect(() => {
+    const prefillDate = searchParams.get("date");
+    if (prefillDate && !date) {
+      setDate(prefillDate);
+    }
+
     async function loadMinistries() {
       const {
         data: { user },
@@ -54,7 +60,7 @@ export default function NovoEventoPage() {
     }
 
     loadMinistries();
-  }, [supabase]);
+  }, [supabase, searchParams, date]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

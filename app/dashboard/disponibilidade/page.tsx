@@ -7,30 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Loader2,
-  Plus,
-  Trash2,
-  CalendarOff,
-  CalendarIcon,
-  Info,
-} from "lucide-react";
-import { format, parseISO, isAfter, startOfToday } from "date-fns";
+import { Loader2, Trash2, CalendarOff, Info } from "lucide-react";
+import { format, parseISO, startOfToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { AvailabilityCalendar } from "@/components/dashboard/availability-calendar";
 
 interface Unavailability {
   id: string;
@@ -40,25 +28,38 @@ interface Unavailability {
   created_at: string;
 }
 
+interface ScheduledEvent {
+  id: string;
+  date: string;
+  title: string;
+  start_time?: string;
+}
+
 export default function DisponibilidadePage() {
   const [unavailabilities, setUnavailabilities] = useState<Unavailability[]>(
     [],
   );
+  const [scheduledEvents, setScheduledEvents] = useState<ScheduledEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("all_day");
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(
+    undefined,
+  );
+  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [reason, setReason] = useState("");
-  const [calendarOpen, setCalendarOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
-    loadUnavailabilities();
+    loadData();
   }, []);
+
+  async function loadData() {
+    await Promise.all([loadUnavailabilities(), loadScheduledEvents()]);
+  }
 
   async function loadUnavailabilities() {
     setLoading(true);
@@ -82,8 +83,35 @@ export default function DisponibilidadePage() {
     setLoading(false);
   }
 
+  async function loadScheduledEvents() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("volunteer_slots")
+      .select("id, events!inner(id, date, title, start_time)")
+      .eq("user_id", user.id)
+      .gte("events.date", startOfToday().toISOString().split("T")[0]);
+
+    if (data) {
+      const events = data.map((slot: any) => {
+        const event = Array.isArray(slot.events) ? slot.events[0] : slot.events;
+        return {
+          id: event.id,
+          date: event.date,
+          title: event.title,
+          start_time: event.start_time,
+        };
+      });
+      setScheduledEvents(events);
+    }
+  }
+
   async function handleAddUnavailability() {
-    if (!selectedDate) return;
+    if (!selectedDate || selectedPeriods.length === 0) return;
     setSaving(true);
     setError(null);
 
@@ -95,8 +123,6 @@ export default function DisponibilidadePage() {
       setSaving(false);
       return;
     }
-
-    const formattedDate = format(selectedDate, "yyyy-MM-dd");
 
     // Helper to get event period based on start time
     function getEventPeriod(startTime?: string): string {
@@ -116,18 +142,18 @@ export default function DisponibilidadePage() {
     // Filter slots for the selected date
     const conflictingSlots = scheduledSlots?.filter((slot: any) => {
       const event = Array.isArray(slot.events) ? slot.events[0] : slot.events;
-      if (event?.date !== formattedDate) return false;
+      if (event?.date !== selectedDate) return false;
 
       const eventPeriod = getEventPeriod(event?.start_time);
 
       // If trying to mark all day unavailable, conflict with any event
-      if (selectedPeriod === "all_day") return true;
+      if (selectedPeriods.includes("all_day")) return true;
 
       // If event is all day, conflict with any period
       if (eventPeriod === "all_day") return true;
 
       // If periods match, there's a conflict
-      return eventPeriod === selectedPeriod;
+      return selectedPeriods.includes(eventPeriod);
     });
 
     if (conflictingSlots && conflictingSlots.length > 0) {
@@ -135,35 +161,44 @@ export default function DisponibilidadePage() {
         ? conflictingSlots[0].events[0]
         : conflictingSlots[0].events;
       const eventTitle = event?.title || "um evento";
-      const periodText =
-        selectedPeriod === "all_day"
-          ? "dia todo"
-          : selectedPeriod === "morning"
-            ? "manhã"
-            : selectedPeriod === "afternoon"
-              ? "tarde"
-              : "noite";
 
       setError(
-        `Você já está escalado para "${eventTitle}" neste dia/horário (${periodText}). Entre em contato com o líder do ministério para ser removido da escala antes de marcar indisponibilidade.`,
+        `Você já está escalado para "${eventTitle}" neste dia. Entre em contato com o líder do ministério para ser removido da escala antes de marcar indisponibilidade.`,
       );
       setSaving(false);
       return;
     }
 
-    const { error: insertError } = await supabase
-      .from("volunteer_unavailability")
-      .insert({
-        user_id: user.id,
-        unavailable_date: formattedDate,
-        period: selectedPeriod,
-        reason: reason || null,
-      });
+    // Remove existing unavailabilities for this date first (to enable editing)
+    const existingUnavailabilities = unavailabilities.filter(
+      (u) => u.unavailable_date === selectedDate,
+    );
 
-    if (!insertError) {
+    if (existingUnavailabilities.length > 0) {
+      await Promise.all(
+        existingUnavailabilities.map((u) =>
+          supabase.from("volunteer_unavailability").delete().eq("id", u.id),
+        ),
+      );
+    }
+
+    // Insert unavailabilities for each selected period
+    const insertPromises = selectedPeriods.map((period) =>
+      supabase.from("volunteer_unavailability").insert({
+        user_id: user.id,
+        unavailable_date: selectedDate,
+        period: period,
+        reason: reason || null,
+      }),
+    );
+
+    const results = await Promise.all(insertPromises);
+    const hasError = results.some((r) => r.error);
+
+    if (!hasError) {
       setOpen(false);
       setSelectedDate(undefined);
-      setSelectedPeriod("all_day");
+      setSelectedPeriods([]);
       setReason("");
       setError(null);
       await loadUnavailabilities();
@@ -181,10 +216,70 @@ export default function DisponibilidadePage() {
     await loadUnavailabilities();
   }
 
-  // Get all unavailable dates for calendar highlighting
-  const unavailableDates = unavailabilities.map((u) =>
-    parseISO(u.unavailable_date),
+  // Group unavailabilities by date for calendar
+  const unavailabilitiesByDate = unavailabilities.reduce(
+    (acc, item) => {
+      if (!acc[item.unavailable_date]) {
+        acc[item.unavailable_date] = [];
+      }
+      acc[item.unavailable_date].push(item.period);
+      return acc;
+    },
+    {} as Record<string, string[]>,
   );
+
+  const calendarUnavailabilities = Object.entries(unavailabilitiesByDate).map(
+    ([date, periods]) => ({
+      date,
+      periods,
+    }),
+  );
+
+  const togglePeriod = (period: string) => {
+    // Toggle the period
+    if (selectedPeriods.includes(period)) {
+      setSelectedPeriods(selectedPeriods.filter((p) => p !== period));
+      return;
+    }
+
+    // If selecting "all_day", clear other selections
+    if (period === "all_day") {
+      setSelectedPeriods(["all_day"]);
+      return;
+    }
+
+    // If "all_day" is selected and user clicks another period, remove "all_day"
+    if (selectedPeriods.includes("all_day")) {
+      setSelectedPeriods([period]);
+      return;
+    }
+
+    // Add the period
+    setSelectedPeriods([...selectedPeriods, period]);
+  };
+
+  const handleRemoveAllUnavailabilitiesForDate = async () => {
+    if (!selectedDate) return;
+    setRemovingId("modal");
+
+    const unavailabilitiesToRemove = unavailabilities.filter(
+      (u) => u.unavailable_date === selectedDate,
+    );
+
+    await Promise.all(
+      unavailabilitiesToRemove.map((u) =>
+        supabase.from("volunteer_unavailability").delete().eq("id", u.id),
+      ),
+    );
+
+    setRemovingId(null);
+    setOpen(false);
+    setSelectedDate(undefined);
+    setSelectedPeriods([]);
+    setReason("");
+    setError(null);
+    await loadUnavailabilities();
+  };
 
   if (loading) {
     return (
@@ -201,7 +296,7 @@ export default function DisponibilidadePage() {
           Minha Disponibilidade
         </h1>
         <p className="text-muted-foreground">
-          Marque os dias em que você NAO pode servir como voluntário
+          Marque os dias em que você NÃO pode servir como voluntário
         </p>
       </div>
 
@@ -213,255 +308,179 @@ export default function DisponibilidadePage() {
               Como funciona?
             </p>
             <p className="text-sm text-amber-700 dark:text-amber-400">
-              Adicione aqui apenas os dias em que voce NAO estara disponivel.
-              Nos demais dias, voce sera considerado disponivel para ser
-              escalado em eventos.
+              Clique em um dia do calendário para marcar indisponibilidade. Dias
+              em vermelho já têm restrições cadastradas. Dias com eventos
+              mostram suas escalas.
             </p>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Dias Indisponiveis</CardTitle>
-            <Dialog
-              open={open}
-              onOpenChange={(isOpen) => {
-                setOpen(isOpen);
-                if (!isOpen) {
-                  setError(null);
-                  setSelectedDate(undefined);
-                  setSelectedPeriod("all_day");
-                  setReason("");
-                }
-              }}
-            >
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Adicionar Data
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Adicionar Indisponibilidade</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                  {error && (
-                    <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                      {error}
-                    </div>
+      <AvailabilityCalendar
+        unavailabilities={calendarUnavailabilities}
+        events={scheduledEvents}
+        selectedDate={selectedDate}
+        onSelectDate={(date) => {
+          setSelectedDate(date);
+
+          // Load existing periods for this date
+          const existingUnavailabilities = unavailabilities.filter(
+            (u) => u.unavailable_date === date,
+          );
+
+          if (existingUnavailabilities.length > 0) {
+            setSelectedPeriods(existingUnavailabilities.map((u) => u.period));
+            setReason(existingUnavailabilities[0].reason || "");
+          } else {
+            setSelectedPeriods([]);
+            setReason("");
+          }
+
+          setError(null);
+          setOpen(true);
+        }}
+      />
+
+      <Dialog
+        open={open}
+        onOpenChange={(isOpen) => {
+          setOpen(isOpen);
+          if (!isOpen) {
+            setError(null);
+            setSelectedDate(undefined);
+            setSelectedPeriods([]);
+            setReason("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Adicionar Indisponibilidade
+              {selectedDate && (
+                <span className="block text-sm font-normal text-muted-foreground mt-1">
+                  {format(
+                    parseISO(selectedDate),
+                    "EEEE, d 'de' MMMM 'de' yyyy",
+                    {
+                      locale: ptBR,
+                    },
                   )}
-
-                  <div className="space-y-2">
-                    <Label>Data *</Label>
-                    <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !selectedDate && "text-muted-foreground",
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {selectedDate
-                            ? format(selectedDate, "PPP", { locale: ptBR })
-                            : "Selecione uma data"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={(date) => {
-                            setSelectedDate(date);
-                            setCalendarOpen(false);
-                          }}
-                          disabled={(date) =>
-                            date < startOfToday() ||
-                            unavailableDates.some(
-                              (d) =>
-                                d.toISOString().split("T")[0] ===
-                                date.toISOString().split("T")[0],
-                            )
-                          }
-                          initialFocus
-                          locale={ptBR}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Período *</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        type="button"
-                        variant={
-                          selectedPeriod === "all_day" ? "default" : "outline"
-                        }
-                        onClick={() => setSelectedPeriod("all_day")}
-                        className="w-full"
-                      >
-                        Dia Todo
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={
-                          selectedPeriod === "morning" ? "default" : "outline"
-                        }
-                        onClick={() => setSelectedPeriod("morning")}
-                        className="w-full"
-                      >
-                        Manhã
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={
-                          selectedPeriod === "afternoon" ? "default" : "outline"
-                        }
-                        onClick={() => setSelectedPeriod("afternoon")}
-                        className="w-full"
-                      >
-                        Tarde
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={
-                          selectedPeriod === "evening" ? "default" : "outline"
-                        }
-                        onClick={() => setSelectedPeriod("evening")}
-                        className="w-full"
-                      >
-                        Noite
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="reason">Motivo (opcional)</Label>
-                    <Textarea
-                      id="reason"
-                      placeholder="Ex: Viagem, compromisso familiar..."
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                    />
-                  </div>
-
-                  <Button
-                    className="w-full"
-                    onClick={handleAddUnavailability}
-                    disabled={!selectedDate || saving}
-                  >
-                    {saving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Salvando...
-                      </>
-                    ) : (
-                      "Adicionar"
-                    )}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </CardHeader>
-          <CardContent>
-            {unavailabilities.length > 0 ? (
-              <div className="space-y-2">
-                {unavailabilities.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
-                        <CalendarOff className="h-5 w-5 text-destructive" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">
-                          {format(
-                            parseISO(item.unavailable_date),
-                            "EEEE, d 'de' MMMM",
-                            {
-                              locale: ptBR,
-                            },
-                          )}{" "}
-                          -{" "}
-                          <span className="text-sm text-muted-foreground">
-                            {item.period === "all_day"
-                              ? "Dia todo"
-                              : item.period === "morning"
-                                ? "Manhã"
-                                : item.period === "afternoon"
-                                  ? "Tarde"
-                                  : "Noite"}
-                          </span>
-                        </p>
-                        {item.reason && (
-                          <p className="text-sm text-muted-foreground">
-                            {item.reason}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      onClick={() => handleRemoveUnavailability(item.id)}
-                      disabled={removingId === item.id}
-                    >
-                      {removingId === item.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                      <span className="sr-only">Remover</span>
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <CalendarOff className="h-10 w-10 text-muted-foreground/50 mb-3" />
-                <p className="text-muted-foreground">
-                  Voce ainda nao marcou nenhum dia como indisponivel.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Isso significa que voce esta disponivel todos os dias.
-                </p>
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            {error && (
+              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
               </div>
             )}
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Resumo</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-3xl font-bold text-destructive">
-                {unavailabilities.length}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {unavailabilities.length === 1
-                  ? "dia marcado como indisponivel"
-                  : "dias marcados como indisponiveis"}
-              </p>
+            <div className="space-y-2">
+              <Label>Períodos * (selecione um ou mais)</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={
+                    selectedPeriods.includes("all_day") ? "default" : "outline"
+                  }
+                  onClick={() => togglePeriod("all_day")}
+                  className="w-full"
+                >
+                  Dia Todo
+                </Button>
+                <Button
+                  type="button"
+                  variant={
+                    selectedPeriods.includes("morning") ? "default" : "outline"
+                  }
+                  onClick={() => togglePeriod("morning")}
+                  className="w-full"
+                  disabled={selectedPeriods.includes("all_day")}
+                >
+                  Manhã
+                </Button>
+                <Button
+                  type="button"
+                  variant={
+                    selectedPeriods.includes("afternoon")
+                      ? "default"
+                      : "outline"
+                  }
+                  onClick={() => togglePeriod("afternoon")}
+                  className="w-full"
+                  disabled={selectedPeriods.includes("all_day")}
+                >
+                  Tarde
+                </Button>
+                <Button
+                  type="button"
+                  variant={
+                    selectedPeriods.includes("evening") ? "default" : "outline"
+                  }
+                  onClick={() => togglePeriod("evening")}
+                  className="w-full"
+                  disabled={selectedPeriods.includes("all_day")}
+                >
+                  Noite
+                </Button>
+              </div>
             </div>
-            <div className="border-t pt-4">
-              <p className="text-sm text-muted-foreground">
-                Lembre-se de manter sua disponibilidade atualizada para que os
-                lideres possam escala-lo corretamente nos eventos.
-              </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="reason">Motivo (opcional)</Label>
+              <Textarea
+                id="reason"
+                placeholder="Ex: Viagem, compromisso familiar..."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
             </div>
-          </CardContent>
-        </Card>
-      </div>
+
+            <div className="flex gap-2">
+              {unavailabilities.some(
+                (u) => u.unavailable_date === selectedDate,
+              ) && (
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={handleRemoveAllUnavailabilitiesForDate}
+                  disabled={removingId === "modal" || saving}
+                >
+                  {removingId === "modal" ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Removendo...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Remover
+                    </>
+                  )}
+                </Button>
+              )}
+              <Button
+                className="flex-1"
+                onClick={handleAddUnavailability}
+                disabled={
+                  !selectedDate || selectedPeriods.length === 0 || saving
+                }
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Salvar"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
