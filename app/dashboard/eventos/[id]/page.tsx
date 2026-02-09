@@ -6,6 +6,7 @@ import { ArrowLeft, Calendar, Clock, MapPin, Edit, Users } from "lucide-react";
 import Link from "next/link";
 import { VolunteerSlotManager } from "@/components/dashboard/volunteer-slot-manager";
 import { SendReminderButton } from "@/components/dashboard/send-reminder-button";
+import { ReplicateScheduleButton } from "@/components/dashboard/replicate-schedule-button";
 import {
   getUserPermissions,
   getAssignableVolunteers,
@@ -117,15 +118,46 @@ export default async function EventPage({ params }: EventPageProps) {
             <p className="text-muted-foreground">Detalhes do evento</p>
           </div>
         </div>
-        {isAdmin && (
+        {(isAdmin || permissions?.isLeader) && (
           <div className="flex gap-2">
-            <SendReminderButton eventId={event.id} eventTitle={event.title} />
-            <Button variant="outline" asChild>
-              <Link href={`/dashboard/eventos/${id}/editar`}>
-                <Edit className="mr-2 h-4 w-4" />
-                Editar
-              </Link>
-            </Button>
+            {permissions?.isLeader && (
+              <ReplicateScheduleButton
+                eventId={event.id}
+                eventTitle={event.title}
+                eventDate={event.date}
+                ledMinistryIds={permissions.ledMinistryIds}
+                eventMinistries={
+                  event.event_ministries?.map(
+                    (em: {
+                      ministry_id: string;
+                      ministries: {
+                        id: string;
+                        name: string;
+                        color: string;
+                      };
+                    }) => ({
+                      id: em.ministries.id,
+                      name: em.ministries.name,
+                      color: em.ministries.color,
+                    })
+                  ) || []
+                }
+              />
+            )}
+            {isAdmin && (
+              <>
+                <SendReminderButton
+                  eventId={event.id}
+                  eventTitle={event.title}
+                />
+                <Button variant="outline" asChild>
+                  <Link href={`/dashboard/eventos/${id}/editar`}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Editar
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
         )}
       </div>
