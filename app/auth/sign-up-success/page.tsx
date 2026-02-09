@@ -1,56 +1,58 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { useSearchParams } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { CalendarCheck, Mail, Loader2, CheckCircle } from "lucide-react"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { CalendarCheck, Mail, Loader2, CheckCircle } from "lucide-react";
 
 export default function SignUpSuccessPage() {
-  const searchParams = useSearchParams()
-  const [email, setEmail] = useState("")
-  const [resending, setResending] = useState(false)
-  const [resendSuccess, setResendSuccess] = useState(false)
-  const [resendError, setResendError] = useState<string | null>(null)
-  const supabase = createClient()
+  const [email, setEmail] = useState("");
+  const [resending, setResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [resendError, setResendError] = useState<string | null>(null);
+  const supabase = createClient();
 
   useEffect(() => {
     // Tenta obter o email do usuário da sessão
     async function getEmail() {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user?.email) {
-        setEmail(user.email)
+        setEmail(user.email);
       }
     }
-    getEmail()
-  }, [supabase])
+    getEmail();
+  }, [supabase]);
 
   async function handleResendEmail() {
     if (!email) {
-      setResendError("Email não encontrado. Tente criar sua conta novamente.")
-      return
+      setResendError("Email não encontrado. Tente criar sua conta novamente.");
+      return;
     }
 
-    setResending(true)
-    setResendError(null)
-    setResendSuccess(false)
+    setResending(true);
+    setResendError(null);
+    setResendSuccess(false);
 
     const { error } = await supabase.auth.resend({
-      type: 'signup',
+      type: "signup",
       email: email,
       options: {
         emailRedirectTo: "https://escaladorv1.vercel.app/auth/login",
       },
-    })
+    });
 
     if (error) {
-      setResendError("Erro ao reenviar email. Tente novamente em alguns minutos.")
+      setResendError(
+        "Erro ao reenviar email. Tente novamente em alguns minutos.",
+      );
     } else {
-      setResendSuccess(true)
+      setResendSuccess(true);
     }
 
-    setResending(false)
+    setResending(false);
   }
 
   return (
@@ -73,8 +75,9 @@ export default function SignUpSuccessPage() {
             Verifique seu email
           </h1>
           <p className="mt-4 text-muted-foreground">
-            Enviamos um link de confirmação para {email && <strong>{email}</strong>}. Clique no link
-            para ativar sua conta e começar a usar o Conecte Escalas.
+            Enviamos um link de confirmação para{" "}
+            {email && <strong>{email}</strong>}. Clique no link para ativar sua
+            conta e começar a usar o Conecte Escalas.
           </p>
         </div>
 
@@ -93,7 +96,8 @@ export default function SignUpSuccessPage() {
           )}
 
           <p className="text-sm text-muted-foreground">
-            Após confirmar seu email, você será redirecionado para completar seu perfil.
+            Após confirmar seu email, você será redirecionado para completar seu
+            perfil.
           </p>
           <Button asChild className="w-full">
             <Link href="/auth/login">Ir para Login</Link>
@@ -121,5 +125,5 @@ export default function SignUpSuccessPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

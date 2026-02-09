@@ -17,7 +17,8 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+  const [showPasswordRequirements, setShowPasswordRequirements] =
+    useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -63,7 +64,9 @@ export default function SignUpPage() {
     }
 
     if (!passwordRequirements.hasSpecialChar) {
-      setError("A senha deve conter pelo menos um caractere especial (!@#$%^&*...)");
+      setError(
+        "A senha deve conter pelo menos um caractere especial (!@#$%^&*...)",
+      );
       setLoading(false);
       return;
     }
@@ -81,10 +84,14 @@ export default function SignUpPage() {
 
     if (error) {
       // Detectar se o email já está em uso
-      if (error.message.toLowerCase().includes("user already registered") || 
-          error.message.toLowerCase().includes("email already") ||
-          error.message.toLowerCase().includes("already registered")) {
-        setError("Este email já está cadastrado. Por favor, faça login ou use outro email.");
+      if (
+        error.message.toLowerCase().includes("user already registered") ||
+        error.message.toLowerCase().includes("email already") ||
+        error.message.toLowerCase().includes("already registered")
+      ) {
+        setError(
+          "Este email já está cadastrado. Por favor, faça login ou use outro email.",
+        );
       } else {
         setError(error.message);
       }
@@ -93,8 +100,14 @@ export default function SignUpPage() {
     }
 
     // Verificar se o usuário já existe (Supabase retorna data.user mesmo se já existe)
-    if (data.user && data.user.identities && data.user.identities.length === 0) {
-      setError("Este email já está cadastrado. Por favor, faça login ou use outro email.");
+    if (
+      data.user &&
+      data.user.identities &&
+      data.user.identities.length === 0
+    ) {
+      setError(
+        "Este email já está cadastrado. Por favor, faça login ou use outro email.",
+      );
       setLoading(false);
       return;
     }
@@ -128,8 +141,8 @@ export default function SignUpPage() {
               {error}
               {error.includes("já está cadastrado") && (
                 <div className="mt-2">
-                  <Link 
-                    href="/auth/login" 
+                  <Link
+                    href="/auth/login"
                     className="font-medium underline hover:text-destructive/80"
                   >
                     Ir para página de login →
@@ -177,7 +190,7 @@ export default function SignUpPage() {
               required
               autoComplete="new-password"
             />
-            
+
             {/* Indicador de requisitos de senha */}
             {showPasswordRequirements && password.length > 0 && (
               <div className="rounded-md border bg-muted/50 p-3 space-y-1.5">
@@ -254,7 +267,11 @@ function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
       ) : (
         <X className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
       )}
-      <span className={met ? "text-emerald-600 font-medium" : "text-muted-foreground"}>
+      <span
+        className={
+          met ? "text-emerald-600 font-medium" : "text-muted-foreground"
+        }
+      >
         {text}
       </span>
     </div>
