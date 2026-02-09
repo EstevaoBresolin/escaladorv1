@@ -72,7 +72,7 @@ export function MinistryLeaderManager({
     if (!error) {
       setOpen(false);
       setSelectedVolunteer("");
-      router.refresh();
+      window.location.reload();
     }
 
     setLoading(false);
@@ -82,7 +82,7 @@ export function MinistryLeaderManager({
     setRemovingId(leaderId);
     await supabase.from("ministry_leaders").delete().eq("id", leaderId);
     setRemovingId(null);
-    router.refresh();
+    window.location.reload();
   }
 
   // Only admins can manage leaders

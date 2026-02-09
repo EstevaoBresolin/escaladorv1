@@ -74,7 +74,6 @@ export default function NovoMinisterioPage() {
     }
 
     router.push("/dashboard/ministerios")
-    router.refresh()
   }
 
   return (

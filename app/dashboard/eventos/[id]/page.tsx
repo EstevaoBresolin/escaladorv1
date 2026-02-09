@@ -55,6 +55,35 @@ export default async function EventPage({ params }: EventPageProps) {
     .eq("id", user?.id)
     .single();
 
+  const { data: userMinistries } = user?.id
+    ? await supabase
+        .from("user_ministries")
+        .select("ministry_id")
+        .eq("user_id", user.id)
+    : { data: [] };
+
+  const { data: nextEvent } = profile?.church_id
+    ? await supabase
+        .from("events")
+        .select("id, title, date")
+        .eq("church_id", profile.church_id)
+        .gt("date", event.date)
+        .order("date", { ascending: true })
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
+
+  const { data: previousEvent } = profile?.church_id
+    ? await supabase
+        .from("events")
+        .select("id, title, date")
+        .eq("church_id", profile.church_id)
+        .lt("date", event.date)
+        .order("date", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
+
   // Get user permissions
   const permissions = await getUserPermissions(supabase);
   const isAdmin = permissions?.isAdmin || false;
@@ -117,17 +146,51 @@ export default async function EventPage({ params }: EventPageProps) {
             <p className="text-muted-foreground">Detalhes do evento</p>
           </div>
         </div>
-        {isAdmin && (
-          <div className="flex gap-2">
-            <SendReminderButton eventId={event.id} eventTitle={event.title} />
-            <Button variant="outline" asChild>
-              <Link href={`/dashboard/eventos/${id}/editar`}>
-                <Edit className="mr-2 h-4 w-4" />
-                Editar
-              </Link>
-            </Button>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {(previousEvent || nextEvent) && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!previousEvent}
+                asChild={!!previousEvent}
+              >
+                {previousEvent ? (
+                  <Link href={`/dashboard/eventos/${previousEvent.id}`}>
+                    Evento anterior
+                  </Link>
+                ) : (
+                  <span>Evento anterior</span>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!nextEvent}
+                asChild={!!nextEvent}
+              >
+                {nextEvent ? (
+                  <Link href={`/dashboard/eventos/${nextEvent.id}`}>
+                    Próximo evento
+                  </Link>
+                ) : (
+                  <span>Próximo evento</span>
+                )}
+              </Button>
+            </div>
+          )}
+          {isAdmin && (
+            <div className="flex gap-2">
+              <SendReminderButton eventId={event.id} eventTitle={event.title} />
+              <Button variant="outline" asChild>
+                <Link href={`/dashboard/eventos/${id}/editar`}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Editar
+                </Link>
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -248,6 +311,9 @@ export default async function EventPage({ params }: EventPageProps) {
                 canManage={canManageEvent}
                 isAdmin={isAdmin}
                 ledMinistryIds={permissions?.ledMinistryIds || []}
+                memberMinistryIds={
+                  userMinistries?.map((um) => um.ministry_id) || []
+                }
               />
             </CardContent>
           </Card>

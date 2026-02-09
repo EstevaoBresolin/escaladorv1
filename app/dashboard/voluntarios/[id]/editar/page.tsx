@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { LoadingCard } from "@/components/ui/spinner";
 
 interface Volunteer {
   id: string;
@@ -98,15 +99,10 @@ export default function EditarVoluntarioPage() {
     }
 
     router.push("/dashboard/voluntarios");
-    router.refresh();
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingCard message="Carregando voluntário..." />;
   }
 
   if (!canEdit || !volunteer) {

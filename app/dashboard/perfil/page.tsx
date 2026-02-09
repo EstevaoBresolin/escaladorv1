@@ -142,7 +142,7 @@ export default function PerfilPage() {
 
     setSuccess(true);
     setLoading(false);
-    router.refresh();
+    // Não precisa reload, dados já foram atualizados no estado
   }
 
   const initials = fullName

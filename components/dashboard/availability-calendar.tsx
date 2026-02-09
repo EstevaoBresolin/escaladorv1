@@ -32,6 +32,8 @@ interface AvailabilityCalendarProps {
   unavailabilities: UnavailabilityData[];
   events: EventData[];
   selectedDate?: string;
+  currentMonth?: Date;
+  onMonthChange?: (date: Date) => void;
   onSelectDate?: (date: string) => void;
 }
 
@@ -39,9 +41,13 @@ export function AvailabilityCalendar({
   unavailabilities,
   events,
   selectedDate,
+  currentMonth: externalCurrentMonth,
+  onMonthChange,
   onSelectDate,
 }: AvailabilityCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [internalCurrentDate, setInternalCurrentDate] = useState(new Date());
+  
+  const currentDate = externalCurrentMonth || internalCurrentDate;
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -52,16 +58,30 @@ export function AvailabilityCalendar({
   const totalDays = lastDayOfMonth.getDate();
 
   const prevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
+    const newDate = new Date(year, month - 1, 1);
+    if (onMonthChange) {
+      onMonthChange(newDate);
+    } else {
+      setInternalCurrentDate(newDate);
+    }
   };
 
   const nextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
+    const newDate = new Date(year, month + 1, 1);
+    if (onMonthChange) {
+      onMonthChange(newDate);
+    } else {
+      setInternalCurrentDate(newDate);
+    }
   };
 
   const goToToday = () => {
-    setCurrentDate(new Date());
     const today = new Date();
+    if (onMonthChange) {
+      onMonthChange(today);
+    } else {
+      setInternalCurrentDate(today);
+    }
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     if (onSelectDate) {
       onSelectDate(todayStr);

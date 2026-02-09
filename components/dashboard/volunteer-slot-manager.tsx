@@ -72,6 +72,7 @@ interface VolunteerSlotManagerProps {
   canManage: boolean;
   isAdmin: boolean;
   ledMinistryIds: string[];
+  memberMinistryIds: string[];
 }
 
 export function VolunteerSlotManager({
@@ -86,6 +87,7 @@ export function VolunteerSlotManager({
   canManage,
   isAdmin,
   ledMinistryIds,
+  memberMinistryIds,
 }: VolunteerSlotManagerProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -346,21 +348,26 @@ export function VolunteerSlotManager({
     setSelectedVolunteer("");
     setSelectedMinistry("");
     setSelectedFunction("");
-    router.refresh();
+    // Reload apenas após adicionar slot
+    window.location.reload();
   }
 
   async function handleRemoveSlot(slotId: string) {
     await supabase.from("volunteer_slots").delete().eq("id", slotId);
-    router.refresh();
+    // Reload apenas após remover slot
+    window.location.reload();
   }
 
   const visibleSlots = isAdmin
     ? slots
-    : slots.filter((slot) =>
-        slot.ministries?.id
-          ? ledMinistryIds.includes(slot.ministries.id)
-          : false,
-      );
+    : slots.filter((slot) => {
+        const ministryId = slot.ministries?.id;
+        if (!ministryId) return false;
+        return (
+          ledMinistryIds.includes(ministryId) ||
+          memberMinistryIds.includes(ministryId)
+        );
+      });
 
   return (
     <div className="space-y-4">

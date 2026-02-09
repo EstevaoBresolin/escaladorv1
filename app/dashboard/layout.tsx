@@ -4,6 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { DashboardTopbar } from "@/components/dashboard/dashboard-topbar";
 
+// Cache por 60 segundos para melhor performance
+export const revalidate = 60;
+
 export default async function DashboardLayout({
   children,
 }: {
