@@ -76,11 +76,8 @@ export function DashboardSidebar({ profile }: DashboardSidebarProps) {
   const isVolunteerOnly = profile?.role === "volunteer";
 
   const visibleNavItems = isVolunteerOnly
-    ? navItems.filter((item) =>
-        ["Voluntários", "Eventos", "Ministérios"].includes(item.label),
-      )
+    ? navItems.filter((item) => item.label !== "Voluntários")
     : navItems;
-
 
   return (
     <>

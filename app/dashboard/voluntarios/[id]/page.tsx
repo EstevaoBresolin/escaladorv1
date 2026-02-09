@@ -18,7 +18,9 @@ export default async function VolunteerPage({ params }: VolunteerPageProps) {
   const { data: { user } } = await supabase.auth.getUser();
   const permissions = await getUserPermissions(supabase);
   const isAdmin = permissions?.isAdmin || false;
-  const canEdit = isAdmin || user?.id === id;
+  const isOwnProfile = user?.id === id;
+  const canEdit = isAdmin || isOwnProfile;
+  const canViewPhone = isAdmin || isOwnProfile;
 
   const { data: volunteer } = await supabase
     .from("profiles")
@@ -86,7 +88,7 @@ export default async function VolunteerPage({ params }: VolunteerPageProps) {
                 </div>
               </div>
 
-              {volunteer.phone && (
+              {canViewPhone && volunteer.phone && (
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                     <Phone className="h-5 w-5 text-primary" />

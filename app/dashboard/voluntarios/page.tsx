@@ -1,14 +1,14 @@
-import { createClient } from "@/lib/supabase/server"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Users, Mail, Phone, MoreVertical } from "lucide-react"
-import Link from "next/link"
+import { createClient } from "@/lib/supabase/server";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Users, Mail, Phone, MoreVertical } from "lucide-react";
+import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -16,34 +16,36 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { getUserPermissions } from "@/lib/permissions"
+} from "@/components/ui/table";
+import { getUserPermissions } from "@/lib/permissions";
 
 export default async function VoluntariosPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("church_id")
     .eq("id", user?.id)
-    .single()
+    .single();
 
   // Get user permissions
-  const permissions = await getUserPermissions(supabase)
-  const isAdmin = permissions?.isAdmin || false
-  const currentUserId = user?.id
+  const permissions = await getUserPermissions(supabase);
+  const isAdmin = permissions?.isAdmin || false;
+  const currentUserId = user?.id;
 
   const { data: volunteers } = await supabase
     .from("profiles")
-    .select(`
+    .select(
+      `
       *,
       user_ministries(ministry_id, ministries(name, color))
-    `)
+    `,
+    )
     .eq("church_id", profile?.church_id)
-    .order("name")
+    .order("name");
 
   return (
     <div className="space-y-6">
@@ -63,8 +65,12 @@ export default async function VoluntariosPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
-                  <TableHead className="hidden md:table-cell">Contato</TableHead>
-                  <TableHead className="hidden sm:table-cell">Ministérios</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    Contato
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell">
+                    Ministérios
+                  </TableHead>
                   <TableHead className="w-[50px]" />
                 </TableRow>
               </TableHeader>
@@ -77,7 +83,7 @@ export default async function VoluntariosPage() {
                           {volunteer.name
                             ? volunteer.name
                                 .split(" ")
-                                .map((n) => n[0])
+                                .map((n: string) => n[0])
                                 .join("")
                                 .slice(0, 2)
                                 .toUpperCase()
@@ -101,30 +107,36 @@ export default async function VoluntariosPage() {
                             {volunteer.email}
                           </div>
                         )}
-                        {volunteer.phone && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Phone className="h-3.5 w-3.5" />
-                            {volunteer.phone}
-                          </div>
-                        )}
+                        {volunteer.phone &&
+                          (isAdmin || currentUserId === volunteer.id) && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Phone className="h-3.5 w-3.5" />
+                              {volunteer.phone}
+                            </div>
+                          )}
                       </div>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
                       <div className="flex flex-wrap gap-1">
                         {volunteer.user_ministries &&
                         volunteer.user_ministries.length > 0 ? (
-                          volunteer.user_ministries.map((um: { ministry_id: string; ministries: { name: string; color: string } }) => (
-                            <span
-                              key={um.ministry_id}
-                              className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                              style={{
-                                backgroundColor: `${um.ministries.color}20`,
-                                color: um.ministries.color,
-                              }}
-                            >
-                              {um.ministries.name}
-                            </span>
-                          ))
+                          volunteer.user_ministries.map(
+                            (um: {
+                              ministry_id: string;
+                              ministries: { name: string; color: string };
+                            }) => (
+                              <span
+                                key={um.ministry_id}
+                                className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                                style={{
+                                  backgroundColor: `${um.ministries.color}20`,
+                                  color: um.ministries.color,
+                                }}
+                              >
+                                {um.ministries.name}
+                              </span>
+                            ),
+                          )
                         ) : (
                           <span className="text-sm text-muted-foreground">
                             Nenhum ministério
@@ -135,14 +147,20 @@ export default async function VoluntariosPage() {
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                          >
                             <MoreVertical className="h-4 w-4" />
                             <span className="sr-only">Ações</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={`/dashboard/voluntarios/${volunteer.id}`}>
+                            <Link
+                              href={`/dashboard/voluntarios/${volunteer.id}`}
+                            >
                               Ver perfil
                             </Link>
                           </DropdownMenuItem>
@@ -178,5 +196,5 @@ export default async function VoluntariosPage() {
         </Card>
       )}
     </div>
-  )
+  );
 }
