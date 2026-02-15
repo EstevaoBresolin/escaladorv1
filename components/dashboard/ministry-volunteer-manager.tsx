@@ -61,7 +61,7 @@ export function MinistryVolunteerManager({
     if (!error) {
       setOpen(false);
       setSelectedVolunteer("");
-      router.refresh();
+      window.location.reload();
     }
 
     setLoading(false);
@@ -71,7 +71,8 @@ export function MinistryVolunteerManager({
     setRemovingId(membershipId);
     await supabase.from("user_ministries").delete().eq("id", membershipId);
     setRemovingId(null);
-    router.refresh();
+    // Forçar re-render apenas quando necessário
+    window.location.reload();
   }
 
   return (

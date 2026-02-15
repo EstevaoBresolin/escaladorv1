@@ -118,7 +118,6 @@ export default function NovoEventoPage() {
     }
 
     router.push("/dashboard/eventos");
-    router.refresh();
   }
 
   function toggleMinistry(ministryId: string) {

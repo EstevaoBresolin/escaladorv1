@@ -56,13 +56,11 @@ export default function LoginPage() {
 
       if (profile?.role === "admin") {
         router.push("/dashboard")
-        router.refresh()
         return
       }
 
       if (profile?.role === "leader") {
         router.push("/dashboard/eventos")
-        router.refresh()
         return
       }
 
@@ -74,12 +72,10 @@ export default function LoginPage() {
 
       if (ledMinistries && ledMinistries.length > 0) {
         router.push("/dashboard/eventos")
-        router.refresh()
         return
       }
 
       router.push("/dashboard/disponibilidade")
-      router.refresh()
       return
     }
   }

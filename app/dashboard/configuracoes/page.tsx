@@ -143,7 +143,7 @@ export default function ConfiguracoesPage() {
 
     setSuccess(true);
     setLoading(false);
-    router.refresh();
+    // Não precisa reload, dados já foram atualizados
   }
 
   return (

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { LoadingCard } from "@/components/ui/spinner";
 
 interface Ministry {
   id: string;
@@ -76,15 +77,10 @@ export default function EditarMinisterioPage() {
     }
 
     router.push("/dashboard/ministerios");
-    router.refresh();
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingCard message="Carregando ministério..." />;
   }
 
   if (!ministry) {
