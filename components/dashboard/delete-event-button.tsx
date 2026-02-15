@@ -35,7 +35,7 @@ export function DeleteEventButton({
     await supabase.from("events").delete().eq("id", eventId)
     setLoading(false)
     setOpen(false)
-    router.refresh()
+    router.push("/dashboard/eventos")
   }
 
   return (

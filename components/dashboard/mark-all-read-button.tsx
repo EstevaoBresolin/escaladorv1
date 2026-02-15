@@ -23,7 +23,7 @@ export function MarkAllReadButton({ userId }: MarkAllReadButtonProps) {
       .eq("user_id", userId)
       .eq("is_read", false)
     setLoading(false)
-    router.refresh()
+    window.location.reload()
   }
 
   return (

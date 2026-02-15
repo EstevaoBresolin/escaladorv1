@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { LoadingCard } from "@/components/ui/spinner";
 
 interface Event {
   id: string;
@@ -132,7 +133,6 @@ export default function EditarEventoPage() {
     }
 
     router.push(`/dashboard/eventos/${eventId}`);
-    router.refresh();
   }
 
   function toggleMinistry(ministryId: string) {
@@ -144,11 +144,7 @@ export default function EditarEventoPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingCard message="Carregando evento..." />;
   }
 
   if (!event) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, LogOut, Settings, User } from "lucide-react";
+import { Bell, LogOut, Settings, User, Loader2 } from "lucide-react";
 import type { Profile } from "@/lib/types";
 
 interface DashboardTopbarProps {
@@ -18,10 +19,12 @@ interface DashboardTopbarProps {
 }
 
 export function DashboardTopbar({ profile }: DashboardTopbarProps) {
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
   async function handleSignOut() {
+    setIsLoggingOut(true);
     await supabase.auth.signOut();
     router.push("/");
     router.refresh();
@@ -85,10 +88,20 @@ export function DashboardTopbar({ profile }: DashboardTopbarProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleSignOut}
+              disabled={isLoggingOut}
               className="cursor-pointer text-destructive focus:text-destructive"
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sair
+              {isLoggingOut ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saindo...
+                </>
+              ) : (
+                <>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sair
+                </>
+              )}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

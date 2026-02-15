@@ -35,7 +35,7 @@ export function DeleteMinistryButton({
     await supabase.from("ministries").delete().eq("id", ministryId)
     setLoading(false)
     setOpen(false)
-    router.refresh()
+    router.push("/dashboard/ministerios")
   }
 
   return (

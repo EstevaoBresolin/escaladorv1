@@ -96,7 +96,6 @@ export default function NovoVoluntarioPage() {
     }
 
     router.push("/dashboard/voluntarios")
-    router.refresh()
   }
 
   function toggleMinistry(ministryId: string) {

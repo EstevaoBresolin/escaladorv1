@@ -19,6 +19,7 @@ import { format, parseISO, startOfToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { AvailabilityCalendar } from "@/components/dashboard/availability-calendar";
+import { LoadingCard } from "@/components/ui/spinner";
 
 interface Unavailability {
   id: string;
@@ -47,6 +48,7 @@ export default function DisponibilidadePage() {
   const [selectedDate, setSelectedDate] = useState<string | undefined>(
     undefined,
   );
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -201,7 +203,7 @@ export default function DisponibilidadePage() {
       setSelectedPeriods([]);
       setReason("");
       setError(null);
-      await loadUnavailabilities();
+      loadUnavailabilities();
     } else {
       setError("Erro ao salvar indisponibilidade. Tente novamente.");
     }
@@ -213,7 +215,7 @@ export default function DisponibilidadePage() {
     setRemovingId(id);
     await supabase.from("volunteer_unavailability").delete().eq("id", id);
     setRemovingId(null);
-    await loadUnavailabilities();
+    loadUnavailabilities();
   }
 
   // Group unavailabilities by date for calendar
@@ -278,15 +280,11 @@ export default function DisponibilidadePage() {
     setSelectedPeriods([]);
     setReason("");
     setError(null);
-    await loadUnavailabilities();
+    loadUnavailabilities();
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <LoadingCard message="Carregando disponibilidade..." />;
   }
 
   return (
@@ -320,6 +318,8 @@ export default function DisponibilidadePage() {
         unavailabilities={calendarUnavailabilities}
         events={scheduledEvents}
         selectedDate={selectedDate}
+        currentMonth={currentMonth}
+        onMonthChange={setCurrentMonth}
         onSelectDate={(date) => {
           setSelectedDate(date);
 
