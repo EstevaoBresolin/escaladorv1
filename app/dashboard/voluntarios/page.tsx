@@ -1,14 +1,18 @@
-import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Users, Mail, Phone, MoreVertical } from "lucide-react";
-import Link from "next/link";
+"use client"
+
+import { useState, useEffect, useMemo } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Users, Mail, Phone, MoreVertical, Search } from "lucide-react"
+import Link from "next/link"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
 import {
   Table,
   TableBody,
@@ -16,36 +20,143 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { getUserPermissions } from "@/lib/permissions";
+} from "@/components/ui/table"
+import { getUserPermissions } from "@/lib/permissions"
 
-export default async function VoluntariosPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+interface UserMinistry {
+  ministry_id: string
+  ministries: { name: string; color: string }
+}
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("church_id")
-    .eq("id", user?.id)
-    .single();
+interface Volunteer {
+  id: string
+  name?: string
+  email?: string
+  phone?: string
+  user_ministries?: UserMinistry[]
+}
 
-  // Get user permissions
-  const permissions = await getUserPermissions(supabase);
-  const isAdmin = permissions?.isAdmin || false;
-  const currentUserId = user?.id;
+export default function VoluntariosPage() {
+  const [volunteers, setVolunteers] = useState<Volunteer[]>([])
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string>()
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
 
-  const { data: volunteers } = await supabase
-    .from("profiles")
-    .select(
-      `
-      *,
-      user_ministries(ministry_id, ministries(name, color))
-    `,
+  useEffect(() => {
+    async function fetchData() {
+      const supabase = createClient()
+      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) return
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("church_id")
+        .eq("id", user.id)
+        .single()
+
+      // Get user permissions
+      const permissions = await getUserPermissions(supabase)
+      setIsAdmin(permissions?.isAdmin || false)
+      setCurrentUserId(user.id)
+
+      const { data: volunteersData } = await supabase
+        .from("profiles")
+        .select(
+          `
+          *,
+          user_ministries(ministry_id, ministries(name, color))
+        `,
+        )
+        .eq("church_id", profile?.church_id)
+        .order("name")
+
+      setVolunteers(volunteersData || [])
+      setLoading(false)
+    }
+
+    fetchData()
+  }, [])
+
+  const filteredVolunteers = useMemo(() => {
+    if (!searchTerm.trim()) return volunteers
+
+    const term = searchTerm.toLowerCase().trim()
+    return volunteers.filter((volunteer) => {
+      // Search by name
+      if (volunteer.name && volunteer.name.toLowerCase().includes(term)) {
+        return true
+      }
+      
+      // Search by email
+      if (volunteer.email && volunteer.email.toLowerCase().includes(term)) {
+        return true
+      }
+      
+      // Search by ministry names
+      if (volunteer.user_ministries && volunteer.user_ministries.length > 0) {
+        return volunteer.user_ministries.some((um) =>
+          um.ministries.name.toLowerCase().includes(term)
+        )
+      }
+      
+      return false
+    })
+  }, [volunteers, searchTerm])
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Voluntários</h1>
+            <p className="text-muted-foreground">
+              Gerencie os voluntários da sua igreja
+            </p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead className="hidden md:table-cell">Contato</TableHead>
+                  <TableHead className="hidden sm:table-cell">Ministérios</TableHead>
+                  <TableHead className="w-[50px]" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[1, 2, 3].map((i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 bg-muted rounded-full animate-pulse"></div>
+                        <div className="h-4 bg-muted rounded w-32 animate-pulse"></div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <div className="h-3 bg-muted rounded w-40 animate-pulse"></div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      <div className="h-3 bg-muted rounded w-20 animate-pulse"></div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-8 w-8 bg-muted rounded animate-pulse"></div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
     )
-    .eq("church_id", profile?.church_id)
-    .order("name");
+  }
 
   return (
     <div className="space-y-6">
@@ -58,7 +169,20 @@ export default async function VoluntariosPage() {
         </div>
       </div>
 
-      {volunteers && volunteers.length > 0 ? (
+      {volunteers && volunteers.length > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Pesquisar voluntários por nome, email ou ministério..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      )}
+
+      {filteredVolunteers && filteredVolunteers.length > 0 ? (
         <Card>
           <CardContent className="p-0">
             <Table>
@@ -75,7 +199,7 @@ export default async function VoluntariosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {volunteers.map((volunteer) => (
+                {filteredVolunteers.map((volunteer) => (
                   <TableRow key={volunteer.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -120,23 +244,18 @@ export default async function VoluntariosPage() {
                       <div className="flex flex-wrap gap-1">
                         {volunteer.user_ministries &&
                         volunteer.user_ministries.length > 0 ? (
-                          volunteer.user_ministries.map(
-                            (um: {
-                              ministry_id: string;
-                              ministries: { name: string; color: string };
-                            }) => (
-                              <span
-                                key={um.ministry_id}
-                                className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                                style={{
-                                  backgroundColor: `${um.ministries.color}20`,
-                                  color: um.ministries.color,
-                                }}
-                              >
-                                {um.ministries.name}
-                              </span>
-                            ),
-                          )
+                          volunteer.user_ministries.map((um) => (
+                            <span
+                              key={um.ministry_id}
+                              className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                              style={{
+                                backgroundColor: `${um.ministries.color}20`,
+                                color: um.ministries.color,
+                              }}
+                            >
+                              {um.ministries.name}
+                            </span>
+                          ))
                         ) : (
                           <span className="text-sm text-muted-foreground">
                             Nenhum ministério
@@ -182,6 +301,21 @@ export default async function VoluntariosPage() {
             </Table>
           </CardContent>
         </Card>
+      ) : volunteers && volunteers.length > 0 && searchTerm ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Search className="mb-4 h-12 w-12 text-muted-foreground/50" />
+            <h3 className="mb-2 text-lg font-semibold text-card-foreground">
+              Nenhum voluntário encontrado
+            </h3>
+            <p className="mb-4 text-center text-muted-foreground">
+              Não encontramos nenhum voluntário com o termo "{searchTerm}".
+            </p>
+            <Button variant="outline" onClick={() => setSearchTerm("")}>
+              Limpar pesquisa
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -196,5 +330,5 @@ export default async function VoluntariosPage() {
         </Card>
       )}
     </div>
-  );
+  )
 }
