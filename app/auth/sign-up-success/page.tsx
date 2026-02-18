@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck, Mail, Loader2, CheckCircle } from "lucide-react";
@@ -12,19 +13,40 @@ export default function SignUpSuccessPage() {
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendError, setResendError] = useState<string | null>(null);
   const supabase = createClient();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Tenta obter o email do usuário da sessão
+    const emailFromQuery = searchParams.get("email");
+    if (emailFromQuery) {
+      setEmail(emailFromQuery);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("signup_email", emailFromQuery);
+      }
+      return;
+    }
+
+    const savedEmail =
+      typeof window !== "undefined"
+        ? localStorage.getItem("signup_email")
+        : null;
+    if (savedEmail) {
+      setEmail(savedEmail);
+      return;
+    }
+
     async function getEmail() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (user?.email) {
         setEmail(user.email);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("signup_email", user.email);
+        }
       }
     }
     getEmail();
-  }, [supabase]);
+  }, [supabase, searchParams]);
 
   async function handleResendEmail() {
     if (!email) {

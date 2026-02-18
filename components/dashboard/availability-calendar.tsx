@@ -46,7 +46,7 @@ export function AvailabilityCalendar({
   onSelectDate,
 }: AvailabilityCalendarProps) {
   const [internalCurrentDate, setInternalCurrentDate] = useState(new Date());
-  
+
   const currentDate = externalCurrentMonth || internalCurrentDate;
 
   const year = currentDate.getFullYear();

@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
+import { normalizeBrazilianPhone } from "@/lib/phone";
 
 export default function PerfilPage() {
   const [fullName, setFullName] = useState("");
@@ -81,12 +82,23 @@ export default function PerfilPage() {
     setCreatingChurch(true);
     setError(null);
 
+    let normalizedChurchPhone: string | null = null;
+    if (newChurchPhone.trim()) {
+      const result = normalizeBrazilianPhone(newChurchPhone);
+      if (result.error || !result.value) {
+        setError(result.error || "Número de telefone inválido");
+        setCreatingChurch(false);
+        return;
+      }
+      normalizedChurchPhone = result.value;
+    }
+
     const { data: newChurch, error: createError } = await supabase
       .from("churches")
       .insert({
         name: newChurchName,
         address: newChurchAddress || null,
-        phone: newChurchPhone || null,
+        phone: normalizedChurchPhone,
       })
       .select()
       .single();
@@ -115,6 +127,17 @@ export default function PerfilPage() {
     setError(null);
     setSuccess(false);
 
+    let normalizedPhone: string | null = null;
+    if (phone.trim()) {
+      const result = normalizeBrazilianPhone(phone);
+      if (result.error || !result.value) {
+        setError(result.error || "Número de telefone inválido");
+        setLoading(false);
+        return;
+      }
+      normalizedPhone = result.value;
+    }
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -129,7 +152,7 @@ export default function PerfilPage() {
       .from("profiles")
       .update({
         name: fullName,
-        phone: phone || null,
+        phone: normalizedPhone,
         church_id: churchId,
       })
       .eq("id", user.id);

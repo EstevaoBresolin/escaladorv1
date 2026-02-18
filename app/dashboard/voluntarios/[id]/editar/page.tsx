@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { LoadingCard } from "@/components/ui/spinner";
+import { normalizeBrazilianPhone } from "@/lib/phone";
 
 interface Volunteer {
   id: string;
@@ -36,24 +37,26 @@ export default function EditarVoluntarioPage() {
   useEffect(() => {
     async function loadVolunteer() {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       // Get current user's profile to check if admin
       const { data: currentProfile } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", user?.id)
         .single();
-      
+
       const isAdmin = currentProfile?.role === "admin";
       const isOwnProfile = user?.id === volunteerId;
-      
+
       if (!isAdmin && !isOwnProfile) {
         setError("Você não tem permissão para editar este perfil.");
         setLoading(false);
         return;
       }
-      
+
       setCanEdit(true);
 
       const { data: volunteerData } = await supabase
@@ -83,12 +86,23 @@ export default function EditarVoluntarioPage() {
     setSaving(true);
     setError(null);
 
+    let normalizedPhone: string | null = null;
+    if (phone.trim()) {
+      const result = normalizeBrazilianPhone(phone);
+      if (result.error || !result.value) {
+        setError(result.error || "Número de telefone inválido");
+        setSaving(false);
+        return;
+      }
+      normalizedPhone = result.value;
+    }
+
     const { error: updateError } = await supabase
       .from("profiles")
       .update({
         name,
         email,
-        phone: phone || null,
+        phone: normalizedPhone,
       })
       .eq("id", volunteerId);
 

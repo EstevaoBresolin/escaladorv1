@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { normalizeBrazilianPhone } from "@/lib/phone";
 
 interface Church {
   id: string;
@@ -62,8 +63,9 @@ export function CompleteProfileForm({
     setError(null);
 
     // Validate inputs
-    if (!phone.trim()) {
-      setError("Número de telefone é obrigatório");
+    const normalizedPhone = normalizeBrazilianPhone(phone);
+    if (normalizedPhone.error || !normalizedPhone.value) {
+      setError(normalizedPhone.error || "Número de telefone inválido");
       return;
     }
 
@@ -87,7 +89,7 @@ export function CompleteProfileForm({
     const { error: updateError } = await supabase
       .from("profiles")
       .update({
-        phone: phone.trim(),
+        phone: normalizedPhone.value,
         church_id: churchId,
       })
       .eq("id", user.id);

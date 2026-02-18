@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Calendar, Clock, MapPin, MoreVertical } from "lucide-react";
@@ -41,13 +42,22 @@ export function EventsPageClient({
   ledMinistryIds,
 }: EventsPageClientProps) {
   const [selectedDate, setSelectedDate] = useState<string>("");
+  const searchParams = useSearchParams();
 
   // Set initial selected date to today on mount
   useEffect(() => {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    setSelectedDate(todayStr);
-  }, []);
+    const paramDate = searchParams.get("date");
+    if (paramDate) {
+      setSelectedDate(paramDate);
+      return;
+    }
+
+    if (!selectedDate) {
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      setSelectedDate(todayStr);
+    }
+  }, [searchParams, selectedDate]);
 
   // Get events for selected date
   const selectedDateEvents = events.filter((e) => e.date === selectedDate);

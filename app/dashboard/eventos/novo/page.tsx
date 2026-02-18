@@ -117,7 +117,11 @@ export default function NovoEventoPage() {
       await supabase.from("event_ministries").insert(eventMinistries);
     }
 
-    router.push("/dashboard/eventos");
+    router.push(
+      date
+        ? `/dashboard/eventos?date=${encodeURIComponent(date)}`
+        : "/dashboard/eventos",
+    );
   }
 
   function toggleMinistry(ministryId: string) {

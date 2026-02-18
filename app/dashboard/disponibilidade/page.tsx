@@ -298,7 +298,7 @@ export default function DisponibilidadePage() {
         </p>
       </div>
 
-      <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
+      <Card className="hidden border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 md:block">
         <CardContent className="flex items-start gap-3 pt-4">
           <Info className="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
           <div>

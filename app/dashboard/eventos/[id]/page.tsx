@@ -62,13 +62,18 @@ export default async function EventPage({ params }: EventPageProps) {
         .eq("user_id", user.id)
     : { data: [] };
 
+  const currentStartTime = event.start_time ?? "00:00:00";
+
   const { data: nextEvent } = profile?.church_id
     ? await supabase
         .from("events")
-        .select("id, title, date")
+        .select("id, title, date, start_time")
         .eq("church_id", profile.church_id)
-        .gt("date", event.date)
+        .or(
+          `date.gt.${event.date},and(date.eq.${event.date},start_time.gt.${currentStartTime})`,
+        )
         .order("date", { ascending: true })
+        .order("start_time", { ascending: true })
         .limit(1)
         .maybeSingle()
     : { data: null };
@@ -76,10 +81,13 @@ export default async function EventPage({ params }: EventPageProps) {
   const { data: previousEvent } = profile?.church_id
     ? await supabase
         .from("events")
-        .select("id, title, date")
+        .select("id, title, date, start_time")
         .eq("church_id", profile.church_id)
-        .lt("date", event.date)
+        .or(
+          `date.lt.${event.date},and(date.eq.${event.date},start_time.lt.${currentStartTime})`,
+        )
         .order("date", { ascending: false })
+        .order("start_time", { ascending: false })
         .limit(1)
         .maybeSingle()
     : { data: null };
