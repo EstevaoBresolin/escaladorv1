@@ -70,6 +70,8 @@ Execute os scripts SQL na seguinte ordem no Supabase SQL Editor:
 2. `scripts/002_profile_trigger.sql` - Cria triggers de perfil
 3. `scripts/003_fix_rls_policies.sql` - Configura políticas RLS
 4. `scripts/004_fix_profile_trigger.sql` - Ajusta triggers
+5. `scripts/005_update_church_policies.sql` até `scripts/013_update_unavailability_periods.sql` - Atualizações incrementais
+6. `scripts/014_security_hardening.sql` - Endurecimento de segurança (RLS + proteção anti-escalada em profiles)
 
 ## 🌐 Deploy na Vercel
 
