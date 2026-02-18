@@ -4,7 +4,6 @@ import {
   buildLoginKey,
   clearLoginFailures,
   getClientIp,
-  getLoginRateLimitStatus,
   recordLoginFailure,
 } from "@/lib/security/login-rate-limit"
 
@@ -49,17 +48,6 @@ export async function POST(request: NextRequest) {
 
     const ip = getClientIp(request.headers)
     const rateLimitKey = buildLoginKey(ip, normalizedEmail)
-    const currentStatus = getLoginRateLimitStatus(rateLimitKey)
-
-    if (currentStatus.blocked) {
-      return jsonWithCookies(
-        { error: "Muitas tentativas de login. Aguarde antes de tentar novamente." },
-        {
-          status: 429,
-          headers: { "Retry-After": String(currentStatus.retryAfterSeconds) },
-        }
-      )
-    }
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -84,7 +72,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (error) {
-      const status = recordLoginFailure(rateLimitKey)
+      const status = await recordLoginFailure(rateLimitKey)
 
       if (status.blocked) {
         return jsonWithCookies(
@@ -105,7 +93,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    clearLoginFailures(rateLimitKey)
+    await clearLoginFailures(rateLimitKey)
 
     return jsonWithCookies({ ok: true }, { status: 200 })
   } catch (error) {

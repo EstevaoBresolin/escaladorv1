@@ -1,24 +1,49 @@
-const WINDOW_MS = 10 * 60 * 1000 // 10 minutes
+const WINDOW_SECONDS = 10 * 60 // 10 minutes
 const MAX_ATTEMPTS_PER_WINDOW = 5
-const BASE_LOCKOUT_MS = 60 * 1000 // 1 minute
-const MAX_LOCKOUT_MS = 30 * 60 * 1000 // 30 minutes
 
-type LoginBucket = {
-  attempts: number
-  firstAttemptAt: number
-  blockedUntil: number
+const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL
+const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN
+
+export type LoginRateLimitStatus = {
+  blocked: boolean
+  retryAfterSeconds: number
+  remainingAttempts: number
 }
 
-const buckets = new Map<string, LoginBucket>()
+function hasUpstashConfig() {
+  return Boolean(UPSTASH_URL && UPSTASH_TOKEN)
+}
 
-function cleanupBucket(now: number, key: string, bucket: LoginBucket) {
-  if (bucket.blockedUntil <= now && now - bucket.firstAttemptAt > WINDOW_MS) {
-    buckets.delete(key)
+async function upstashCommand<T = unknown>(command: unknown[]): Promise<T> {
+  if (!UPSTASH_URL || !UPSTASH_TOKEN) {
+    throw new Error("Upstash Redis is not configured")
   }
+
+  const response = await fetch(UPSTASH_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${UPSTASH_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ command }),
+    cache: "no-store",
+  })
+
+  if (!response.ok) {
+    throw new Error(`Upstash command failed with status ${response.status}`)
+  }
+
+  const data = (await response.json()) as { result?: T; error?: string }
+
+  if (data.error) {
+    throw new Error(data.error)
+  }
+
+  return data.result as T
 }
 
 export function buildLoginKey(ip: string, email: string): string {
-  return `${ip.toLowerCase()}::${email.trim().toLowerCase()}`
+  return `rl:login:${ip.toLowerCase()}::${email.trim().toLowerCase()}`
 }
 
 export function getClientIp(headers: Headers): string {
@@ -35,61 +60,35 @@ export function getClientIp(headers: Headers): string {
   return "unknown"
 }
 
-export function getLoginRateLimitStatus(key: string) {
-  const now = Date.now()
-  const bucket = buckets.get(key)
-
-  if (!bucket) {
-    return { blocked: false, retryAfterSeconds: 0, remainingAttempts: MAX_ATTEMPTS_PER_WINDOW }
-  }
-
-  cleanupBucket(now, key, bucket)
-
-  if (bucket.blockedUntil > now) {
+export async function recordLoginFailure(key: string): Promise<LoginRateLimitStatus> {
+  if (!hasUpstashConfig()) {
     return {
-      blocked: true,
-      retryAfterSeconds: Math.ceil((bucket.blockedUntil - now) / 1000),
-      remainingAttempts: 0,
+      blocked: false,
+      retryAfterSeconds: 0,
+      remainingAttempts: MAX_ATTEMPTS_PER_WINDOW,
     }
   }
 
-  if (now - bucket.firstAttemptAt > WINDOW_MS) {
-    buckets.delete(key)
-    return { blocked: false, retryAfterSeconds: 0, remainingAttempts: MAX_ATTEMPTS_PER_WINDOW }
+  const attempts = Number(await upstashCommand<number>(["INCR", key]))
+
+  if (attempts === 1) {
+    await upstashCommand(["EXPIRE", key, WINDOW_SECONDS])
   }
+
+  const ttl = Math.max(Number(await upstashCommand<number>(["TTL", key])), 0)
+  const remainingAttempts = Math.max(MAX_ATTEMPTS_PER_WINDOW - attempts, 0)
 
   return {
-    blocked: false,
-    retryAfterSeconds: 0,
-    remainingAttempts: Math.max(MAX_ATTEMPTS_PER_WINDOW - bucket.attempts, 0),
+    blocked: attempts > MAX_ATTEMPTS_PER_WINDOW,
+    retryAfterSeconds: attempts > MAX_ATTEMPTS_PER_WINDOW ? ttl : 0,
+    remainingAttempts,
   }
 }
 
-export function recordLoginFailure(key: string) {
-  const now = Date.now()
-  const previous = buckets.get(key)
-
-  if (!previous || now - previous.firstAttemptAt > WINDOW_MS) {
-    buckets.set(key, {
-      attempts: 1,
-      firstAttemptAt: now,
-      blockedUntil: 0,
-    })
-    return getLoginRateLimitStatus(key)
+export async function clearLoginFailures(key: string): Promise<void> {
+  if (!hasUpstashConfig()) {
+    return
   }
 
-  previous.attempts += 1
-
-  if (previous.attempts >= MAX_ATTEMPTS_PER_WINDOW) {
-    const extraAttempts = previous.attempts - MAX_ATTEMPTS_PER_WINDOW
-    const lockoutMs = Math.min(BASE_LOCKOUT_MS * 2 ** extraAttempts, MAX_LOCKOUT_MS)
-    previous.blockedUntil = now + lockoutMs
-  }
-
-  buckets.set(key, previous)
-  return getLoginRateLimitStatus(key)
-}
-
-export function clearLoginFailures(key: string) {
-  buckets.delete(key)
+  await upstashCommand(["DEL", key])
 }
