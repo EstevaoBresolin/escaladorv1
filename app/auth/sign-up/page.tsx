@@ -113,9 +113,7 @@ export default function SignUpPage() {
       return;
     }
 
-    router.push(
-      `/auth/sign-up-success?email=${encodeURIComponent(email)}`,
-    );
+    router.push(`/auth/sign-up-success?email=${encodeURIComponent(email)}`);
   }
 
   return (

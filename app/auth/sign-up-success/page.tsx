@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -8,6 +8,14 @@ import { Button } from "@/components/ui/button";
 import { CalendarCheck, Mail, Loader2, CheckCircle } from "lucide-react";
 
 export default function SignUpSuccessPage() {
+  return (
+    <Suspense>
+      <SignUpSuccessContent />
+    </Suspense>
+  );
+}
+
+function SignUpSuccessContent() {
   const [email, setEmail] = useState("");
   const [resending, setResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);

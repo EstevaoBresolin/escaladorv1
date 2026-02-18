@@ -1,83 +1,83 @@
-"use client"
+"use client";
 
-import React from "react"
+import React from "react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { CalendarCheck, Loader2, Eye, EyeOff } from "lucide-react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CalendarCheck, Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
-    })
+    });
 
     if (error) {
-      setError("Email ou senha incorretos. Tente novamente.")
-      setLoading(false)
-      return
+      setError("Email ou senha incorretos. Tente novamente.");
+      setLoading(false);
+      return;
     }
 
     // Check if profile is complete
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("phone, church_id, role")
         .eq("id", user.id)
-        .single()
+        .single();
 
       // If profile is incomplete, redirect to complete-profile page
       if (!profile?.phone || !profile?.church_id) {
-        router.push("/complete-profile")
-        router.refresh()
-        return
+        router.push("/complete-profile");
+        router.refresh();
+        return;
       }
 
       if (profile?.role === "admin") {
-        router.push("/dashboard")
-        return
+        router.push("/dashboard");
+        return;
       }
 
       if (profile?.role === "leader") {
-        router.push("/dashboard/eventos")
-        return
+        router.push("/dashboard/eventos");
+        return;
       }
 
       const { data: ledMinistries } = await supabase
         .from("ministry_leaders")
         .select("ministry_id")
         .eq("user_id", user.id)
-        .limit(1)
+        .limit(1);
 
       if (ledMinistries && ledMinistries.length > 0) {
-        router.push("/dashboard/eventos")
-        return
+        router.push("/dashboard/eventos");
+        return;
       }
 
-      router.push("/dashboard/disponibilidade")
-      return
+      router.push("/dashboard/disponibilidade");
+      return;
     }
   }
 
@@ -176,5 +176,5 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
-  )
+  );
 }
