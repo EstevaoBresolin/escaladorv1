@@ -60,6 +60,11 @@ export default function LoginPage() {
         return;
       }
 
+      if (profile?.role === "member") {
+        router.push("/dashboard/perfil");
+        return;
+      }
+
       if (profile?.role === "leader") {
         router.push("/dashboard/eventos");
         return;

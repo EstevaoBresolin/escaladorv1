@@ -79,6 +79,7 @@ export default function SignUpPage() {
         emailRedirectTo: "https://escaladorv1.vercel.app/auth/login",
         data: {
           full_name: fullName,
+          role: "member",
         },
       },
     });

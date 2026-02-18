@@ -24,6 +24,7 @@ export default function PerfilPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [churchId, setChurchId] = useState<string | null>(null);
+  const [originalChurchId, setOriginalChurchId] = useState<string | null>(null);
   const [churches, setChurches] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -61,6 +62,7 @@ export default function PerfilPage() {
         setEmail(profile.email || user.email || "");
         setPhone(profile.phone || "");
         setChurchId(profile.church_id || null);
+        setOriginalChurchId(profile.church_id || null);
       }
 
       // Carregar todas as igrejas
@@ -161,6 +163,15 @@ export default function PerfilPage() {
       setError("Erro ao atualizar perfil. Tente novamente.");
       setLoading(false);
       return;
+    }
+
+    if (originalChurchId && churchId && originalChurchId !== churchId) {
+      await Promise.all([
+        supabase.from("user_ministries").delete().eq("user_id", user.id),
+        supabase.from("volunteer_slots").delete().eq("user_id", user.id),
+        supabase.from("ministry_leaders").delete().eq("user_id", user.id),
+      ]);
+      setOriginalChurchId(churchId);
     }
 
     setSuccess(true);

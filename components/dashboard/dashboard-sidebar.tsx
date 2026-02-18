@@ -45,6 +45,11 @@ const navItems = [
     href: "/dashboard/eventos",
     icon: Calendar,
   },
+  {
+    label: "Escalas",
+    href: "/dashboard/escalas",
+    icon: CalendarCheck,
+  },
   // {
   //   label: "Notificações",
   //   href: "/dashboard/notificacoes",
@@ -74,10 +79,19 @@ export function DashboardSidebar({ profile }: DashboardSidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const isVolunteerOnly = profile?.role === "volunteer";
+  const isMemberOnly = profile?.role === "member";
 
-  const visibleNavItems = isVolunteerOnly
-    ? navItems.filter((item) => item.label !== "Voluntários")
-    : navItems;
+  const visibleNavItems = isMemberOnly
+    ? []
+    : isVolunteerOnly
+      ? navItems.filter((item) => item.label !== "Voluntários")
+      : navItems;
+
+  const visibleBottomItems = isMemberOnly
+    ? bottomNavItems.filter(
+        (item) => item.label === "Meu Perfil" || item.label === "Configurações",
+      )
+    : bottomNavItems;
 
   return (
     <>
@@ -147,7 +161,7 @@ export function DashboardSidebar({ profile }: DashboardSidebarProps) {
         </nav>
 
         <div className="border-t border-sidebar-border p-3">
-          {bottomNavItems.map((item) => {
+          {visibleBottomItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link

@@ -1,41 +1,92 @@
-import { createClient } from "@/lib/supabase/server"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Plus, Users, MoreVertical, Church } from "lucide-react"
-import Link from "next/link"
+import { createClient } from "@/lib/supabase/server";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Plus, Users, MoreVertical, Church } from "lucide-react";
+import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { DeleteMinistryButton } from "@/components/dashboard/delete-ministry-button"
-import { getUserPermissions } from "@/lib/permissions"
+} from "@/components/ui/dropdown-menu";
+import { DeleteMinistryButton } from "@/components/dashboard/delete-ministry-button";
+import { getUserPermissions } from "@/lib/permissions";
 
 export default async function MinisteriosPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("church_id")
     .eq("id", user?.id)
-    .single()
+    .single();
 
   // Get user permissions
   const permissions = await getUserPermissions(supabase);
   const isAdmin = permissions?.isAdmin || false;
+  const isLeader = permissions?.isLeader || false;
 
-  const { data: ministries } = await supabase
+  const memberMinistryIds =
+    !isAdmin && user?.id
+      ? (
+          await supabase
+            .from("user_ministries")
+            .select("ministry_id")
+            .eq("user_id", user.id)
+        ).data?.map((m: { ministry_id: string }) => m.ministry_id) || []
+      : [];
+
+  const leaderMinistryIds =
+    !isAdmin && isLeader ? permissions?.ledMinistryIds || [] : [];
+
+  let ministriesQuery = supabase
     .from("ministries")
-    .select(`
+    .select(
+      `
       *,
       user_ministries(count)
-    `)
+    `,
+    )
     .eq("church_id", profile?.church_id)
-    .order("name")
+    .order("name");
+
+  if (!isAdmin) {
+    const allowedMinistryIds = isLeader ? leaderMinistryIds : memberMinistryIds;
+
+    if (allowedMinistryIds.length === 0) {
+      return (
+        <div className="space-y-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">
+                Ministérios
+              </h1>
+              <p className="text-muted-foreground">
+                Gerencie os ministérios da sua igreja
+              </p>
+            </div>
+          </div>
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Church className="mb-4 h-12 w-12 text-muted-foreground/50" />
+              <h3 className="mb-2 text-lg font-semibold text-card-foreground">
+                Nenhum ministério cadastrado
+              </h3>
+              <p className="mb-4 text-center text-muted-foreground">
+                Nenhum ministério disponível no momento.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+    ministriesQuery = ministriesQuery.in("id", allowedMinistryIds);
+  }
+
+  const { data: ministries } = await ministriesQuery;
 
   return (
     <div className="space-y-6">
@@ -91,11 +142,16 @@ export default async function MinisteriosPage() {
                     {isAdmin && (
                       <>
                         <DropdownMenuItem asChild>
-                          <Link href={`/dashboard/ministerios/${ministry.id}/editar`}>
+                          <Link
+                            href={`/dashboard/ministerios/${ministry.id}/editar`}
+                          >
                             Editar
                           </Link>
                         </DropdownMenuItem>
-                        <DeleteMinistryButton ministryId={ministry.id} ministryName={ministry.name} />
+                        <DeleteMinistryButton
+                          ministryId={ministry.id}
+                          ministryName={ministry.name}
+                        />
                       </>
                     )}
                   </DropdownMenuContent>
@@ -125,7 +181,7 @@ export default async function MinisteriosPage() {
               Nenhum ministério cadastrado
             </h3>
             <p className="mb-4 text-center text-muted-foreground">
-              {isAdmin 
+              {isAdmin
                 ? "Comece criando o primeiro ministério da sua igreja."
                 : "Nenhum ministério disponível no momento."}
             </p>
@@ -141,5 +197,5 @@ export default async function MinisteriosPage() {
         </Card>
       )}
     </div>
-  )
+  );
 }
