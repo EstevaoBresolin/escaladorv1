@@ -19,27 +19,47 @@ async function upstashCommand<T = unknown>(command: unknown[]): Promise<T> {
     throw new Error("Upstash Redis is not configured")
   }
 
-  const response = await fetch(UPSTASH_URL, {
+  const headers = {
+    Authorization: `Bearer ${UPSTASH_TOKEN}`,
+    "Content-Type": "application/json",
+  }
+
+  // Upstash REST accepts command payloads in array format.
+  // We still keep a fallback payload shape for compatibility.
+  let response = await fetch(UPSTASH_URL, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${UPSTASH_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ command }),
+    headers,
+    body: JSON.stringify(command),
     cache: "no-store",
   })
+
+  if (!response.ok) {
+    response = await fetch(UPSTASH_URL, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ command }),
+      cache: "no-store",
+    })
+  }
 
   if (!response.ok) {
     throw new Error(`Upstash command failed with status ${response.status}`)
   }
 
-  const data = (await response.json()) as { result?: T; error?: string }
+  const data = (await response.json()) as
+    | { result?: T; error?: string }
+    | { error?: string }
+    | T
 
-  if (data.error) {
+  if (typeof data === "object" && data !== null && "error" in data && data.error) {
     throw new Error(data.error)
   }
 
-  return data.result as T
+  if (typeof data === "object" && data !== null && "result" in data) {
+    return data.result as T
+  }
+
+  return data as T
 }
 
 export function buildLoginKey(ip: string, email: string): string {
@@ -69,19 +89,30 @@ export async function recordLoginFailure(key: string): Promise<LoginRateLimitSta
     }
   }
 
-  const attempts = Number(await upstashCommand<number>(["INCR", key]))
+  try {
+    const attempts = Number(await upstashCommand<number>(["INCR", key]))
 
-  if (attempts === 1) {
-    await upstashCommand(["EXPIRE", key, WINDOW_SECONDS])
-  }
+    if (attempts === 1) {
+      await upstashCommand(["EXPIRE", key, WINDOW_SECONDS])
+    }
 
-  const ttl = Math.max(Number(await upstashCommand<number>(["TTL", key])), 0)
-  const remainingAttempts = Math.max(MAX_ATTEMPTS_PER_WINDOW - attempts, 0)
+    const ttl = Math.max(Number(await upstashCommand<number>(["TTL", key])), 0)
+    const remainingAttempts = Math.max(MAX_ATTEMPTS_PER_WINDOW - attempts, 0)
 
-  return {
-    blocked: attempts > MAX_ATTEMPTS_PER_WINDOW,
-    retryAfterSeconds: attempts > MAX_ATTEMPTS_PER_WINDOW ? ttl : 0,
-    remainingAttempts,
+    return {
+      blocked: attempts > MAX_ATTEMPTS_PER_WINDOW,
+      retryAfterSeconds: attempts > MAX_ATTEMPTS_PER_WINDOW ? ttl : 0,
+      remainingAttempts,
+    }
+  } catch (error) {
+    console.error("Login rate limit fallback (Upstash unavailable):", error)
+
+    // Fallback to fail-open in case Redis is temporarily unavailable.
+    return {
+      blocked: false,
+      retryAfterSeconds: 0,
+      remainingAttempts: MAX_ATTEMPTS_PER_WINDOW,
+    }
   }
 }
 
@@ -90,5 +121,9 @@ export async function clearLoginFailures(key: string): Promise<void> {
     return
   }
 
-  await upstashCommand(["DEL", key])
+  try {
+    await upstashCommand(["DEL", key])
+  } catch (error) {
+    console.error("Unable to clear login rate limit key:", error)
+  }
 }
