@@ -58,9 +58,13 @@ Crie um arquivo `.env.local` na raiz do projeto com as seguintes variáveis:
 \`\`\`env
 NEXT_PUBLIC_SUPABASE_URL=seu_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=seu_supabase_anon_key
+UPSTASH_REDIS_REST_URL=sua_upstash_redis_rest_url
+UPSTASH_REDIS_REST_TOKEN=seu_upstash_redis_rest_token
 \`\`\`
 
 Obtenha essas credenciais no [Supabase Dashboard](https://supabase.com/dashboard).
+
+Obtenha as credenciais do Redis no [Upstash Console](https://console.upstash.com/) e configure-as na Vercel para o rate limit distribuido de login.
 
 ## 🗄️ Configuração do Banco de Dados
 
@@ -70,6 +74,8 @@ Execute os scripts SQL na seguinte ordem no Supabase SQL Editor:
 2. `scripts/002_profile_trigger.sql` - Cria triggers de perfil
 3. `scripts/003_fix_rls_policies.sql` - Configura políticas RLS
 4. `scripts/004_fix_profile_trigger.sql` - Ajusta triggers
+5. `scripts/005_update_church_policies.sql` até `scripts/013_update_unavailability_periods.sql` - Atualizações incrementais
+6. `scripts/014_security_hardening.sql` - Endurecimento de segurança (RLS + proteção anti-escalada em profiles)
 
 ## 🌐 Deploy na Vercel
 

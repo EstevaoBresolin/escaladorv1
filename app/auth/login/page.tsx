@@ -25,15 +25,30 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const loginResponse = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    })
 
-    if (error) {
-      setError("Email ou senha incorretos. Tente novamente.");
-      setLoading(false);
-      return;
+    if (!loginResponse.ok) {
+      const body = await loginResponse.json().catch(() => null)
+
+      if (loginResponse.status === 429) {
+        const retryAfter = loginResponse.headers.get("Retry-After")
+        setError(
+          retryAfter
+            ? `Muitas tentativas. Aguarde ${retryAfter} segundos e tente novamente.`
+            : "Muitas tentativas. Aguarde um pouco e tente novamente."
+        )
+      } else {
+        setError(body?.error || "Email ou senha incorretos. Tente novamente.")
+      }
+
+      setLoading(false)
+      return
     }
 
     // Check if profile is complete
