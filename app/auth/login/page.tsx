@@ -1,28 +1,29 @@
-"use client"
+"use client";
 
-import React from "react"
+import React from "react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { CalendarCheck, Loader2 } from "lucide-react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CalendarCheck, Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
     const loginResponse = await fetch("/api/auth/login", {
       method: "POST",
@@ -53,45 +54,50 @@ export default function LoginPage() {
     // Check if profile is complete
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("phone, church_id, role")
         .eq("id", user.id)
-        .single()
+        .single();
 
       // If profile is incomplete, redirect to complete-profile page
       if (!profile?.phone || !profile?.church_id) {
-        router.push("/complete-profile")
-        router.refresh()
-        return
+        router.push("/complete-profile");
+        router.refresh();
+        return;
       }
 
       if (profile?.role === "admin") {
-        router.push("/dashboard")
-        return
+        router.push("/dashboard");
+        return;
+      }
+
+      if (profile?.role === "member") {
+        router.push("/dashboard/perfil");
+        return;
       }
 
       if (profile?.role === "leader") {
-        router.push("/dashboard/eventos")
-        return
+        router.push("/dashboard/eventos");
+        return;
       }
 
       const { data: ledMinistries } = await supabase
         .from("ministry_leaders")
         .select("ministry_id")
         .eq("user_id", user.id)
-        .limit(1)
+        .limit(1);
 
       if (ledMinistries && ledMinistries.length > 0) {
-        router.push("/dashboard/eventos")
-        return
+        router.push("/dashboard/eventos");
+        return;
       }
 
-      router.push("/dashboard/disponibilidade")
-      return
+      router.push("/dashboard/disponibilidade");
+      return;
     }
   }
 
@@ -145,15 +151,29 @@ export default function LoginPage() {
                 Esqueceu a senha?
               </Link>
             </div>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Sua senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Sua senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
@@ -176,5 +196,5 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
-  )
+  );
 }

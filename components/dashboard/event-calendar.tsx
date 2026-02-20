@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
@@ -26,6 +26,14 @@ export function EventCalendar({
   onSelectDate,
 }: EventCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    const selected = new Date(`${selectedDate}T12:00:00`);
+    if (!Number.isNaN(selected.getTime())) {
+      setCurrentDate(selected);
+    }
+  }, [selectedDate]);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -133,12 +141,29 @@ export function EventCalendar({
                   "min-h-[80px] bg-card p-1 md:min-h-[100px]",
                   !day && "bg-muted/50",
                   day && isSelected(day) && "bg-primary/10",
+                  day && "cursor-pointer hover:bg-muted/30",
                 )}
+                onClick={day ? () => handleDayClick(day) : undefined}
+                role={day ? "button" : undefined}
+                tabIndex={day ? 0 : undefined}
+                onKeyDown={
+                  day
+                    ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleDayClick(day);
+                        }
+                      }
+                    : undefined
+                }
               >
                 {day && (
                   <>
                     <button
-                      onClick={() => handleDayClick(day)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDayClick(day);
+                      }}
                       className={cn(
                         "mb-1 flex h-6 w-6 items-center justify-center rounded-full text-sm transition-colors",
                         isSelected(day)
@@ -159,6 +184,7 @@ export function EventCalendar({
                                 href={`/dashboard/eventos/${event.id}`}
                                 className="group flex items-center gap-1 rounded-md bg-primary px-1.5 py-1 text-[10px] font-medium text-primary-foreground transition-all hover:bg-primary/90 md:text-xs line-clamp-1"
                                 title={event.title}
+                                onClick={(e) => e.stopPropagation()}
                               >
                                 <Calendar className="h-2.5 w-2.5 shrink-0 md:h-3 md:w-3" />
                                 <span className="truncate">{event.title}</span>

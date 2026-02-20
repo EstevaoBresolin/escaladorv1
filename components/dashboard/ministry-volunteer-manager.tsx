@@ -151,6 +151,7 @@ export function MinistryVolunteerManager({
                   volunteers={filteredVolunteers}
                   selectedVolunteerId={selectedVolunteer}
                   onSelectVolunteer={setSelectedVolunteer}
+                  showEventStats={false}
                 />
 
                 <Button

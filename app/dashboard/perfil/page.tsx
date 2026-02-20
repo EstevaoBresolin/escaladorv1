@@ -17,12 +17,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
+import { normalizeBrazilianPhone } from "@/lib/phone";
 
 export default function PerfilPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [churchId, setChurchId] = useState<string | null>(null);
+  const [originalChurchId, setOriginalChurchId] = useState<string | null>(null);
   const [churches, setChurches] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -60,6 +62,7 @@ export default function PerfilPage() {
         setEmail(profile.email || user.email || "");
         setPhone(profile.phone || "");
         setChurchId(profile.church_id || null);
+        setOriginalChurchId(profile.church_id || null);
       }
 
       // Carregar todas as igrejas
@@ -81,12 +84,23 @@ export default function PerfilPage() {
     setCreatingChurch(true);
     setError(null);
 
+    let normalizedChurchPhone: string | null = null;
+    if (newChurchPhone.trim()) {
+      const result = normalizeBrazilianPhone(newChurchPhone);
+      if (result.error || !result.value) {
+        setError(result.error || "Número de telefone inválido");
+        setCreatingChurch(false);
+        return;
+      }
+      normalizedChurchPhone = result.value;
+    }
+
     const { data: newChurch, error: createError } = await supabase
       .from("churches")
       .insert({
         name: newChurchName,
         address: newChurchAddress || null,
-        phone: newChurchPhone || null,
+        phone: normalizedChurchPhone,
       })
       .select()
       .single();
@@ -115,6 +129,17 @@ export default function PerfilPage() {
     setError(null);
     setSuccess(false);
 
+    let normalizedPhone: string | null = null;
+    if (phone.trim()) {
+      const result = normalizeBrazilianPhone(phone);
+      if (result.error || !result.value) {
+        setError(result.error || "Número de telefone inválido");
+        setLoading(false);
+        return;
+      }
+      normalizedPhone = result.value;
+    }
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -129,7 +154,7 @@ export default function PerfilPage() {
       .from("profiles")
       .update({
         name: fullName,
-        phone: phone || null,
+        phone: normalizedPhone,
         church_id: churchId,
       })
       .eq("id", user.id);
@@ -138,6 +163,15 @@ export default function PerfilPage() {
       setError("Erro ao atualizar perfil. Tente novamente.");
       setLoading(false);
       return;
+    }
+
+    if (originalChurchId && churchId && originalChurchId !== churchId) {
+      await Promise.all([
+        supabase.from("user_ministries").delete().eq("user_id", user.id),
+        supabase.from("volunteer_slots").delete().eq("user_id", user.id),
+        supabase.from("ministry_leaders").delete().eq("user_id", user.id),
+      ]);
+      setOriginalChurchId(churchId);
     }
 
     setSuccess(true);
