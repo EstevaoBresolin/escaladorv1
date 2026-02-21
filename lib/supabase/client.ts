@@ -14,6 +14,42 @@ type DbOperation = {
   limit?: number;
 };
 
+type DbExecuteResult = {
+  data: unknown;
+  error: { message: string } | null;
+};
+
+const pendingSelectRequests = new Map<string, Promise<DbExecuteResult>>();
+let pendingGetUserRequest: Promise<
+  Awaited<ReturnType<ReturnType<typeof createBrowserClient>["auth"]["getUser"]>>
+> | null = null;
+
+function buildSelectRequestKey(operation: DbOperation) {
+  const normalizedFilters = (operation.filters || [])
+    .map((filter) => ({
+      field: filter.field,
+      operator: filter.operator,
+      value: filter.value,
+    }))
+    .sort((a, b) => {
+      if (a.field === b.field) {
+        return a.operator.localeCompare(b.operator);
+      }
+      return a.field.localeCompare(b.field);
+    });
+
+  return JSON.stringify({
+    table: operation.table,
+    action: operation.action,
+    select: operation.select || "*",
+    single: Boolean(operation.single),
+    filters: normalizedFilters,
+    orderBy: operation.orderBy || null,
+    ascending: operation.ascending ?? true,
+    limit: operation.limit || null,
+  });
+}
+
 class BackendDbQueryBuilder {
   private operation: DbOperation;
 
@@ -96,6 +132,28 @@ class BackendDbQueryBuilder {
   }
 
   async execute() {
+    if (this.operation.action === "select") {
+      const requestKey = buildSelectRequestKey(this.operation);
+      const pending = pendingSelectRequests.get(requestKey);
+
+      if (pending) {
+        return pending;
+      }
+
+      const nextRequest = this.runRequest();
+      pendingSelectRequests.set(requestKey, nextRequest);
+
+      nextRequest.finally(() => {
+        pendingSelectRequests.delete(requestKey);
+      });
+
+      return nextRequest;
+    }
+
+    return this.runRequest();
+  }
+
+  private async runRequest(): Promise<DbExecuteResult> {
     try {
       const response = await fetch("/api/db/query", {
         method: "POST",
@@ -160,6 +218,19 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   );
+
+  const originalGetUser = browserClient.auth.getUser.bind(browserClient.auth);
+  browserClient.auth.getUser = (async (...args: Parameters<typeof originalGetUser>) => {
+    if (pendingGetUserRequest) {
+      return pendingGetUserRequest;
+    }
+
+    pendingGetUserRequest = originalGetUser(...args).finally(() => {
+      pendingGetUserRequest = null;
+    });
+
+    return pendingGetUserRequest;
+  }) as typeof browserClient.auth.getUser;
 
   return new Proxy(browserClient as any, {
     get(target, prop, receiver) {

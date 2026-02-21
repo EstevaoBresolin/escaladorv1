@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getUserPermissions } from "@/lib/permissions";
+import { getUserPermissionsByProfile } from "@/lib/permissions";
 import { EventsPageClient } from "@/components/dashboard/eventos-page-client";
 
 export default async function EventosPage() {
@@ -10,12 +10,14 @@ export default async function EventosPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("church_id")
+    .select("church_id, role")
     .eq("id", user?.id)
     .single();
 
   // Get user permissions
-  const permissions = await getUserPermissions(supabase);
+  const permissions = user
+    ? await getUserPermissionsByProfile(supabase, user.id, profile?.role)
+    : null;
   const isAdmin = permissions?.isAdmin || false;
   const isLeader = permissions?.isLeader || false;
   const ledMinistryIds = permissions?.ledMinistryIds || [];

@@ -22,7 +22,6 @@ export interface Profile {
   phone?: string;
   church_id?: string;
   role: UserRole;
-  avatar_url?: string;
   created_at: string;
   updated_at: string;
   church?: Church;

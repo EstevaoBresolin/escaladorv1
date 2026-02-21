@@ -7,7 +7,7 @@ import Link from "next/link";
 import { MinistryVolunteerManager } from "@/components/dashboard/ministry-volunteer-manager";
 import { MinistryLeaderManager } from "@/components/dashboard/ministry-leader-manager";
 import { MinistryFunctionManager } from "@/components/dashboard/ministry-function-manager";
-import { getUserPermissions } from "@/lib/permissions";
+import { getUserPermissionsByProfile } from "@/lib/permissions";
 
 interface MinistryPageProps {
   params: Promise<{ id: string }>;
@@ -61,7 +61,9 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
     .single();
 
   // Get user permissions
-  const permissions = await getUserPermissions(supabase);
+  const permissions = user
+    ? await getUserPermissionsByProfile(supabase, user.id, profile?.role)
+    : null;
   const isAdmin = permissions?.isAdmin || false;
   const isLeaderOfThisMinistry =
     permissions?.ledMinistryIds.includes(id) || false;

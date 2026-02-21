@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Church, Users, Calendar, Bell, Plus, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { getUserPermissions } from "@/lib/permissions";
+import { getUserPermissionsByProfile } from "@/lib/permissions";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -13,12 +13,14 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("church_id")
+    .select("church_id, role")
     .eq("id", user?.id)
     .single();
 
   // Get user permissions
-  const permissions = await getUserPermissions(supabase);
+  const permissions = user
+    ? await getUserPermissionsByProfile(supabase, user.id, profile?.role)
+    : null;
   const isAdmin = permissions?.isAdmin || false;
 
   const [ministriesResult, volunteersResult, eventsResult] = await Promise.all([
@@ -79,8 +81,6 @@ export default async function DashboardPage() {
     .gte("date", todayStr)
     .order("date", { ascending: true })
     .limit(5);
-
-  console.log(upcomingEvents);
 
   return (
     <div className="space-y-6">

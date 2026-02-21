@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getUserPermissions } from "@/lib/permissions";
+import { getUserPermissionsByProfile } from "@/lib/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -105,7 +105,11 @@ export default function EscalasPage() {
         return;
       }
 
-      const permissions = await getUserPermissions(supabase);
+      const permissions = await getUserPermissionsByProfile(
+        supabase,
+        user.id,
+        profile.role,
+      );
       const isAdmin = permissions?.isAdmin || false;
       const ledMinistryIds = permissions?.ledMinistryIds || [];
 

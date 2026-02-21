@@ -20,7 +20,6 @@ export const DB_TABLE_POLICIES: Record<string, TablePolicy> = {
       "name",
       "email",
       "phone",
-      "avatar_url",
       "birth_date",
       "church_id",
       "is_profile_complete",

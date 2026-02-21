@@ -7,7 +7,7 @@ import Link from "next/link";
 import { VolunteerSlotManager } from "@/components/dashboard/volunteer-slot-manager";
 import { SendReminderButton } from "@/components/dashboard/send-reminder-button";
 import {
-  getUserPermissions,
+  getUserPermissionsByProfile,
   getAssignableVolunteers,
   getManageableMinistries,
 } from "@/lib/permissions";
@@ -51,7 +51,7 @@ export default async function EventPage({ params }: EventPageProps) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("church_id")
+    .select("church_id, role")
     .eq("id", user?.id)
     .single();
 
@@ -93,7 +93,9 @@ export default async function EventPage({ params }: EventPageProps) {
     : { data: null };
 
   // Get user permissions
-  const permissions = await getUserPermissions(supabase);
+  const permissions = user
+    ? await getUserPermissionsByProfile(supabase, user.id, profile?.role)
+    : null;
   const isAdmin = permissions?.isAdmin || false;
   const canManageEvent =
     isAdmin ||

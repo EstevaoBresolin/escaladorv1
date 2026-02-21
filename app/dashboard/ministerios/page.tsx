@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DeleteMinistryButton } from "@/components/dashboard/delete-ministry-button";
-import { getUserPermissions } from "@/lib/permissions";
+import { getUserPermissionsByProfile } from "@/lib/permissions";
 
 export default async function MinisteriosPage() {
   const supabase = await createClient();
@@ -20,12 +20,14 @@ export default async function MinisteriosPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("church_id")
+    .select("church_id, role")
     .eq("id", user?.id)
     .single();
 
   // Get user permissions
-  const permissions = await getUserPermissions(supabase);
+  const permissions = user
+    ? await getUserPermissionsByProfile(supabase, user.id, profile?.role)
+    : null;
   const isAdmin = permissions?.isAdmin || false;
   const isLeader = permissions?.isLeader || false;
 
