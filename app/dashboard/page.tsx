@@ -76,7 +76,7 @@ export default async function DashboardPage() {
 
   const { data: upcomingEvents } = await supabase
     .from("events")
-    .select("*, event_ministries(ministry_id, ministries(name))")
+    .select("*, event_ministries(ministry_id, ministries(name, color))")
     .eq("church_id", profile?.church_id)
     .gte("date", todayStr)
     .order("date", { ascending: true })
@@ -182,13 +182,23 @@ export default async function DashboardPage() {
                         (
                           ministry: {
                             ministry_id: string;
-                            ministries?: { name?: string | null } | null;
+                            ministries?: {
+                              name?: string | null;
+                              color?: string | null;
+                            } | null;
                           },
                           index: number,
                         ) => (
                           <span
                             key={`${event.id}-${ministry.ministry_id ?? index}`}
-                            className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                            className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                            style={{
+                              backgroundColor: ministry.ministries?.color
+                                ? `${ministry.ministries.color}1A`
+                                : undefined,
+                              color: ministry.ministries?.color || undefined,
+                              borderColor: ministry.ministries?.color || undefined,
+                            }}
                           >
                             {ministry.ministries?.name || "Ministério"}
                           </span>
