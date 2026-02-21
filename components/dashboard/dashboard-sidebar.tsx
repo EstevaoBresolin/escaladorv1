@@ -22,6 +22,7 @@ import type { Profile } from "@/lib/types";
 
 interface DashboardSidebarProps {
   profile: (Profile & { churches: { name: string } | null }) | null;
+  canViewVolunteers?: boolean;
 }
 
 const navItems = [
@@ -75,7 +76,10 @@ const bottomNavItems = [
   },
 ];
 
-export function DashboardSidebar({ profile }: DashboardSidebarProps) {
+export function DashboardSidebar({
+  profile,
+  canViewVolunteers = false,
+}: DashboardSidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const isVolunteerOnly = profile?.role === "volunteer";
@@ -84,7 +88,9 @@ export function DashboardSidebar({ profile }: DashboardSidebarProps) {
   const visibleNavItems = isMemberOnly
     ? []
     : isVolunteerOnly
-      ? navItems.filter((item) => item.label !== "Voluntários")
+      ? canViewVolunteers
+        ? navItems
+        : navItems.filter((item) => item.label !== "Voluntários")
       : navItems;
 
   const visibleBottomItems = isMemberOnly

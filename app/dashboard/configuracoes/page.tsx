@@ -25,6 +25,7 @@ export default function ConfiguracoesPage() {
   const [churchPhone, setChurchPhone] = useState("");
   const [churchCNPJ, setChurchCNPJ] = useState("");
   const [churchId, setChurchId] = useState<string | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,11 +38,15 @@ export default function ConfiguracoesPage() {
 
   useEffect(() => {
     async function loadSettings() {
+      setInitialLoading(true);
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user) return;
+      if (!user) {
+        setInitialLoading(false);
+        return;
+      }
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -61,6 +66,7 @@ export default function ConfiguracoesPage() {
       // Get user permissions
       const permissions = await getUserPermissions(supabase);
       setIsAdmin(permissions?.isAdmin || false);
+      setInitialLoading(false);
     }
 
     loadSettings();
@@ -144,6 +150,32 @@ export default function ConfiguracoesPage() {
     setSuccess(true);
     setLoading(false);
     // Não precisa reload, dados já foram atualizados
+  }
+
+  if (initialLoading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="space-y-2">
+          <div className="h-8 w-44 rounded bg-muted" />
+          <div className="h-4 w-72 rounded bg-muted" />
+        </div>
+        <div className="max-w-2xl space-y-6">
+          <Card>
+            <CardHeader className="space-y-2">
+              <div className="h-6 w-40 rounded bg-muted" />
+              <div className="h-4 w-56 rounded bg-muted" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="h-10 w-full rounded bg-muted" />
+              <div className="h-10 w-full rounded bg-muted" />
+              <div className="h-10 w-full rounded bg-muted" />
+              <div className="h-10 w-full rounded bg-muted" />
+              <div className="h-10 w-40 rounded bg-muted" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   return (

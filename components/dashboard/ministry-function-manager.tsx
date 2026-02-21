@@ -118,11 +118,15 @@ export function MinistryFunctionManager({
       )}
 
       {functions.length > 0 ? (
-        <div className="space-y-2">
+        <div className="overflow-hidden rounded-lg border border-border">
+          <div className="hidden grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-border bg-muted/30 px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground md:grid">
+            <p>Função</p>
+            {canManage && <span className="sr-only">Ações</span>}
+          </div>
           {functions.map((fn) => (
             <div
               key={fn.id}
-              className="flex items-center justify-between rounded-md border border-border px-3 py-2"
+              className="grid gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
             >
               <span className="text-sm font-medium text-card-foreground">
                 {fn.name}

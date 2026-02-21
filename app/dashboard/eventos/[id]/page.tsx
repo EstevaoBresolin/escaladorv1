@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calendar, Clock, MapPin, Edit, Users } from "lucide-react";
 import Link from "next/link";
 import { VolunteerSlotManager } from "@/components/dashboard/volunteer-slot-manager";
-import { SendReminderButton } from "@/components/dashboard/send-reminder-button";
+import { EventQuickSchedule } from "@/components/dashboard/event-quick-schedule";
 import {
   getUserPermissions,
   getAssignableVolunteers,
@@ -138,25 +138,25 @@ export default async function EventPage({ params }: EventPageProps) {
     .eq("unavailable_date", event.date);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="space-y-6 overflow-x-hidden">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
             <Link href="/dashboard/eventos">
               <ArrowLeft className="h-5 w-5" />
               <span className="sr-only">Voltar</span>
             </Link>
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
+          <div className="min-w-0">
+            <h1 className="truncate text-2xl font-bold text-foreground">
               {event.title}
             </h1>
             <p className="text-muted-foreground">Detalhes do evento</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
           {(previousEvent || nextEvent) && (
-            <div className="flex gap-2">
+            <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap">
               <Button
                 variant="outline"
                 size="sm"
@@ -165,10 +165,14 @@ export default async function EventPage({ params }: EventPageProps) {
               >
                 {previousEvent ? (
                   <Link href={`/dashboard/eventos/${previousEvent.id}`}>
-                    Evento anterior
+                    <span className="sm:hidden">Anterior</span>
+                    <span className="hidden sm:inline">Evento anterior</span>
                   </Link>
                 ) : (
-                  <span>Evento anterior</span>
+                  <span>
+                    <span className="sm:hidden">Anterior</span>
+                    <span className="hidden sm:inline">Evento anterior</span>
+                  </span>
                 )}
               </Button>
               <Button
@@ -179,17 +183,20 @@ export default async function EventPage({ params }: EventPageProps) {
               >
                 {nextEvent ? (
                   <Link href={`/dashboard/eventos/${nextEvent.id}`}>
-                    Próximo evento
+                    <span className="sm:hidden">Próximo</span>
+                    <span className="hidden sm:inline">Próximo evento</span>
                   </Link>
                 ) : (
-                  <span>Próximo evento</span>
+                  <span>
+                    <span className="sm:hidden">Próximo</span>
+                    <span className="hidden sm:inline">Próximo evento</span>
+                  </span>
                 )}
               </Button>
             </div>
           )}
           {isAdmin && (
-            <div className="flex gap-2">
-              <SendReminderButton eventId={event.id} eventTitle={event.title} />
+            <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap">
               <Button variant="outline" asChild>
                 <Link href={`/dashboard/eventos/${id}/editar`}>
                   <Edit className="mr-2 h-4 w-4" />
@@ -247,9 +254,9 @@ export default async function EventPage({ params }: EventPageProps) {
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                     <MapPin className="h-5 w-5 text-primary" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm text-muted-foreground">Local</p>
-                    <p className="font-medium text-card-foreground">
+                    <p className="break-words font-medium text-card-foreground">
                       {event.location}
                     </p>
                   </div>
@@ -259,7 +266,7 @@ export default async function EventPage({ params }: EventPageProps) {
               {event.description && (
                 <div className="pt-2">
                   <p className="text-sm text-muted-foreground">Descrição</p>
-                  <p className="mt-1 text-card-foreground">
+                  <p className="mt-1 break-words text-card-foreground">
                     {event.description}
                   </p>
                 </div>
@@ -295,11 +302,22 @@ export default async function EventPage({ params }: EventPageProps) {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
                 Escala de Voluntários
               </CardTitle>
+              <EventQuickSchedule
+                event={{
+                  id: event.id,
+                  title: event.title,
+                  date: event.date,
+                  start_time: event.start_time,
+                  event_ministries: event.event_ministries || [],
+                }}
+                isAdmin={isAdmin}
+                ledMinistryIds={permissions?.ledMinistryIds || []}
+              />
             </CardHeader>
             <CardContent>
               <VolunteerSlotManager

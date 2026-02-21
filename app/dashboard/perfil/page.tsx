@@ -26,6 +26,7 @@ export default function PerfilPage() {
   const [churchId, setChurchId] = useState<string | null>(null);
   const [originalChurchId, setOriginalChurchId] = useState<string | null>(null);
   const [churches, setChurches] = useState<{ id: string; name: string }[]>([]);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,11 +45,15 @@ export default function PerfilPage() {
 
   useEffect(() => {
     async function loadProfile() {
+      setInitialLoading(true);
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user) return;
+      if (!user) {
+        setInitialLoading(false);
+        return;
+      }
 
       // Carregar perfil do usuário
       const { data: profile } = await supabase
@@ -74,6 +79,8 @@ export default function PerfilPage() {
       if (churchesData) {
         setChurches(churchesData);
       }
+
+      setInitialLoading(false);
     }
 
     loadProfile();
@@ -206,6 +213,34 @@ export default function PerfilPage() {
 
     setSuccessResetPassword(true);
     setLoadingResetPassword(false);
+  }
+
+  if (initialLoading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="space-y-2">
+          <div className="h-8 w-40 rounded bg-muted" />
+          <div className="h-4 w-64 rounded bg-muted" />
+        </div>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Card className="lg:col-span-2">
+            <CardContent className="space-y-4 p-6">
+              <div className="h-10 w-full rounded bg-muted" />
+              <div className="h-10 w-full rounded bg-muted" />
+              <div className="h-10 w-full rounded bg-muted" />
+              <div className="h-10 w-36 rounded bg-muted" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="space-y-4 p-6">
+              <div className="h-24 w-24 rounded-full bg-muted mx-auto" />
+              <div className="h-4 w-2/3 rounded bg-muted mx-auto" />
+              <div className="h-4 w-1/2 rounded bg-muted mx-auto" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   return (

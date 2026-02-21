@@ -19,47 +19,36 @@ async function upstashCommand<T = unknown>(command: unknown[]): Promise<T> {
     throw new Error("Upstash Redis is not configured")
   }
 
+  const baseUrl = UPSTASH_URL.endsWith("/") ? UPSTASH_URL.slice(0, -1) : UPSTASH_URL
+
   const headers = {
     Authorization: `Bearer ${UPSTASH_TOKEN}`,
     "Content-Type": "application/json",
   }
 
-  // Upstash REST accepts command payloads in array format.
-  // We still keep a fallback payload shape for compatibility.
-  let response = await fetch(UPSTASH_URL, {
+  const response = await fetch(`${baseUrl}/pipeline`, {
     method: "POST",
     headers,
-    body: JSON.stringify(command),
+    body: JSON.stringify([command]),
     cache: "no-store",
   })
-
-  if (!response.ok) {
-    response = await fetch(UPSTASH_URL, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ command }),
-      cache: "no-store",
-    })
-  }
 
   if (!response.ok) {
     throw new Error(`Upstash command failed with status ${response.status}`)
   }
 
-  const data = (await response.json()) as
-    | { result?: T; error?: string }
-    | { error?: string }
-    | T
+  const data = (await response.json()) as Array<{ result?: T; error?: string }>
+  const first = data?.[0]
 
-  if (typeof data === "object" && data !== null && "error" in data && data.error) {
-    throw new Error(data.error)
+  if (!first) {
+    throw new Error("Upstash pipeline returned an empty response")
   }
 
-  if (typeof data === "object" && data !== null && "result" in data) {
-    return data.result as T
+  if (first.error) {
+    throw new Error(first.error)
   }
 
-  return data as T
+  return first.result as T
 }
 
 export function buildLoginKey(ip: string, email: string): string {

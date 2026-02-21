@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useMemo } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Users, Mail, Phone, MoreVertical, Search } from "lucide-react"
-import Link from "next/link"
+import { useState, useEffect, useMemo } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Users, Mail, Phone, MoreVertical, Search } from "lucide-react";
+import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -20,93 +20,130 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { getUserPermissions } from "@/lib/permissions"
+} from "@/components/ui/table";
+import { getUserPermissions } from "@/lib/permissions";
 
 interface UserMinistry {
-  ministry_id: string
-  ministries: { name: string; color: string }
+  ministry_id: string;
+  ministries: { name: string; color: string };
 }
 
 interface Volunteer {
-  id: string
-  name?: string
-  email?: string
-  phone?: string
-  user_ministries?: UserMinistry[]
+  id: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  user_ministries?: UserMinistry[];
 }
 
 export default function VoluntariosPage() {
-  const [volunteers, setVolunteers] = useState<Volunteer[]>([])
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [currentUserId, setCurrentUserId] = useState<string>()
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
+  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLeader, setIsLeader] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>();
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     async function fetchData() {
-      const supabase = createClient()
-      
+      const supabase = createClient();
+
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await supabase.auth.getUser();
 
-      if (!user) return
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       const { data: profile } = await supabase
         .from("profiles")
         .select("church_id")
         .eq("id", user.id)
-        .single()
+        .single();
 
       // Get user permissions
-      const permissions = await getUserPermissions(supabase)
-      setIsAdmin(permissions?.isAdmin || false)
-      setCurrentUserId(user.id)
+      const permissions = await getUserPermissions(supabase);
+      setIsAdmin(permissions?.isAdmin || false);
+      const ledMinistryIds = permissions?.ledMinistryIds || [];
+      setIsLeader(ledMinistryIds.length > 0);
+      setCurrentUserId(user.id);
 
-      const { data: volunteersData } = await supabase
-        .from("profiles")
-        .select(
-          `
-          *,
-          user_ministries(ministry_id, ministries(name, color))
-        `,
-        )
-        .eq("church_id", profile?.church_id)
-        .order("name")
+      let volunteersData: Volunteer[] = [];
 
-      setVolunteers(volunteersData || [])
-      setLoading(false)
+      if (permissions?.isAdmin) {
+        const { data } = await supabase
+          .from("profiles")
+          .select(
+            `
+            *,
+            user_ministries(ministry_id, ministries(name, color))
+          `,
+          )
+          .eq("church_id", profile?.church_id)
+          .order("name");
+
+        volunteersData = data || [];
+      } else if (ledMinistryIds.length > 0) {
+        const { data: ministryMembers } = await supabase
+          .from("user_ministries")
+          .select("user_id")
+          .in("ministry_id", ledMinistryIds);
+
+        const userIds = Array.from(
+          new Set((ministryMembers || []).map((member) => member.user_id)),
+        );
+
+        if (userIds.length > 0) {
+          const { data } = await supabase
+            .from("profiles")
+            .select(
+              `
+              *,
+              user_ministries(ministry_id, ministries(name, color))
+            `,
+            )
+            .eq("church_id", profile?.church_id)
+            .in("id", userIds)
+            .order("name");
+
+          volunteersData = data || [];
+        }
+      }
+
+      setVolunteers(volunteersData);
+      setLoading(false);
     }
 
-    fetchData()
-  }, [])
+    fetchData();
+  }, []);
 
   const filteredVolunteers = useMemo(() => {
-    if (!searchTerm.trim()) return volunteers
+    if (!searchTerm.trim()) return volunteers;
 
-    const term = searchTerm.toLowerCase().trim()
+    const term = searchTerm.toLowerCase().trim();
     return volunteers.filter((volunteer) => {
       // Search by name
       if (volunteer.name && volunteer.name.toLowerCase().includes(term)) {
-        return true
+        return true;
       }
-      
+
       // Search by email
       if (volunteer.email && volunteer.email.toLowerCase().includes(term)) {
-        return true
+        return true;
       }
-      
+
       // Search by ministry names
       if (volunteer.user_ministries && volunteer.user_ministries.length > 0) {
         return volunteer.user_ministries.some((um) =>
-          um.ministries.name.toLowerCase().includes(term)
-        )
+          um.ministries.name.toLowerCase().includes(term),
+        );
       }
-      
-      return false
-    })
-  }, [volunteers, searchTerm])
+
+      return false;
+    });
+  }, [volunteers, searchTerm]);
 
   if (loading) {
     return (
@@ -125,8 +162,12 @@ export default function VoluntariosPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
-                  <TableHead className="hidden md:table-cell">Contato</TableHead>
-                  <TableHead className="hidden sm:table-cell">Ministérios</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    Contato
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell">
+                    Ministérios
+                  </TableHead>
                   <TableHead className="w-[50px]" />
                 </TableRow>
               </TableHeader>
@@ -155,7 +196,7 @@ export default function VoluntariosPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -164,7 +205,11 @@ export default function VoluntariosPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Voluntários</h1>
           <p className="text-muted-foreground">
-            Gerencie os voluntários da sua igreja
+            {isAdmin
+              ? "Gerencie os voluntários da sua igreja"
+              : isLeader
+                ? "Voluntários dos ministérios que você lidera"
+                : "Voluntários"}
           </p>
         </div>
       </div>
@@ -330,5 +375,5 @@ export default function VoluntariosPage() {
         </Card>
       )}
     </div>
-  )
+  );
 }

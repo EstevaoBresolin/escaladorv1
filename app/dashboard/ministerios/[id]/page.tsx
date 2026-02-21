@@ -249,40 +249,46 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
           ) : (
             <div className="space-y-2">
               {(volunteers || []).length > 0 ? (
-                (volunteers || []).map(
-                  (member: {
-                    id: string;
-                    profiles: {
+                <div className="overflow-hidden rounded-lg border border-border">
+                  <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,2fr)] gap-4 border-b border-border bg-muted/30 px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground md:grid">
+                    <p>Nome</p>
+                    <p>Contato</p>
+                  </div>
+                  {(volunteers || []).map(
+                    (member: {
                       id: string;
-                      name: string;
-                      email: string;
-                    } | null;
-                  }) => (
-                    <div
-                      key={member.id}
-                      className="flex items-center gap-3 rounded-lg border border-border p-3"
-                    >
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                        {member.profiles?.name
-                          ? member.profiles.name
-                              .split(" ")
-                              .map((n: string) => n[0])
-                              .join("")
-                              .slice(0, 2)
-                              .toUpperCase()
-                          : "?"}
-                      </div>
-                      <div>
-                        <p className="font-medium text-card-foreground">
-                          {member.profiles?.name || "Voluntario nao encontrado"}
-                        </p>
+                      profiles: {
+                        id: string;
+                        name: string;
+                        email: string;
+                      } | null;
+                    }) => (
+                      <div
+                        key={member.id}
+                        className="grid gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)] md:items-center md:gap-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                            {member.profiles?.name
+                              ? member.profiles.name
+                                  .split(" ")
+                                  .map((n: string) => n[0])
+                                  .join("")
+                                  .slice(0, 2)
+                                  .toUpperCase()
+                              : "?"}
+                          </div>
+                          <p className="font-medium text-card-foreground">
+                            {member.profiles?.name || "Voluntario nao encontrado"}
+                          </p>
+                        </div>
                         <p className="text-sm text-muted-foreground">
-                          {member.profiles?.email}
+                          {member.profiles?.email || "-"}
                         </p>
                       </div>
-                    </div>
-                  ),
-                )
+                    ),
+                  )}
+                </div>
               ) : (
                 <p className="text-center text-muted-foreground py-4">
                   Nenhum voluntario neste ministerio.

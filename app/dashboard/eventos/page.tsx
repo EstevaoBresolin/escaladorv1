@@ -1,23 +1,24 @@
 import { createClient } from "@/lib/supabase/server";
-import { getUserPermissions } from "@/lib/permissions";
 import { EventsPageClient } from "@/components/dashboard/eventos-page-client";
+import {
+  getCachedPermissions,
+  getCachedProfile,
+  getCachedUser,
+} from "@/lib/supabase/cache";
 
 export default async function EventosPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("church_id")
-    .eq("id", user?.id)
-    .single();
+  if (!user) {
+    return null;
+  }
+
+  const profile = await getCachedProfile(user.id);
 
   // Get user permissions
-  const permissions = await getUserPermissions(supabase);
+  const permissions = await getCachedPermissions(user.id);
   const isAdmin = permissions?.isAdmin || false;
-  const isLeader = permissions?.isLeader || false;
   const ledMinistryIds = permissions?.ledMinistryIds || [];
 
   const { data: eventsRaw } = await supabase
@@ -53,7 +54,6 @@ export default async function EventosPage() {
     <EventsPageClient
       events={events || []}
       isAdmin={isAdmin}
-      isLeader={isLeader}
       ledMinistryIds={ledMinistryIds}
     />
   );

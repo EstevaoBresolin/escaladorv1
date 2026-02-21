@@ -31,14 +31,12 @@ interface EventWithMinistries {
 interface EventsPageClientProps {
   events: EventWithMinistries[];
   isAdmin: boolean;
-  isLeader: boolean;
   ledMinistryIds: string[];
 }
 
 export function EventsPageClient({
   events,
   isAdmin,
-  isLeader,
   ledMinistryIds,
 }: EventsPageClientProps) {
   const [selectedDate, setSelectedDate] = useState<string>("");
@@ -52,12 +50,12 @@ export function EventsPageClient({
       return;
     }
 
-    if (!selectedDate) {
+    setSelectedDate((current) => {
+      if (current) return current;
       const today = new Date();
-      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-      setSelectedDate(todayStr);
-    }
-  }, [searchParams, selectedDate]);
+      return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    });
+  }, [searchParams]);
 
   // Get events for selected date
   const selectedDateEvents = events.filter((e) => e.date === selectedDate);
@@ -165,7 +163,7 @@ export function EventsPageClient({
                             </div>
                           )}
 
-                        {(isAdmin || isLeader) && (
+                        {(isAdmin || ledMinistryIds.length > 0) && (
                           <EventQuickSchedule
                             event={event}
                             isAdmin={isAdmin}

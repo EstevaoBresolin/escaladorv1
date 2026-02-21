@@ -26,6 +26,7 @@ export default function EditarMinisterioPage() {
   const [color, setColor] = useState("#3B82F6");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [navigatingBack, setNavigatingBack] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const params = useParams();
@@ -79,6 +80,12 @@ export default function EditarMinisterioPage() {
     router.push("/dashboard/ministerios");
   }
 
+  function handleBackNavigation() {
+    if (navigatingBack) return;
+    setNavigatingBack(true);
+    router.push("/dashboard/ministerios");
+  }
+
   if (loading) {
     return <LoadingCard message="Carregando ministério..." />;
   }
@@ -103,10 +110,18 @@ export default function EditarMinisterioPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard/ministerios">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleBackNavigation}
+          disabled={navigatingBack}
+          aria-label="Voltar"
+        >
+          {navigatingBack ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
             <ArrowLeft className="h-5 w-5" />
-          </Link>
+          )}
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-foreground">

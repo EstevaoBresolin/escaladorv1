@@ -1,23 +1,26 @@
-import { createClient } from "@/lib/supabase/server"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Bell, Calendar, Users, Check } from "lucide-react"
-import { MarkAllReadButton } from "@/components/dashboard/mark-all-read-button"
+import { createClient } from "@/lib/supabase/server";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Bell, Calendar, Users, Check } from "lucide-react";
+import { MarkAllReadButton } from "@/components/dashboard/mark-all-read-button";
+import { getCachedUser } from "@/lib/supabase/cache";
 
 export default async function NotificacoesPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const supabase = await createClient();
+  const user = await getCachedUser();
+
+  if (!user) {
+    return null;
+  }
 
   const { data: notifications } = await supabase
     .from("notifications")
     .select("*")
-    .eq("user_id", user?.id)
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(50)
+    .limit(50);
 
-  const unreadCount = notifications?.filter((n) => !n.is_read).length || 0
+  const unreadCount = notifications?.filter((n) => !n.is_read).length || 0;
 
   return (
     <div className="space-y-6">
@@ -30,7 +33,7 @@ export default async function NotificacoesPage() {
               : "Todas as notificações foram lidas"}
           </p>
         </div>
-        {unreadCount > 0 && <MarkAllReadButton userId={user?.id || ""} />}
+        {unreadCount > 0 && <MarkAllReadButton userId={user.id} />}
       </div>
 
       <Card>
@@ -42,8 +45,9 @@ export default async function NotificacoesPage() {
                   event: Calendar,
                   schedule: Users,
                   system: Bell,
-                }
-                const Icon = icons[notification.type as keyof typeof icons] || Bell
+                };
+                const Icon =
+                  icons[notification.type as keyof typeof icons] || Bell;
 
                 return (
                   <div
@@ -84,7 +88,7 @@ export default async function NotificacoesPage() {
                             month: "short",
                             hour: "2-digit",
                             minute: "2-digit",
-                          }
+                          },
                         )}
                       </p>
                     </div>
@@ -92,7 +96,7 @@ export default async function NotificacoesPage() {
                       <div className="flex h-2 w-2 flex-shrink-0 items-center justify-center rounded-full bg-primary" />
                     )}
                   </div>
-                )
+                );
               })}
             </div>
           ) : (
@@ -109,5 +113,5 @@ export default async function NotificacoesPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

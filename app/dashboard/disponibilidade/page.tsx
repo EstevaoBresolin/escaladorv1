@@ -19,7 +19,6 @@ import { format, parseISO, startOfToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { AvailabilityCalendar } from "@/components/dashboard/availability-calendar";
-import { LoadingCard } from "@/components/ui/spinner";
 
 interface Unavailability {
   id: string;
@@ -284,7 +283,25 @@ export default function DisponibilidadePage() {
   };
 
   if (loading) {
-    return <LoadingCard message="Carregando disponibilidade..." />;
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="space-y-2">
+          <div className="h-8 w-52 rounded bg-muted" />
+          <div className="h-4 w-80 rounded bg-muted" />
+        </div>
+        <Card>
+          <CardContent className="space-y-4 p-6">
+            <div className="h-4 w-64 rounded bg-muted" />
+            <div className="h-4 w-48 rounded bg-muted" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="h-[360px] w-full rounded bg-muted" />
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

@@ -10,24 +10,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DeleteMinistryButton } from "@/components/dashboard/delete-ministry-button";
-import { getUserPermissions } from "@/lib/permissions";
+import {
+  getCachedPermissions,
+  getCachedProfile,
+  getCachedUser,
+} from "@/lib/supabase/cache";
 
 export default async function MinisteriosPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("church_id")
-    .eq("id", user?.id)
-    .single();
+  if (!user) {
+    return null;
+  }
+
+  const profile = await getCachedProfile(user.id);
 
   // Get user permissions
-  const permissions = await getUserPermissions(supabase);
+  const permissions = await getCachedPermissions(user.id);
   const isAdmin = permissions?.isAdmin || false;
-  const isLeader = permissions?.isLeader || false;
+  const leaderMinistryIds = permissions?.ledMinistryIds || [];
 
   const memberMinistryIds =
     !isAdmin && user?.id
@@ -38,9 +40,6 @@ export default async function MinisteriosPage() {
             .eq("user_id", user.id)
         ).data?.map((m: { ministry_id: string }) => m.ministry_id) || []
       : [];
-
-  const leaderMinistryIds =
-    !isAdmin && isLeader ? permissions?.ledMinistryIds || [] : [];
 
   let ministriesQuery = supabase
     .from("ministries")
@@ -54,7 +53,8 @@ export default async function MinisteriosPage() {
     .order("name");
 
   if (!isAdmin) {
-    const allowedMinistryIds = isLeader ? leaderMinistryIds : memberMinistryIds;
+    const allowedMinistryIds =
+      leaderMinistryIds.length > 0 ? leaderMinistryIds : memberMinistryIds;
 
     if (allowedMinistryIds.length === 0) {
       return (

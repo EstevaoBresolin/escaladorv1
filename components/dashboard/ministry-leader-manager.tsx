@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,7 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Loader2, Trash2, Crown, UserPlus } from "lucide-react";
+import { Plus, Loader2, Trash2, Crown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface Leader {
@@ -51,7 +50,6 @@ export function MinistryLeaderManager({
   const [loading, setLoading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [selectedVolunteer, setSelectedVolunteer] = useState("");
-  const router = useRouter();
   const supabase = createClient();
 
   // Filter out people who are already leaders
@@ -90,25 +88,32 @@ export function MinistryLeaderManager({
     return (
       <div className="space-y-4">
         {leaders.length > 0 ? (
-          <div className="space-y-2">
+          <div className="overflow-hidden rounded-lg border border-border">
+            <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,2fr)_auto] gap-4 border-b border-border bg-muted/30 px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground md:grid">
+              <p>Nome</p>
+              <p>Contato</p>
+              <p>Papel</p>
+            </div>
             {leaders.map((leader) => (
               <div
                 key={leader.id}
-                className="flex items-center justify-between rounded-lg border border-border p-3"
+                className="grid gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_auto] md:items-center md:gap-4"
               >
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/10 text-sm font-medium text-amber-600">
                     <Crown className="h-4 w-4" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-medium text-card-foreground">
                       {leader.profiles?.name || "Lider nao encontrado"}
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                      {leader.profiles?.email}
-                    </p>
                   </div>
                 </div>
+
+                <p className="text-sm text-muted-foreground">
+                  {leader.profiles?.email || "-"}
+                </p>
+
                 <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">
                   Lider
                 </Badge>
@@ -130,44 +135,51 @@ export function MinistryLeaderManager({
   return (
     <div className="space-y-4">
       {leaders.length > 0 ? (
-        <div className="space-y-2">
+        <div className="overflow-hidden rounded-lg border border-border">
+          <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,2fr)_auto_auto] gap-4 border-b border-border bg-muted/30 px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground md:grid">
+            <p>Nome</p>
+            <p>Contato</p>
+            <p>Papel</p>
+            <span className="sr-only">Ações</span>
+          </div>
           {leaders.map((leader) => (
             <div
               key={leader.id}
-              className="flex items-center justify-between rounded-lg border border-border p-3"
+              className="grid gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_auto_auto] md:items-center md:gap-4"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/10 text-sm font-medium text-amber-600">
                   <Crown className="h-4 w-4" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-medium text-card-foreground">
                     {leader.profiles?.name || "Lider nao encontrado"}
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    {leader.profiles?.email}
-                  </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">
-                  Lider
-                </Badge>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  onClick={() => handleRemoveLeader(leader.id)}
-                  disabled={removingId === leader.id}
-                >
-                  {removingId === leader.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                  <span className="sr-only">Remover</span>
-                </Button>
-              </div>
+
+              <p className="text-sm text-muted-foreground">
+                {leader.profiles?.email || "-"}
+              </p>
+
+              <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">
+                Lider
+              </Badge>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                onClick={() => handleRemoveLeader(leader.id)}
+                disabled={removingId === leader.id}
+              >
+                {removingId === leader.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                <span className="sr-only">Remover</span>
+              </Button>
             </div>
           ))}
         </div>

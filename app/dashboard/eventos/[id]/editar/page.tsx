@@ -39,6 +39,7 @@ export default function EditarEventoPage() {
   const [selectedMinistries, setSelectedMinistries] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [navigatingBack, setNavigatingBack] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const params = useParams();
@@ -65,9 +66,12 @@ export default function EditarEventoPage() {
       setDate(eventData.date);
       setStartTime(eventData.start_time || "");
       setLocation(eventData.location || "");
-      
+
       // Set selected ministries
-      const ministryIds = eventData.event_ministries?.map((em: { ministry_id: string }) => em.ministry_id) || [];
+      const ministryIds =
+        eventData.event_ministries?.map(
+          (em: { ministry_id: string }) => em.ministry_id,
+        ) || [];
       setSelectedMinistries(ministryIds);
 
       // Load all ministries from the church
@@ -143,6 +147,12 @@ export default function EditarEventoPage() {
     );
   }
 
+  function handleBackNavigation() {
+    if (navigatingBack) return;
+    setNavigatingBack(true);
+    router.push(`/dashboard/eventos/${eventId}`);
+  }
+
   if (loading) {
     return <LoadingCard message="Carregando evento..." />;
   }
@@ -167,10 +177,18 @@ export default function EditarEventoPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={`/dashboard/eventos/${eventId}`}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleBackNavigation}
+          disabled={navigatingBack}
+          aria-label="Voltar"
+        >
+          {navigatingBack ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
             <ArrowLeft className="h-5 w-5" />
-          </Link>
+          )}
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-foreground">Editar Evento</h1>

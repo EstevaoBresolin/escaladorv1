@@ -24,6 +24,7 @@ export default function NovoEventoPage() {
   const [selectedMinistries, setSelectedMinistries] = useState<string[]>([]);
   const [ministries, setMinistries] = useState<Ministry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [navigatingBack, setNavigatingBack] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -132,14 +133,28 @@ export default function NovoEventoPage() {
     );
   }
 
+  function handleBackNavigation() {
+    if (navigatingBack) return;
+    setNavigatingBack(true);
+    router.push("/dashboard/eventos");
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard/eventos">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleBackNavigation}
+          disabled={navigatingBack}
+          aria-label="Voltar"
+        >
+          {navigatingBack ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
             <ArrowLeft className="h-5 w-5" />
-            <span className="sr-only">Voltar</span>
-          </Link>
+          )}
+          <span className="sr-only">Voltar</span>
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-foreground">Novo Evento</h1>

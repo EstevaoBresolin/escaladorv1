@@ -376,9 +376,9 @@ export function VolunteerSlotManager({
           {visibleSlots.map((slot) => (
             <div
               key={slot.id}
-              className="flex items-center justify-between rounded-lg border border-border p-3"
+              className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
                   {slot.profiles?.name
                     ? slot.profiles.name
@@ -389,11 +389,11 @@ export function VolunteerSlotManager({
                         .toUpperCase()
                     : "?"}
                 </div>
-                <div>
-                  <p className="font-medium text-card-foreground">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-card-foreground">
                     {slot.profiles?.name || "Voluntário não encontrado"}
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {slot.ministries && (
                       <span
                         className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
@@ -413,7 +413,7 @@ export function VolunteerSlotManager({
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 self-end sm:self-auto">
                 {canManageSlot(slot.ministries?.id || "") ? (
                   <>
                     <Badge variant="default">

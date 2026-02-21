@@ -1,8 +1,12 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { DashboardTopbar } from "@/components/dashboard/dashboard-topbar";
+import {
+  getCachedPermissions,
+  getCachedProfile,
+  getCachedUser,
+} from "@/lib/supabase/cache";
 
 // Cache por 60 segundos para melhor performance
 export const revalidate = 60;
@@ -12,24 +16,24 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     redirect("/auth/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*, churches(*)")
-    .eq("id", user.id)
-    .single();
+  const profile = await getCachedProfile(user.id);
+  const permissions = await getCachedPermissions(user.id);
+  const canViewVolunteers =
+    Boolean(permissions?.isAdmin) ||
+    (permissions?.ledMinistryIds?.length || 0) > 0;
 
   return (
     <div className="flex min-h-screen bg-background">
-      <DashboardSidebar profile={profile} />
+      <DashboardSidebar
+        profile={profile}
+        canViewVolunteers={canViewVolunteers}
+      />
       <div className="flex flex-1 flex-col lg:pl-64">
         <DashboardTopbar profile={profile} />
         <main className="flex-1 p-4 md:p-6">{children}</main>

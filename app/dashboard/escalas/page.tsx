@@ -93,18 +93,6 @@ export default function EscalasPage() {
         return;
       }
 
-      if (profile.role === "volunteer") {
-        const selfOption = {
-          id: profile.id,
-          name: profile.name || user.email || "Voluntário",
-          email: profile.email || user.email || "",
-        };
-        setVolunteers([selfOption]);
-        setSelectedVolunteerId(profile.id);
-        setLoading(false);
-        return;
-      }
-
       const permissions = await getUserPermissions(supabase);
       const isAdmin = permissions?.isAdmin || false;
       const ledMinistryIds = permissions?.ledMinistryIds || [];
@@ -123,9 +111,11 @@ export default function EscalasPage() {
         }));
 
         setVolunteers(options);
-        if (!selectedVolunteerId && options.length > 0) {
-          setSelectedVolunteerId(options[0].id);
-        }
+        setSelectedVolunteerId((current) =>
+          current && options.some((opt) => opt.id === current)
+            ? current
+            : options[0]?.id || "",
+        );
         setLoading(false);
         return;
       }
@@ -138,11 +128,14 @@ export default function EscalasPage() {
 
         const map = new Map<string, VolunteerOption>();
         (ministryVolunteers || []).forEach((row: any) => {
-          if (!row.profiles) return;
-          map.set(row.profiles.id, {
-            id: row.profiles.id,
-            name: row.profiles.name || row.profiles.email,
-            email: row.profiles.email || "",
+          const profileData = Array.isArray(row.profiles)
+            ? row.profiles[0]
+            : row.profiles;
+          if (!profileData) return;
+          map.set(profileData.id, {
+            id: profileData.id,
+            name: profileData.name || profileData.email,
+            email: profileData.email || "",
           });
         });
 
@@ -151,19 +144,34 @@ export default function EscalasPage() {
         );
 
         setVolunteers(options);
-        if (!selectedVolunteerId && options.length > 0) {
-          setSelectedVolunteerId(options[0].id);
-        }
+        setSelectedVolunteerId((current) =>
+          current && options.some((opt) => opt.id === current)
+            ? current
+            : options[0]?.id || "",
+        );
+        setLoading(false);
+        return;
+      }
+
+      if (profile.role === "volunteer") {
+        const selfOption = {
+          id: profile.id,
+          name: profile.name || user.email || "Voluntário",
+          email: profile.email || user.email || "",
+        };
+        setVolunteers([selfOption]);
+        setSelectedVolunteerId(selfOption.id);
         setLoading(false);
         return;
       }
 
       setVolunteers([]);
+      setSelectedVolunteerId("");
       setLoading(false);
     }
 
     loadVolunteers();
-  }, [supabase, selectedVolunteerId]);
+  }, [supabase]);
 
   useEffect(() => {
     async function loadSchedules() {
@@ -292,56 +300,68 @@ export default function EscalasPage() {
               Nenhuma escala encontrada para este mês.
             </div>
           ) : (
-            <div className="space-y-3">
-              {schedules.map((schedule) => (
-                <div
-                  key={schedule.id}
-                  className="rounded-lg border border-border p-4"
-                >
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-medium text-card-foreground">
-                        {schedule.title}
-                      </p>
-                      <div className="mt-1 flex flex-wrap gap-3 text-sm text-muted-foreground">
-                        <span className="inline-flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {new Date(
-                            `${schedule.date}T12:00:00`,
-                          ).toLocaleDateString("pt-BR", {
-                            weekday: "short",
-                            day: "2-digit",
-                            month: "2-digit",
-                          })}
-                        </span>
-                        {schedule.startTime && (
+            <div className="overflow-hidden rounded-lg border border-border">
+              <table className="w-full table-fixed">
+                <thead className="hidden md:table-header-group">
+                  <tr className="border-b border-border bg-muted/30 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <th className="w-[40%] px-4 py-2 text-left">Evento</th>
+                    <th className="w-[42%] px-4 py-2 text-left">Data e detalhes</th>
+                    <th className="w-[18%] px-4 py-2 text-left">Ministério</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {schedules.map((schedule) => (
+                    <tr key={schedule.id} className="border-t border-border first:border-t-0">
+                      <td className="px-4 py-3 align-middle">
+                        <p className="font-medium text-card-foreground">{schedule.title}</p>
+                      </td>
+
+                      <td className="px-4 py-3 align-middle">
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                           <span className="inline-flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {schedule.startTime.slice(0, 5)}
+                            <Calendar className="h-4 w-4 shrink-0" />
+                            {new Date(
+                              `${schedule.date}T12:00:00`,
+                            ).toLocaleDateString("pt-BR", {
+                              weekday: "short",
+                              day: "2-digit",
+                              month: "2-digit",
+                            })}
                           </span>
-                        )}
-                        {schedule.location && (
-                          <span className="inline-flex items-center gap-1">
-                            <MapPin className="h-4 w-4" />
-                            {schedule.location}
+                          {schedule.startTime && (
+                            <span className="inline-flex items-center gap-1">
+                              <Clock className="h-4 w-4 shrink-0" />
+                              {schedule.startTime.slice(0, 5)}
+                            </span>
+                          )}
+                          {schedule.location && (
+                            <span className="inline-flex min-w-0 items-center gap-1">
+                              <MapPin className="h-4 w-4 shrink-0" />
+                              <span className="truncate">{schedule.location}</span>
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-3 align-middle">
+                        {schedule.ministryName ? (
+                          <span
+                            className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
+                            style={{
+                              backgroundColor: `${schedule.ministryColor || "#2563eb"}20`,
+                              color: schedule.ministryColor || "#2563eb",
+                            }}
+                          >
+                            {schedule.ministryName}
                           </span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">-</span>
                         )}
-                      </div>
-                    </div>
-                    {schedule.ministryName && (
-                      <span
-                        className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
-                        style={{
-                          backgroundColor: `${schedule.ministryColor || "#2563eb"}20`,
-                          color: schedule.ministryColor || "#2563eb",
-                        }}
-                      >
-                        {schedule.ministryName}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>

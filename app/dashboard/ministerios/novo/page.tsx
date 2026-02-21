@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import React from "react"
+import React from "react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Loader2 } from "lucide-react"
-import Link from "next/link"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import Link from "next/link";
 
 const colors = [
   "#3B82F6",
@@ -22,42 +22,43 @@ const colors = [
   "#EC4899",
   "#06B6D4",
   "#84CC16",
-]
+];
 
 export default function NovoMinisterioPage() {
-  const [name, setName] = useState("")
-  const [description, setDescription] = useState("")
-  const [color, setColor] = useState(colors[0])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
-  const supabase = createClient()
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [color, setColor] = useState(colors[0]);
+  const [loading, setLoading] = useState(false);
+  const [navigatingBack, setNavigatingBack] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const supabase = createClient();
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (!user) {
-      setError("Você precisa estar logado.")
-      setLoading(false)
-      return
+      setError("Você precisa estar logado.");
+      setLoading(false);
+      return;
     }
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("church_id")
       .eq("id", user.id)
-      .single()
+      .single();
 
     if (!profile?.church_id) {
-      setError("Igreja não encontrada.")
-      setLoading(false)
-      return
+      setError("Igreja não encontrada.");
+      setLoading(false);
+      return;
     }
 
     const { error: insertError } = await supabase.from("ministries").insert({
@@ -65,28 +66,44 @@ export default function NovoMinisterioPage() {
       name,
       description: description || null,
       color,
-    })
+    });
 
     if (insertError) {
-      setError("Erro ao criar ministério. Tente novamente.")
-      setLoading(false)
-      return
+      setError("Erro ao criar ministério. Tente novamente.");
+      setLoading(false);
+      return;
     }
 
-    router.push("/dashboard/ministerios")
+    router.push("/dashboard/ministerios");
+  }
+
+  function handleBackNavigation() {
+    if (navigatingBack) return;
+    setNavigatingBack(true);
+    router.push("/dashboard/ministerios");
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard/ministerios">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleBackNavigation}
+          disabled={navigatingBack}
+          aria-label="Voltar"
+        >
+          {navigatingBack ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
             <ArrowLeft className="h-5 w-5" />
-            <span className="sr-only">Voltar</span>
-          </Link>
+          )}
+          <span className="sr-only">Voltar</span>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Novo Ministério</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            Novo Ministério
+          </h1>
           <p className="text-muted-foreground">
             Crie um novo ministério para sua igreja
           </p>
@@ -166,5 +183,5 @@ export default function NovoMinisterioPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
