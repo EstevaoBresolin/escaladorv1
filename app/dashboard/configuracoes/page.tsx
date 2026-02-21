@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -33,7 +33,7 @@ export default function ConfiguracoesPage() {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     async function loadSettings() {

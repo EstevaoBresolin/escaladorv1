@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { dbQuery } from "@/lib/api/db-client";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,8 +39,6 @@ export function MinistryVolunteerManager({
   const [loading, setLoading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [selectedVolunteer, setSelectedVolunteer] = useState("");
-  const router = useRouter();
-  const supabase = createClient();
 
   // Filter out volunteers already in the ministry
   const memberIds = members.map((m) => m.profiles?.id).filter(Boolean);
@@ -53,15 +50,21 @@ export function MinistryVolunteerManager({
     if (!selectedVolunteer) return;
     setLoading(true);
 
-    const { error } = await supabase.from("user_ministries").insert({
-      ministry_id: ministryId,
-      user_id: selectedVolunteer,
-    });
+    try {
+      await dbQuery({
+        table: "user_ministries",
+        action: "insert",
+        values: {
+          ministry_id: ministryId,
+          user_id: selectedVolunteer,
+        },
+      });
 
-    if (!error) {
       setOpen(false);
       setSelectedVolunteer("");
       window.location.reload();
+    } catch {
+      // mantém UX atual sem toast adicional
     }
 
     setLoading(false);
@@ -69,7 +72,11 @@ export function MinistryVolunteerManager({
 
   async function handleRemoveVolunteer(membershipId: string) {
     setRemovingId(membershipId);
-    await supabase.from("user_ministries").delete().eq("id", membershipId);
+    await dbQuery({
+      table: "user_ministries",
+      action: "delete",
+      filters: [{ field: "id", operator: "eq", value: membershipId }],
+    });
     setRemovingId(null);
     // Forçar re-render apenas quando necessário
     window.location.reload();

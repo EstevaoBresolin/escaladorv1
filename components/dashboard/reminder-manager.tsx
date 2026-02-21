@@ -1,18 +1,24 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
-import { Switch } from "@/components/ui/switch"
+import { useState, useEffect, useMemo } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Bell,
   Mail,
@@ -23,62 +29,62 @@ import {
   CheckCircle,
   AlertCircle,
   Calendar,
-} from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+} from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
-type NotificationChannel = "email" | "whatsapp"
+type NotificationChannel = "email" | "whatsapp";
 
 interface Event {
-  id: string
-  title: string
-  date: string
-  start_time: string | null
+  id: string;
+  title: string;
+  date: string;
+  start_time: string | null;
 }
 
 interface SendResult {
-  success: boolean
-  message: string
+  success: boolean;
+  message: string;
   details?: {
-    total: number
-    sent: number
-    failed: number
-  }
+    total: number;
+    sent: number;
+    failed: number;
+  };
 }
 
 export function ReminderManager() {
-  const [channel, setChannel] = useState<NotificationChannel>("email")
-  const [enableFallback, setEnableFallback] = useState(false)
-  const [events, setEvents] = useState<Event[]>([])
-  const [selectedEvent, setSelectedEvent] = useState<string>("")
-  const [loading, setLoading] = useState(false)
-  const [loadingEvents, setLoadingEvents] = useState(true)
-  const [result, setResult] = useState<SendResult | null>(null)
+  const [channel, setChannel] = useState<NotificationChannel>("email");
+  const [enableFallback, setEnableFallback] = useState(false);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [result, setResult] = useState<SendResult | null>(null);
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     async function loadEvents() {
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await supabase.auth.getUser();
 
-      if (!user) return
+      if (!user) return;
 
       const { data: profile } = await supabase
         .from("profiles")
         .select("church_id")
         .eq("id", user.id)
-        .single()
+        .single();
 
-      if (!profile?.church_id) return
+      if (!profile?.church_id) return;
 
       // Get upcoming events (next 7 days)
-      const today = new Date()
-      const nextWeek = new Date()
-      nextWeek.setDate(nextWeek.getDate() + 7)
+      const today = new Date();
+      const nextWeek = new Date();
+      nextWeek.setDate(nextWeek.getDate() + 7);
 
-      const todayStr = today.toISOString().split("T")[0]
-      const nextWeekStr = nextWeek.toISOString().split("T")[0]
+      const todayStr = today.toISOString().split("T")[0];
+      const nextWeekStr = nextWeek.toISOString().split("T")[0];
 
       const { data } = await supabase
         .from("events")
@@ -86,20 +92,20 @@ export function ReminderManager() {
         .eq("church_id", profile.church_id)
         .gte("date", todayStr)
         .lte("date", nextWeekStr)
-        .order("date", { ascending: true })
+        .order("date", { ascending: true });
 
-      setEvents(data || [])
-      setLoadingEvents(false)
+      setEvents(data || []);
+      setLoadingEvents(false);
     }
 
-    loadEvents()
-  }, [supabase])
+    loadEvents();
+  }, [supabase]);
 
   async function handleSendReminders() {
-    if (!selectedEvent) return
+    if (!selectedEvent) return;
 
-    setLoading(true)
-    setResult(null)
+    setLoading(true);
+    setResult(null);
 
     try {
       const response = await fetch("/api/reminders/send", {
@@ -112,9 +118,9 @@ export function ReminderManager() {
           channel,
           enableFallback,
         }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok) {
         setResult({
@@ -125,26 +131,26 @@ export function ReminderManager() {
             sent: data.sent || 0,
             failed: data.failed || 0,
           },
-        })
+        });
       } else {
         setResult({
           success: false,
           message: data.error || "Erro ao enviar lembretes",
-        })
+        });
       }
     } catch (error) {
       setResult({
         success: false,
         message: "Erro de conexao. Tente novamente.",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   async function handleTestCron() {
-    setLoading(true)
-    setResult(null)
+    setLoading(true);
+    setResult(null);
 
     try {
       const response = await fetch("/api/cron/send-reminders", {
@@ -152,32 +158,32 @@ export function ReminderManager() {
         headers: {
           "x-vercel-cron-test": "true",
         },
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok) {
         setResult({
           success: true,
           message: `Cron executado! ${data.sent || 0} lembretes enviados para eventos de amanha.`,
-        })
+        });
       } else {
         setResult({
           success: false,
           message: data.error || "Erro ao executar cron",
-        })
+        });
       }
     } catch (error) {
       setResult({
         success: false,
         message: "Erro de conexao. Tente novamente.",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
-  const selectedEventData = events.find((e) => e.id === selectedEvent)
+  const selectedEventData = events.find((e) => e.id === selectedEvent);
 
   return (
     <div className="space-y-6">
@@ -199,7 +205,7 @@ export function ReminderManager() {
               onClick={() => setChannel("email")}
               className={cn(
                 "flex cursor-pointer flex-col items-center justify-between rounded-lg border-2 bg-popover p-4 transition-colors hover:bg-accent hover:text-accent-foreground",
-                channel === "email" ? "border-primary" : "border-muted"
+                channel === "email" ? "border-primary" : "border-muted",
               )}
             >
               <Mail className="mb-3 h-6 w-6" />
@@ -213,7 +219,7 @@ export function ReminderManager() {
               onClick={() => setChannel("whatsapp")}
               className={cn(
                 "flex cursor-pointer flex-col items-center justify-between rounded-lg border-2 bg-popover p-4 transition-colors hover:bg-accent hover:text-accent-foreground",
-                channel === "whatsapp" ? "border-primary" : "border-muted"
+                channel === "whatsapp" ? "border-primary" : "border-muted",
               )}
             >
               <MessageCircle className="mb-3 h-6 w-6" />
@@ -287,14 +293,13 @@ export function ReminderManager() {
                         <span>{event.title}</span>
                         <span className="text-muted-foreground">
                           -{" "}
-                          {new Date(event.date + "T12:00:00").toLocaleDateString(
-                            "pt-BR",
-                            {
-                              weekday: "short",
-                              day: "numeric",
-                              month: "short",
-                            }
-                          )}
+                          {new Date(
+                            event.date + "T12:00:00",
+                          ).toLocaleDateString("pt-BR", {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                          })}
                         </span>
                       </div>
                     </SelectItem>
@@ -308,15 +313,14 @@ export function ReminderManager() {
             <div className="rounded-lg border p-3 text-sm">
               <p className="font-medium">{selectedEventData.title}</p>
               <p className="text-muted-foreground">
-                {new Date(selectedEventData.date + "T12:00:00").toLocaleDateString(
-                  "pt-BR",
-                  {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  }
-                )}
+                {new Date(
+                  selectedEventData.date + "T12:00:00",
+                ).toLocaleDateString("pt-BR", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
                 {selectedEventData.start_time &&
                   ` as ${selectedEventData.start_time.slice(0, 5)}`}
               </p>
@@ -341,8 +345,8 @@ export function ReminderManager() {
               </div>
               {result.details && (
                 <div className="mt-2 text-sm opacity-80">
-                  Total: {result.details.total} | Enviados: {result.details.sent}{" "}
-                  | Falhas: {result.details.failed}
+                  Total: {result.details.total} | Enviados:{" "}
+                  {result.details.sent} | Falhas: {result.details.failed}
                 </div>
               )}
             </div>
@@ -438,5 +442,5 @@ export function ReminderManager() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

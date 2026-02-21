@@ -1,8 +1,6 @@
 "use client";
 
-import React from "react";
-
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -11,17 +9,79 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CalendarCheck, Loader2, Eye, EyeOff } from "lucide-react";
 
+const LOGIN_BLOCKED_UNTIL_KEY = "login-blocked-until";
+
+function formatRemainingMinutes(seconds: number) {
+  const minutes = Math.max(Math.ceil(seconds / 60), 1);
+  const minuteLabel = minutes === 1 ? "minuto" : "minutos";
+  return `${minutes} ${minuteLabel}`;
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [blockedUntil, setBlockedUntil] = useState(0);
+  const [now, setNow] = useState(Date.now());
   const router = useRouter();
   const supabase = createClient();
 
+  const remainingBlockSeconds = Math.max(
+    Math.ceil((blockedUntil - now) / 1000),
+    0
+  );
+  const isBlocked = remainingBlockSeconds > 0;
+  const displayError = isBlocked
+    ? `Muitas tentativas. Aguarde ${formatRemainingMinutes(remainingBlockSeconds)} para tentar novamente.`
+    : error;
+
+  useEffect(() => {
+    const raw = window.localStorage.getItem(LOGIN_BLOCKED_UNTIL_KEY);
+    const savedUntil = raw ? Number(raw) : 0;
+
+    if (Number.isFinite(savedUntil) && savedUntil > Date.now()) {
+      setBlockedUntil(savedUntil);
+      setNow(Date.now());
+      return;
+    }
+
+    window.localStorage.removeItem(LOGIN_BLOCKED_UNTIL_KEY);
+  }, []);
+
+  useEffect(() => {
+    if (!isBlocked) {
+      if (blockedUntil > 0) {
+        window.localStorage.removeItem(LOGIN_BLOCKED_UNTIL_KEY);
+      }
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [isBlocked, blockedUntil]);
+
+  function blockLoginForSeconds(seconds: number) {
+    const validSeconds = Number.isFinite(seconds) && seconds > 0 ? seconds : 10 * 60;
+    const until = Date.now() + validSeconds * 1000;
+
+    setBlockedUntil(until);
+    setNow(Date.now());
+    setError(null);
+    window.localStorage.setItem(LOGIN_BLOCKED_UNTIL_KEY, String(until));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (isBlocked) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -37,14 +97,19 @@ export default function LoginPage() {
       const body = await loginResponse.json().catch(() => null)
 
       if (loginResponse.status === 429) {
-        const retryAfter = loginResponse.headers.get("Retry-After")
-        setError(
-          retryAfter
-            ? `Muitas tentativas. Aguarde ${retryAfter} segundos e tente novamente.`
-            : "Muitas tentativas. Aguarde um pouco e tente novamente."
-        )
+        const retryAfter = Number(loginResponse.headers.get("Retry-After"))
+        blockLoginForSeconds(retryAfter)
       } else {
-        setError(body?.error || "Email ou senha incorretos. Tente novamente.")
+        const remainingAttempts = Number(body?.remainingAttempts)
+
+        if (Number.isFinite(remainingAttempts) && remainingAttempts > 0) {
+          const tentativaLabel = remainingAttempts === 1 ? "tentativa" : "tentativas"
+          setError(
+            `Email ou senha incorretos. Restam ${remainingAttempts} ${tentativaLabel}.`
+          )
+        } else {
+          setError(body?.error || "Email ou senha incorretos. Tente novamente.")
+        }
       }
 
       setLoading(false)
@@ -122,9 +187,9 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
+          {displayError && (
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
+              {displayError}
             </div>
           )}
 
@@ -176,12 +241,14 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || isBlocked}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Entrando...
               </>
+            ) : isBlocked ? (
+              `Bloqueado (${formatRemainingMinutes(remainingBlockSeconds)})`
             ) : (
               "Entrar"
             )}

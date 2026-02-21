@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { dbQuery } from "@/lib/api/db-client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -51,28 +50,32 @@ export function MinistryLeaderManager({
   const [loading, setLoading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [selectedVolunteer, setSelectedVolunteer] = useState("");
-  const router = useRouter();
-  const supabase = createClient();
 
   // Filter out people who are already leaders
   const leaderIds = leaders.map((l) => l.profiles?.id).filter(Boolean);
   const filteredVolunteers = availableVolunteers.filter(
-    (v) => !leaderIds.includes(v.id)
+    (v) => !leaderIds.includes(v.id),
   );
 
   async function handleAddLeader() {
     if (!selectedVolunteer) return;
     setLoading(true);
 
-    const { error } = await supabase.from("ministry_leaders").insert({
-      ministry_id: ministryId,
-      user_id: selectedVolunteer,
-    });
+    try {
+      await dbQuery({
+        table: "ministry_leaders",
+        action: "insert",
+        values: {
+          ministry_id: ministryId,
+          user_id: selectedVolunteer,
+        },
+      });
 
-    if (!error) {
       setOpen(false);
       setSelectedVolunteer("");
       window.location.reload();
+    } catch {
+      // mantém UX atual sem toast adicional
     }
 
     setLoading(false);
@@ -80,7 +83,11 @@ export function MinistryLeaderManager({
 
   async function handleRemoveLeader(leaderId: string) {
     setRemovingId(leaderId);
-    await supabase.from("ministry_leaders").delete().eq("id", leaderId);
+    await dbQuery({
+      table: "ministry_leaders",
+      action: "delete",
+      filters: [{ field: "id", operator: "eq", value: leaderId }],
+    });
     setRemovingId(null);
     window.location.reload();
   }
@@ -109,7 +116,10 @@ export function MinistryLeaderManager({
                     </p>
                   </div>
                 </div>
-                <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">
+                <Badge
+                  variant="secondary"
+                  className="bg-amber-500/10 text-amber-600"
+                >
                   Lider
                 </Badge>
               </div>
@@ -150,7 +160,10 @@ export function MinistryLeaderManager({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">
+                <Badge
+                  variant="secondary"
+                  className="bg-amber-500/10 text-amber-600"
+                >
                   Lider
                 </Badge>
                 <Button
@@ -222,8 +235,8 @@ export function MinistryLeaderManager({
                 </div>
 
                 <p className="text-sm text-muted-foreground">
-                  Lideres podem adicionar e remover voluntarios do ministerio
-                  e escalar voluntarios para eventos.
+                  Lideres podem adicionar e remover voluntarios do ministerio e
+                  escalar voluntarios para eventos.
                 </p>
 
                 <Button

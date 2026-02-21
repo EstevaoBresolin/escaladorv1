@@ -1,29 +1,32 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Check, Loader2 } from "lucide-react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { dbQuery } from "@/lib/api/db-client";
+import { Button } from "@/components/ui/button";
+import { Check, Loader2 } from "lucide-react";
 
 interface MarkAllReadButtonProps {
-  userId: string
+  userId: string;
 }
 
 export function MarkAllReadButton({ userId }: MarkAllReadButtonProps) {
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   async function handleMarkAllRead() {
-    setLoading(true)
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("user_id", userId)
-      .eq("is_read", false)
-    setLoading(false)
-    window.location.reload()
+    setLoading(true);
+    await dbQuery({
+      table: "notifications",
+      action: "update",
+      values: { is_read: true },
+      filters: [
+        { field: "user_id", operator: "eq", value: userId },
+        { field: "is_read", operator: "eq", value: false },
+      ],
+    });
+    setLoading(false);
+    router.refresh();
   }
 
   return (
@@ -40,5 +43,5 @@ export function MarkAllReadButton({ userId }: MarkAllReadButtonProps) {
         </>
       )}
     </Button>
-  )
+  );
 }

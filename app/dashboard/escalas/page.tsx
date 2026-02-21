@@ -45,7 +45,7 @@ export default function EscalasPage() {
   const [loading, setLoading] = useState(true);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const monthLabel = currentMonth.toLocaleDateString("pt-BR", {
     month: "long",
@@ -123,8 +123,8 @@ export default function EscalasPage() {
         }));
 
         setVolunteers(options);
-        if (!selectedVolunteerId && options.length > 0) {
-          setSelectedVolunteerId(options[0].id);
+        if (options.length > 0) {
+          setSelectedVolunteerId((prev) => prev || options[0].id);
         }
         setLoading(false);
         return;
@@ -151,8 +151,8 @@ export default function EscalasPage() {
         );
 
         setVolunteers(options);
-        if (!selectedVolunteerId && options.length > 0) {
-          setSelectedVolunteerId(options[0].id);
+        if (options.length > 0) {
+          setSelectedVolunteerId((prev) => prev || options[0].id);
         }
         setLoading(false);
         return;
@@ -163,7 +163,7 @@ export default function EscalasPage() {
     }
 
     loadVolunteers();
-  }, [supabase, selectedVolunteerId]);
+  }, [supabase]);
 
   useEffect(() => {
     async function loadSchedules() {
@@ -179,9 +179,7 @@ export default function EscalasPage() {
         )
         .eq("user_id", selectedVolunteerId)
         .gte("events.date", monthRange.startStr)
-        .lte("events.date", monthRange.endStr)
-        .order("date", { ascending: true, foreignTable: "events" })
-        .order("start_time", { ascending: true, foreignTable: "events" });
+        .lte("events.date", monthRange.endStr);
 
       if (error) {
         setError("Erro ao carregar escalas. Tente novamente.");
@@ -199,6 +197,14 @@ export default function EscalasPage() {
         ministryName: row.ministries?.name || null,
         ministryColor: row.ministries?.color || null,
       }));
+
+      mapped.sort((a, b) => {
+        const dateCompare = (a.date || "").localeCompare(b.date || "");
+        if (dateCompare !== 0) {
+          return dateCompare;
+        }
+        return (a.startTime || "").localeCompare(b.startTime || "");
+      });
 
       setSchedules(mapped);
       setLoadingSchedules(false);

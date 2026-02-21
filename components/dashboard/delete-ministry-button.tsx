@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { dbQuery } from "@/lib/api/db-client";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,37 +13,40 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Loader2 } from "lucide-react"
+} from "@/components/ui/alert-dialog";
+import { Loader2 } from "lucide-react";
 
 interface DeleteMinistryButtonProps {
-  ministryId: string
-  ministryName: string
+  ministryId: string;
+  ministryName: string;
 }
 
 export function DeleteMinistryButton({
   ministryId,
   ministryName,
 }: DeleteMinistryButtonProps) {
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   async function handleDelete() {
-    setLoading(true)
-    await supabase.from("ministries").delete().eq("id", ministryId)
-    setLoading(false)
-    setOpen(false)
-    router.push("/dashboard/ministerios")
+    setLoading(true);
+    await dbQuery({
+      table: "ministries",
+      action: "delete",
+      filters: [{ field: "id", operator: "eq", value: ministryId }],
+    });
+    setLoading(false);
+    setOpen(false);
+    router.push("/dashboard/ministerios");
   }
 
   return (
     <>
       <DropdownMenuItem
         onSelect={(e) => {
-          e.preventDefault()
-          setOpen(true)
+          e.preventDefault();
+          setOpen(true);
         }}
         className="text-destructive focus:text-destructive"
       >
@@ -80,5 +83,5 @@ export function DeleteMinistryButton({
         </AlertDialogContent>
       </AlertDialog>
     </>
-  )
+  );
 }
