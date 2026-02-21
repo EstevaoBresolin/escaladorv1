@@ -63,12 +63,16 @@ interface EventQuickScheduleProps {
   event: EventWithMinistries;
   isAdmin: boolean;
   ledMinistryIds: string[];
+  triggerSize?: "default" | "sm" | "lg";
+  triggerClassName?: string;
 }
 
 export function EventQuickSchedule({
   event,
   isAdmin,
   ledMinistryIds,
+  triggerSize = "default",
+  triggerClassName,
 }: EventQuickScheduleProps) {
   const [open, setOpen] = useState(false);
   const [selectMinistryOpen, setSelectMinistryOpen] = useState(false);
@@ -472,7 +476,11 @@ export function EventQuickSchedule({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="mt-3">
+        <Button
+          variant="outline"
+          size={triggerSize}
+          className={triggerClassName}
+        >
           <UserPlus className="mr-2 h-4 w-4" />
           Cadastrar escalas
         </Button>

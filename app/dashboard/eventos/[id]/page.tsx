@@ -2,7 +2,15 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, Clock, MapPin, Edit, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  MapPin,
+  Edit,
+  Users,
+  BadgeCheck,
+} from "lucide-react";
 import Link from "next/link";
 import { VolunteerSlotManager } from "@/components/dashboard/volunteer-slot-manager";
 import { EventQuickSchedule } from "@/components/dashboard/event-quick-schedule";
@@ -92,32 +100,30 @@ export default async function EventPage({ params }: EventPageProps) {
         .maybeSingle()
     : { data: null };
 
-  // Get user permissions
   const permissions = await getUserPermissions(supabase);
   const isAdmin = permissions?.isAdmin || false;
+
   const canManageEvent =
     isAdmin ||
-    permissions?.ledMinistryIds.some((lid) =>
+    permissions?.ledMinistryIds.some((ledMinistryId) =>
       event.event_ministries?.some(
-        (em: { ministry_id: string }) => em.ministry_id === lid,
+        (eventMinistry: { ministry_id: string }) =>
+          eventMinistry.ministry_id === ledMinistryId,
       ),
     ) ||
     false;
 
-  // Get ministry IDs from the event
   const eventMinistryIds =
     event.event_ministries?.map(
-      (em: { ministry_id: string }) => em.ministry_id,
+      (eventMinistry: { ministry_id: string }) => eventMinistry.ministry_id,
     ) || [];
 
-  // Get all ministries for the church
   const { data: allMinistries } = await supabase
     .from("ministries")
     .select("id, name, color")
     .eq("church_id", profile?.church_id)
     .order("name");
 
-  // Get manageable ministries based on permissions
   const manageableMinistries = permissions
     ? getManageableMinistries(
         eventMinistryIds,
@@ -126,123 +132,176 @@ export default async function EventPage({ params }: EventPageProps) {
       )
     : [];
 
-  // Get assignable volunteers based on permissions
   const volunteers = permissions
     ? await getAssignableVolunteers(supabase, eventMinistryIds, permissions)
     : [];
 
-  // Get unavailable volunteers for this event date with period information
   const { data: unavailableVolunteers } = await supabase
     .from("volunteer_unavailability")
     .select("user_id, unavailable_date, period")
     .eq("unavailable_date", event.date);
 
+  const confirmedSlots =
+    event.volunteer_slots?.filter(
+      (slot: { status: string }) => slot.status === "confirmed",
+    ).length || 0;
+  const pendingSlots =
+    event.volunteer_slots?.filter(
+      (slot: { status: string }) => slot.status === "pending",
+    ).length || 0;
+
+  const eventDateLabel = new Date(event.date + "T12:00:00").toLocaleDateString(
+    "pt-BR",
+    {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    },
+  );
+
   return (
     <div className="space-y-6 overflow-x-hidden">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/dashboard/eventos">
-              <ArrowLeft className="h-5 w-5" />
-              <span className="sr-only">Voltar</span>
-            </Link>
-          </Button>
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
-            <h1 className="truncate text-2xl font-bold text-foreground">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-muted-foreground">
+              <BadgeCheck className="h-3.5 w-3.5 text-primary" />
+              Detalhes do evento
+            </div>
+            <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
               {event.title}
             </h1>
-            <p className="text-muted-foreground">Detalhes do evento</p>
+            <p className="mt-2 text-sm capitalize text-muted-foreground">
+              {eventDateLabel}
+            </p>
           </div>
-        </div>
-        <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
-          {(previousEvent || nextEvent) && (
-            <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!previousEvent}
-                asChild={!!previousEvent}
-              >
-                {previousEvent ? (
-                  <Link href={`/dashboard/eventos/${previousEvent.id}`}>
-                    <span className="sm:hidden">Anterior</span>
-                    <span className="hidden sm:inline">Evento anterior</span>
-                  </Link>
-                ) : (
-                  <span>
-                    <span className="sm:hidden">Anterior</span>
-                    <span className="hidden sm:inline">Evento anterior</span>
-                  </span>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!nextEvent}
-                asChild={!!nextEvent}
-              >
-                {nextEvent ? (
-                  <Link href={`/dashboard/eventos/${nextEvent.id}`}>
-                    <span className="sm:hidden">Próximo</span>
-                    <span className="hidden sm:inline">Próximo evento</span>
-                  </Link>
-                ) : (
-                  <span>
-                    <span className="sm:hidden">Próximo</span>
-                    <span className="hidden sm:inline">Próximo evento</span>
-                  </span>
-                )}
-              </Button>
-            </div>
-          )}
-          {isAdmin && (
-            <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap">
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/eventos">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar
+              </Link>
+            </Button>
+            {isAdmin && (
               <Button variant="outline" asChild>
                 <Link href={`/dashboard/eventos/${id}/editar`}>
                   <Edit className="mr-2 h-4 w-4" />
                   Editar
                 </Link>
               </Button>
-            </div>
-          )}
+            )}
+            <EventQuickSchedule
+              event={{
+                id: event.id,
+                title: event.title,
+                date: event.date,
+                start_time: event.start_time,
+                event_ministries: event.event_ministries || [],
+              }}
+              isAdmin={isAdmin}
+              ledMinistryIds={permissions?.ledMinistryIds || []}
+            />
+          </div>
         </div>
-      </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <Card>
+        {(previousEvent || nextEvent) && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={!previousEvent}
+              asChild={!!previousEvent}
+            >
+              {previousEvent ? (
+                <Link href={`/dashboard/eventos/${previousEvent.id}`}>
+                  Evento anterior
+                </Link>
+              ) : (
+                <span>Evento anterior</span>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={!nextEvent}
+              asChild={!!nextEvent}
+            >
+              {nextEvent ? (
+                <Link href={`/dashboard/eventos/${nextEvent.id}`}>
+                  Próximo evento
+                </Link>
+              ) : (
+                <span>Próximo evento</span>
+              )}
+            </Button>
+          </div>
+        )}
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="rounded-2xl">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Confirmados</p>
+            <p className="mt-1 text-3xl font-semibold tracking-tight text-card-foreground">
+              {confirmedSlots}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Pendentes</p>
+            <p className="mt-1 text-3xl font-semibold tracking-tight text-card-foreground">
+              {pendingSlots}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Ministérios</p>
+            <p className="mt-1 text-3xl font-semibold tracking-tight text-card-foreground">
+              {event.event_ministries?.length || 0}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Escalas totais</p>
+            <p className="mt-1 text-3xl font-semibold tracking-tight text-card-foreground">
+              {event.volunteer_slots?.length || 0}
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-1">
+          <Card className="rounded-2xl">
             <CardHeader>
               <CardTitle>Informações</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <Calendar className="h-5 w-5 text-primary" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                  <Calendar className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Data</p>
-                  <p className="font-medium text-card-foreground">
-                    {new Date(event.date + "T12:00:00").toLocaleDateString(
-                      "pt-BR",
-                      {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      },
-                    )}
+                  <p className="text-xs text-muted-foreground">Data</p>
+                  <p className="text-sm font-medium text-card-foreground capitalize">
+                    {eventDateLabel}
                   </p>
                 </div>
               </div>
 
               {event.start_time && (
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                    <Clock className="h-5 w-5 text-primary" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                    <Clock className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Horário</p>
-                    <p className="font-medium text-card-foreground">
+                    <p className="text-xs text-muted-foreground">Horário</p>
+                    <p className="text-sm font-medium text-card-foreground">
                       {event.start_time.slice(0, 5)}
                     </p>
                   </div>
@@ -251,12 +310,12 @@ export default async function EventPage({ params }: EventPageProps) {
 
               {event.location && (
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                    <MapPin className="h-5 w-5 text-primary" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                    <MapPin className="h-4 w-4 text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm text-muted-foreground">Local</p>
-                    <p className="break-words font-medium text-card-foreground">
+                    <p className="text-xs text-muted-foreground">Local</p>
+                    <p className="break-words text-sm font-medium text-card-foreground">
                       {event.location}
                     </p>
                   </div>
@@ -265,33 +324,33 @@ export default async function EventPage({ params }: EventPageProps) {
 
               {event.description && (
                 <div className="pt-2">
-                  <p className="text-sm text-muted-foreground">Descrição</p>
-                  <p className="mt-1 break-words text-card-foreground">
+                  <p className="text-xs text-muted-foreground">Descrição</p>
+                  <p className="mt-1 text-sm text-card-foreground">
                     {event.description}
                   </p>
                 </div>
               )}
 
-              {event.event_ministries && event.event_ministries.length > 0 && (
+              {event.event_ministries?.length > 0 && (
                 <div className="pt-2">
-                  <p className="mb-2 text-sm text-muted-foreground">
-                    Ministérios Envolvidos
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Ministérios envolvidos
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {event.event_ministries.map(
-                      (em: {
+                      (eventMinistry: {
                         ministry_id: string;
                         ministries: { id: string; name: string; color: string };
                       }) => (
                         <span
-                          key={em.ministry_id}
-                          className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium"
+                          key={eventMinistry.ministry_id}
+                          className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
                           style={{
-                            backgroundColor: `${em.ministries.color}20`,
-                            color: em.ministries.color,
+                            backgroundColor: `${eventMinistry.ministries.color}20`,
+                            color: eventMinistry.ministries.color,
                           }}
                         >
-                          {em.ministries.name}
+                          {eventMinistry.ministries.name}
                         </span>
                       ),
                     )}
@@ -300,24 +359,15 @@ export default async function EventPage({ params }: EventPageProps) {
               )}
             </CardContent>
           </Card>
+        </div>
 
-          <Card>
-            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="lg:col-span-2">
+          <Card className="rounded-2xl">
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
                 Escala de Voluntários
               </CardTitle>
-              <EventQuickSchedule
-                event={{
-                  id: event.id,
-                  title: event.title,
-                  date: event.date,
-                  start_time: event.start_time,
-                  event_ministries: event.event_ministries || [],
-                }}
-                isAdmin={isAdmin}
-                ledMinistryIds={permissions?.ledMinistryIds || []}
-              />
             </CardHeader>
             <CardContent>
               <VolunteerSlotManager
@@ -326,10 +376,10 @@ export default async function EventPage({ params }: EventPageProps) {
                 eventStartTime={event.start_time}
                 slots={event.volunteer_slots || []}
                 volunteers={
-                  volunteers.map((v) => ({
-                    id: v.id,
-                    name: v.name,
-                    email: v.email,
+                  volunteers.map((volunteer) => ({
+                    id: volunteer.id,
+                    name: volunteer.name,
+                    email: volunteer.email,
                   })) || []
                 }
                 ministries={manageableMinistries || []}
@@ -338,47 +388,15 @@ export default async function EventPage({ params }: EventPageProps) {
                 isAdmin={isAdmin}
                 ledMinistryIds={permissions?.ledMinistryIds || []}
                 memberMinistryIds={
-                  userMinistries?.map((um) => um.ministry_id) || []
+                  userMinistries?.map(
+                    (userMinistry) => userMinistry.ministry_id,
+                  ) || []
                 }
               />
             </CardContent>
           </Card>
         </div>
-
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Resumo</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">
-                  Voluntários escalados
-                </span>
-                <span className="font-semibold text-card-foreground">
-                  {event.volunteer_slots?.filter(
-                    (s: { status: string }) => s.status === "confirmed",
-                  ).length || 0}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Pendentes</span>
-                <span className="font-semibold text-card-foreground">
-                  {event.volunteer_slots?.filter(
-                    (s: { status: string }) => s.status === "pending",
-                  ).length || 0}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Ministérios</span>
-                <span className="font-semibold text-card-foreground">
-                  {event.event_ministries?.length || 0}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }

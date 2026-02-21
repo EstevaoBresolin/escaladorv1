@@ -1,11 +1,18 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Users, Mail, Phone, MoreVertical, Search } from "lucide-react";
+import {
+  Users,
+  Mail,
+  Phone,
+  MoreVertical,
+  Search,
+  UserCheck,
+} from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -22,6 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getUserPermissions } from "@/lib/permissions";
+import { DashboardEmptyState } from "@/components/dashboard/dashboard-feedback";
 
 interface UserMinistry {
   ministry_id: string;
@@ -63,7 +71,6 @@ export default function VoluntariosPage() {
         .eq("id", user.id)
         .single();
 
-      // Get user permissions
       const permissions = await getUserPermissions(supabase);
       setIsAdmin(permissions?.isAdmin || false);
       const ledMinistryIds = permissions?.ledMinistryIds || [];
@@ -124,20 +131,14 @@ export default function VoluntariosPage() {
 
     const term = searchTerm.toLowerCase().trim();
     return volunteers.filter((volunteer) => {
-      // Search by name
-      if (volunteer.name && volunteer.name.toLowerCase().includes(term)) {
+      if (volunteer.name && volunteer.name.toLowerCase().includes(term))
         return true;
-      }
-
-      // Search by email
-      if (volunteer.email && volunteer.email.toLowerCase().includes(term)) {
+      if (volunteer.email && volunteer.email.toLowerCase().includes(term))
         return true;
-      }
 
-      // Search by ministry names
       if (volunteer.user_ministries && volunteer.user_ministries.length > 0) {
-        return volunteer.user_ministries.some((um) =>
-          um.ministries.name.toLowerCase().includes(term),
+        return volunteer.user_ministries.some((userMinistry) =>
+          userMinistry.ministries.name.toLowerCase().includes(term),
         );
       }
 
@@ -145,18 +146,22 @@ export default function VoluntariosPage() {
     });
   }, [volunteers, searchTerm]);
 
+  const subtitle = isAdmin
+    ? "Gerencie os voluntários da sua igreja"
+    : isLeader
+      ? "Voluntários dos ministérios que você lidera"
+      : "Voluntários";
+
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Voluntários</h1>
-            <p className="text-muted-foreground">
-              Gerencie os voluntários da sua igreja
-            </p>
-          </div>
-        </div>
-        <Card>
+        <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+          <div className="h-5 w-40 animate-pulse rounded bg-muted" />
+          <div className="mt-2 h-8 w-56 animate-pulse rounded bg-muted" />
+          <div className="mt-2 h-4 w-80 animate-pulse rounded bg-muted" />
+        </section>
+
+        <Card className="rounded-2xl">
           <CardContent className="p-0">
             <Table>
               <TableHeader>
@@ -172,22 +177,22 @@ export default function VoluntariosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {[1, 2, 3].map((i) => (
-                  <TableRow key={i}>
+                {[1, 2, 3].map((index) => (
+                  <TableRow key={index}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 bg-muted rounded-full animate-pulse"></div>
-                        <div className="h-4 bg-muted rounded w-32 animate-pulse"></div>
+                        <div className="h-9 w-9 animate-pulse rounded-full bg-muted" />
+                        <div className="h-4 w-32 animate-pulse rounded bg-muted" />
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      <div className="h-3 bg-muted rounded w-40 animate-pulse"></div>
+                      <div className="h-3 w-40 animate-pulse rounded bg-muted" />
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
-                      <div className="h-3 bg-muted rounded w-20 animate-pulse"></div>
+                      <div className="h-3 w-20 animate-pulse rounded bg-muted" />
                     </TableCell>
                     <TableCell>
-                      <div className="h-8 w-8 bg-muted rounded animate-pulse"></div>
+                      <div className="h-8 w-8 animate-pulse rounded bg-muted" />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -201,34 +206,44 @@ export default function VoluntariosPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Voluntários</h1>
-          <p className="text-muted-foreground">
-            {isAdmin
-              ? "Gerencie os voluntários da sua igreja"
-              : isLeader
-                ? "Voluntários dos ministérios que você lidera"
-                : "Voluntários"}
-          </p>
-        </div>
-      </div>
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-sm font-medium text-primary">
+              Gestão de pessoas
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+              Voluntários
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>
+          </div>
 
-      {volunteers && volunteers.length > 0 && (
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Pesquisar voluntários por nome, email ou ministério..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+          <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm text-muted-foreground">
+            <UserCheck className="h-4 w-4 text-primary" />
+            <span>{filteredVolunteers.length} resultados</span>
+          </div>
         </div>
+      </section>
+
+      {volunteers.length > 0 && (
+        <Card className="rounded-2xl">
+          <CardContent className="p-4 md:p-5">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Pesquisar voluntários por nome, email ou ministério..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {filteredVolunteers && filteredVolunteers.length > 0 ? (
-        <Card>
+      {filteredVolunteers.length > 0 ? (
+        <Card className="overflow-hidden rounded-2xl">
           <CardContent className="p-0">
             <Table>
               <TableHeader>
@@ -252,7 +267,7 @@ export default function VoluntariosPage() {
                           {volunteer.name
                             ? volunteer.name
                                 .split(" ")
-                                .map((n: string) => n[0])
+                                .map((name: string) => name[0])
                                 .join("")
                                 .slice(0, 2)
                                 .toUpperCase()
@@ -268,6 +283,7 @@ export default function VoluntariosPage() {
                         </div>
                       </div>
                     </TableCell>
+
                     <TableCell className="hidden md:table-cell">
                       <div className="space-y-1">
                         {volunteer.email && (
@@ -285,20 +301,21 @@ export default function VoluntariosPage() {
                           )}
                       </div>
                     </TableCell>
+
                     <TableCell className="hidden sm:table-cell">
                       <div className="flex flex-wrap gap-1">
                         {volunteer.user_ministries &&
                         volunteer.user_ministries.length > 0 ? (
-                          volunteer.user_ministries.map((um) => (
+                          volunteer.user_ministries.map((userMinistry) => (
                             <span
-                              key={um.ministry_id}
+                              key={userMinistry.ministry_id}
                               className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
                               style={{
-                                backgroundColor: `${um.ministries.color}20`,
-                                color: um.ministries.color,
+                                backgroundColor: `${userMinistry.ministries.color}20`,
+                                color: userMinistry.ministries.color,
                               }}
                             >
-                              {um.ministries.name}
+                              {userMinistry.ministries.name}
                             </span>
                           ))
                         ) : (
@@ -308,6 +325,7 @@ export default function VoluntariosPage() {
                         )}
                       </div>
                     </TableCell>
+
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -346,33 +364,23 @@ export default function VoluntariosPage() {
             </Table>
           </CardContent>
         </Card>
-      ) : volunteers && volunteers.length > 0 && searchTerm ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Search className="mb-4 h-12 w-12 text-muted-foreground/50" />
-            <h3 className="mb-2 text-lg font-semibold text-card-foreground">
-              Nenhum voluntário encontrado
-            </h3>
-            <p className="mb-4 text-center text-muted-foreground">
-              Não encontramos nenhum voluntário com o termo "{searchTerm}".
-            </p>
+      ) : volunteers.length > 0 && searchTerm ? (
+        <DashboardEmptyState
+          icon={Search}
+          title="Nenhum voluntário encontrado"
+          description={`Não encontramos nenhum voluntário com o termo "${searchTerm}".`}
+          action={
             <Button variant="outline" onClick={() => setSearchTerm("")}>
               Limpar pesquisa
             </Button>
-          </CardContent>
-        </Card>
+          }
+        />
       ) : (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Users className="mb-4 h-12 w-12 text-muted-foreground/50" />
-            <h3 className="mb-2 text-lg font-semibold text-card-foreground">
-              Nenhum voluntário cadastrado
-            </h3>
-            <p className="text-center text-muted-foreground">
-              Os voluntários são criados através do cadastro (sign up).
-            </p>
-          </CardContent>
-        </Card>
+        <DashboardEmptyState
+          icon={Users}
+          title="Nenhum voluntário cadastrado"
+          description="Os voluntários são criados através do cadastro (sign up)."
+        />
       )}
     </div>
   );

@@ -1,8 +1,6 @@
 "use client";
 
-import React from "react";
-
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { DashboardErrorAlert } from "@/components/dashboard/dashboard-feedback";
 
 const colors = [
   "#3B82F6",
@@ -31,6 +30,7 @@ export default function NovoMinisterioPage() {
   const [loading, setLoading] = useState(false);
   const [navigatingBack, setNavigatingBack] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const router = useRouter();
   const supabase = createClient();
 
@@ -85,45 +85,44 @@ export default function NovoMinisterioPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleBackNavigation}
-          disabled={navigatingBack}
-          aria-label="Voltar"
-        >
-          {navigatingBack ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <ArrowLeft className="h-5 w-5" />
-          )}
-          <span className="sr-only">Voltar</span>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Novo Ministério
-          </h1>
-          <p className="text-muted-foreground">
-            Crie um novo ministério para sua igreja
-          </p>
-        </div>
-      </div>
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-primary">Novo cadastro</p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+              Novo Ministério
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Crie um ministério com identidade visual própria para facilitar a
+              gestão.
+            </p>
+          </div>
 
-      <Card className="max-w-2xl">
+          <Button
+            variant="outline"
+            onClick={handleBackNavigation}
+            disabled={navigatingBack}
+          >
+            {navigatingBack ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowLeft className="mr-2 h-4 w-4" />
+            )}
+            Voltar
+          </Button>
+        </div>
+      </section>
+
+      <Card className="max-w-3xl rounded-2xl">
         <CardHeader>
-          <CardTitle>Informações do Ministério</CardTitle>
+          <CardTitle>Informações do ministério</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
+            {error && <DashboardErrorAlert message={error} />}
 
             <div className="space-y-2">
-              <Label htmlFor="name">Nome do Ministério *</Label>
+              <Label htmlFor="name">Nome do ministério *</Label>
               <Input
                 id="name"
                 placeholder="Ex: Louvor, Recepção, Infantil..."
@@ -140,31 +139,31 @@ export default function NovoMinisterioPage() {
                 placeholder="Descreva as atividades e responsabilidades do ministério..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={3}
+                rows={4}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Cor de Identificação</Label>
-              <div className="flex flex-wrap gap-2">
-                {colors.map((c) => (
+            <div className="space-y-2 rounded-xl border border-border bg-background/60 p-4">
+              <Label>Cor de identificação</Label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {colors.map((colorOption) => (
                   <button
-                    key={c}
+                    key={colorOption}
                     type="button"
-                    onClick={() => setColor(c)}
+                    onClick={() => setColor(colorOption)}
                     className={`h-8 w-8 rounded-full transition-all ${
-                      color === c
-                        ? "ring-2 ring-offset-2 ring-foreground"
+                      color === colorOption
+                        ? "ring-2 ring-foreground ring-offset-2"
                         : "hover:scale-110"
                     }`}
-                    style={{ backgroundColor: c }}
-                    aria-label={`Selecionar cor ${c}`}
+                    style={{ backgroundColor: colorOption }}
+                    aria-label={`Selecionar cor ${colorOption}`}
                   />
                 ))}
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Button type="submit" disabled={loading}>
                 {loading ? (
                   <>

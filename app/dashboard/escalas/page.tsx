@@ -18,7 +18,12 @@ import {
   ChevronRight,
   Clock,
   MapPin,
+  UserRound,
 } from "lucide-react";
+import {
+  DashboardEmptyState,
+  DashboardErrorAlert,
+} from "@/components/dashboard/dashboard-feedback";
 
 interface VolunteerOption {
   id: string;
@@ -57,13 +62,8 @@ export default function EscalasPage() {
     const month = currentMonth.getMonth();
     const start = new Date(year, month, 1);
     const end = new Date(year, month + 1, 0);
-    const startStr = `${start.getFullYear()}-${String(
-      start.getMonth() + 1,
-    ).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
-    const endStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(
-      2,
-      "0",
-    )}-${String(end.getDate()).padStart(2, "0")}`;
+    const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+    const endStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
     return { startStr, endStr };
   }, [currentMonth]);
 
@@ -229,20 +229,24 @@ export default function EscalasPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Escalas do Mês</h1>
-        <p className="text-muted-foreground">
-          Consulte as escalas do voluntário selecionado
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <p className="text-sm font-medium text-primary">Planejamento mensal</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+          Escalas do Mês
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Consulte as escalas por voluntário e acompanhe a agenda de cada
+          ministério.
         </p>
-      </div>
+      </section>
 
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader className="space-y-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="capitalize">{monthLabel}</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Total no mês: {schedules.length}
+              <p className="mt-1 text-sm text-muted-foreground">
+                Total de escalas no período: {schedules.length}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -257,9 +261,12 @@ export default function EscalasPage() {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
-              <p className="text-sm font-medium text-foreground">Voluntário</p>
+              <p className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+                <UserRound className="h-4 w-4 text-primary" />
+                Voluntário
+              </p>
               {loading ? (
-                <div className="h-10 rounded-md border border-input bg-background" />
+                <div className="h-10 rounded-lg border border-input bg-background" />
               ) : volunteers.length > 0 ? (
                 <Select
                   value={selectedVolunteerId}
@@ -284,36 +291,43 @@ export default function EscalasPage() {
             </div>
           </div>
         </CardHeader>
+
         <CardContent className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
+          {error && <DashboardErrorAlert message={error} />}
 
           {loadingSchedules ? (
-            <div className="rounded-md border border-input bg-background p-4 text-sm text-muted-foreground">
+            <div className="rounded-lg border border-input bg-background p-4 text-sm text-muted-foreground">
               Carregando escalas...
             </div>
           ) : schedules.length === 0 ? (
-            <div className="rounded-md border border-input bg-background p-4 text-sm text-muted-foreground">
-              Nenhuma escala encontrada para este mês.
-            </div>
+            <DashboardEmptyState
+              icon={Calendar}
+              title="Nenhuma escala encontrada"
+              description="Não há escalas para o voluntário selecionado neste mês."
+              className="bg-background"
+            />
           ) : (
-            <div className="overflow-hidden rounded-lg border border-border">
+            <div className="overflow-hidden rounded-xl border border-border">
               <table className="w-full table-fixed">
                 <thead className="hidden md:table-header-group">
                   <tr className="border-b border-border bg-muted/30 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     <th className="w-[40%] px-4 py-2 text-left">Evento</th>
-                    <th className="w-[42%] px-4 py-2 text-left">Data e detalhes</th>
+                    <th className="w-[42%] px-4 py-2 text-left">
+                      Data e detalhes
+                    </th>
                     <th className="w-[18%] px-4 py-2 text-left">Ministério</th>
                   </tr>
                 </thead>
                 <tbody>
                   {schedules.map((schedule) => (
-                    <tr key={schedule.id} className="border-t border-border first:border-t-0">
+                    <tr
+                      key={schedule.id}
+                      className="border-t border-border first:border-t-0"
+                    >
                       <td className="px-4 py-3 align-middle">
-                        <p className="font-medium text-card-foreground">{schedule.title}</p>
+                        <p className="font-medium text-card-foreground">
+                          {schedule.title}
+                        </p>
                       </td>
 
                       <td className="px-4 py-3 align-middle">
@@ -328,16 +342,20 @@ export default function EscalasPage() {
                               month: "2-digit",
                             })}
                           </span>
+
                           {schedule.startTime && (
                             <span className="inline-flex items-center gap-1">
                               <Clock className="h-4 w-4 shrink-0" />
                               {schedule.startTime.slice(0, 5)}
                             </span>
                           )}
+
                           {schedule.location && (
                             <span className="inline-flex min-w-0 items-center gap-1">
                               <MapPin className="h-4 w-4 shrink-0" />
-                              <span className="truncate">{schedule.location}</span>
+                              <span className="truncate">
+                                {schedule.location}
+                              </span>
                             </span>
                           )}
                         </div>
@@ -355,7 +373,9 @@ export default function EscalasPage() {
                             {schedule.ministryName}
                           </span>
                         ) : (
-                          <span className="text-sm text-muted-foreground">-</span>
+                          <span className="text-sm text-muted-foreground">
+                            -
+                          </span>
                         )}
                       </td>
                     </tr>

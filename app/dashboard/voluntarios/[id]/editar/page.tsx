@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,10 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { LoadingCard } from "@/components/ui/spinner";
 import { normalizeBrazilianPhone } from "@/lib/phone";
+import {
+  DashboardEmptyState,
+  DashboardErrorAlert,
+} from "@/components/dashboard/dashboard-feedback";
 
 interface Volunteer {
   id: string;
@@ -27,8 +31,10 @@ export default function EditarVoluntarioPage() {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [navigatingBack, setNavigatingBack] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [canEdit, setCanEdit] = useState(false);
+
   const router = useRouter();
   const params = useParams();
   const volunteerId = params.id as string;
@@ -36,12 +42,10 @@ export default function EditarVoluntarioPage() {
 
   useEffect(() => {
     async function loadVolunteer() {
-      // Get current user
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      // Get current user's profile to check if admin
       const { data: currentProfile } = await supabase
         .from("profiles")
         .select("role")
@@ -115,56 +119,71 @@ export default function EditarVoluntarioPage() {
     router.push("/dashboard/voluntarios");
   }
 
+  function handleBackNavigation() {
+    if (navigatingBack) return;
+    setNavigatingBack(true);
+    router.push("/dashboard/voluntarios");
+  }
+
   if (loading) {
     return <LoadingCard message="Carregando voluntário..." />;
   }
 
   if (!canEdit || !volunteer) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/dashboard/voluntarios">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
+      <DashboardEmptyState
+        icon={ArrowLeft}
+        title={error ? "Acesso indisponível" : "Voluntário não encontrado"}
+        description={
+          error || "Este perfil não está disponível ou foi removido."
+        }
+        action={
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/voluntarios">Voltar para voluntários</Link>
           </Button>
-          <h1 className="text-2xl font-bold text-foreground">
-            {error || "Voluntário não encontrado"}
-          </h1>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard/voluntarios">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Editar Voluntário
-          </h1>
-          <p className="text-muted-foreground">
-            Atualize as informações do voluntário
-          </p>
-        </div>
-      </div>
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-primary">
+              Atualização de cadastro
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+              Editar Voluntário
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Atualize dados de contato e identificação do voluntário.
+            </p>
+          </div>
 
-      <Card className="max-w-2xl">
+          <Button
+            variant="outline"
+            onClick={handleBackNavigation}
+            disabled={navigatingBack}
+          >
+            {navigatingBack ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowLeft className="mr-2 h-4 w-4" />
+            )}
+            Voltar
+          </Button>
+        </div>
+      </section>
+
+      <Card className="max-w-3xl rounded-2xl">
         <CardHeader>
-          <CardTitle>Informações do Voluntário</CardTitle>
+          <CardTitle>Informações do voluntário</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
+            {error && <DashboardErrorAlert message={error} />}
 
             <div className="space-y-2">
               <Label htmlFor="name">Nome *</Label>
@@ -200,7 +219,7 @@ export default function EditarVoluntarioPage() {
               />
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Button type="submit" disabled={saving}>
                 {saving ? (
                   <>

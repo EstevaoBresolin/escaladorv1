@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { LoadingCard } from "@/components/ui/spinner";
+import {
+  DashboardEmptyState,
+  DashboardErrorAlert,
+} from "@/components/dashboard/dashboard-feedback";
 
 interface Event {
   id: string;
@@ -41,6 +45,7 @@ export default function EditarEventoPage() {
   const [saving, setSaving] = useState(false);
   const [navigatingBack, setNavigatingBack] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const router = useRouter();
   const params = useParams();
   const eventId = params.id as string;
@@ -67,14 +72,12 @@ export default function EditarEventoPage() {
       setStartTime(eventData.start_time || "");
       setLocation(eventData.location || "");
 
-      // Set selected ministries
       const ministryIds =
         eventData.event_ministries?.map(
-          (em: { ministry_id: string }) => em.ministry_id,
+          (eventMinistry: { ministry_id: string }) => eventMinistry.ministry_id,
         ) || [];
       setSelectedMinistries(ministryIds);
 
-      // Load all ministries from the church
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -125,7 +128,6 @@ export default function EditarEventoPage() {
       return;
     }
 
-    // Update ministries - first delete existing, then insert new ones
     await supabase.from("event_ministries").delete().eq("event_id", eventId);
 
     if (selectedMinistries.length > 0) {
@@ -159,59 +161,61 @@ export default function EditarEventoPage() {
 
   if (!event) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/dashboard/eventos">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
+      <DashboardEmptyState
+        icon={ArrowLeft}
+        title="Evento não encontrado"
+        description="Este evento não está disponível ou foi removido."
+        action={
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/eventos">Voltar para eventos</Link>
           </Button>
-          <h1 className="text-2xl font-bold text-foreground">
-            Evento não encontrado
-          </h1>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleBackNavigation}
-          disabled={navigatingBack}
-          aria-label="Voltar"
-        >
-          {navigatingBack ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <ArrowLeft className="h-5 w-5" />
-          )}
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Editar Evento</h1>
-          <p className="text-muted-foreground">
-            Atualize as informações do evento
-          </p>
-        </div>
-      </div>
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-primary">
+              Atualização de cadastro
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+              Editar Evento
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Atualize informações e ministérios para manter o planejamento
+              consistente.
+            </p>
+          </div>
 
-      <Card className="max-w-2xl">
+          <Button
+            variant="outline"
+            onClick={handleBackNavigation}
+            disabled={navigatingBack}
+          >
+            {navigatingBack ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowLeft className="mr-2 h-4 w-4" />
+            )}
+            Voltar
+          </Button>
+        </div>
+      </section>
+
+      <Card className="max-w-3xl rounded-2xl">
         <CardHeader>
-          <CardTitle>Informações do Evento</CardTitle>
+          <CardTitle>Informações do evento</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
+            {error && <DashboardErrorAlert message={error} />}
 
             <div className="space-y-2">
-              <Label htmlFor="title">Nome do Evento *</Label>
+              <Label htmlFor="title">Nome do evento *</Label>
               <Input
                 id="title"
                 placeholder="Ex: Culto de Domingo, Ensaio do Louvor..."
@@ -260,13 +264,13 @@ export default function EditarEventoPage() {
                 placeholder="Adicione detalhes sobre o evento..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={3}
+                rows={4}
               />
             </div>
 
             {ministries.length > 0 && (
-              <div className="space-y-3">
-                <Label>Ministérios Envolvidos</Label>
+              <div className="space-y-3 rounded-xl border border-border bg-background/60 p-4">
+                <Label>Ministérios envolvidos</Label>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {ministries.map((ministry) => (
                     <div
@@ -280,7 +284,7 @@ export default function EditarEventoPage() {
                       />
                       <label
                         htmlFor={ministry.id}
-                        className="flex items-center gap-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        className="flex items-center gap-2 text-sm font-medium"
                       >
                         <span
                           className="h-2 w-2 rounded-full"
@@ -294,7 +298,7 @@ export default function EditarEventoPage() {
               </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Button type="submit" disabled={saving}>
                 {saving ? (
                   <>

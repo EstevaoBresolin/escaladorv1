@@ -21,22 +21,49 @@ export default async function NotificacoesPage() {
     .limit(50);
 
   const unreadCount = notifications?.filter((n) => !n.is_read).length || 0;
+  const totalCount = notifications?.length || 0;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Notificações</h1>
-          <p className="text-muted-foreground">
-            {unreadCount > 0
-              ? `Você tem ${unreadCount} notificação${unreadCount > 1 ? "ões" : ""} não lida${unreadCount > 1 ? "s" : ""}`
-              : "Todas as notificações foram lidas"}
-          </p>
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-primary">
+              Central de alertas
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+              Notificações
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {unreadCount > 0
+                ? `Você tem ${unreadCount} notificação${unreadCount > 1 ? "ões" : ""} não lida${unreadCount > 1 ? "s" : ""}.`
+                : "Todas as notificações foram lidas."}
+            </p>
+          </div>
+          {unreadCount > 0 && <MarkAllReadButton userId={user.id} />}
         </div>
-        {unreadCount > 0 && <MarkAllReadButton userId={user.id} />}
-      </div>
+      </section>
 
-      <Card>
+      <section className="grid gap-4 sm:grid-cols-2">
+        <Card className="rounded-2xl">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Total</p>
+            <p className="mt-1 text-3xl font-semibold tracking-tight text-card-foreground">
+              {totalCount}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Não lidas</p>
+            <p className="mt-1 text-3xl font-semibold tracking-tight text-primary">
+              {unreadCount}
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <Card className="overflow-hidden rounded-2xl">
         <CardContent className="p-0">
           {notifications && notifications.length > 0 ? (
             <div className="divide-y divide-border">
@@ -53,7 +80,7 @@ export default async function NotificacoesPage() {
                   <div
                     key={notification.id}
                     className={`flex gap-4 p-4 transition-colors ${
-                      !notification.is_read ? "bg-primary/5" : ""
+                      !notification.is_read ? "bg-primary/5" : "bg-background"
                     }`}
                   >
                     <div
@@ -100,7 +127,7 @@ export default async function NotificacoesPage() {
               })}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12">
+            <div className="flex flex-col items-center justify-center py-14">
               <Bell className="mb-4 h-12 w-12 text-muted-foreground/50" />
               <h3 className="mb-2 text-lg font-semibold text-card-foreground">
                 Nenhuma notificação

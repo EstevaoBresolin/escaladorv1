@@ -285,17 +285,18 @@ export default function DisponibilidadePage() {
   if (loading) {
     return (
       <div className="space-y-6 animate-pulse">
-        <div className="space-y-2">
-          <div className="h-8 w-52 rounded bg-muted" />
-          <div className="h-4 w-80 rounded bg-muted" />
+        <div className="rounded-2xl border border-border/70 bg-card p-6">
+          <div className="h-5 w-44 rounded bg-muted" />
+          <div className="mt-2 h-8 w-56 rounded bg-muted" />
+          <div className="mt-2 h-4 w-80 rounded bg-muted" />
         </div>
-        <Card>
+        <Card className="rounded-2xl">
           <CardContent className="space-y-4 p-6">
             <div className="h-4 w-64 rounded bg-muted" />
             <div className="h-4 w-48 rounded bg-muted" />
           </CardContent>
         </Card>
-        <Card>
+        <Card className="rounded-2xl">
           <CardContent className="p-6">
             <div className="h-[360px] w-full rounded bg-muted" />
           </CardContent>
@@ -306,16 +307,20 @@ export default function DisponibilidadePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <p className="text-sm font-medium text-primary">
+          Gestão de agenda pessoal
+        </p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
           Minha Disponibilidade
         </h1>
-        <p className="text-muted-foreground">
-          Marque os dias em que você NÃO pode servir como voluntário
+        <p className="mt-2 text-sm text-muted-foreground">
+          Marque períodos indisponíveis para evitar conflitos na escala da sua
+          equipe.
         </p>
-      </div>
+      </section>
 
-      <Card className="hidden border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 md:block">
+      <Card className="hidden rounded-2xl border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 md:block">
         <CardContent className="flex items-start gap-3 pt-4">
           <Info className="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
           <div>
@@ -331,32 +336,37 @@ export default function DisponibilidadePage() {
         </CardContent>
       </Card>
 
-      <AvailabilityCalendar
-        unavailabilities={calendarUnavailabilities}
-        events={scheduledEvents}
-        selectedDate={selectedDate}
-        currentMonth={currentMonth}
-        onMonthChange={setCurrentMonth}
-        onSelectDate={(date) => {
-          setSelectedDate(date);
+      <Card className="rounded-2xl">
+        <CardContent className="p-4 md:p-6">
+          <AvailabilityCalendar
+            unavailabilities={calendarUnavailabilities}
+            events={scheduledEvents}
+            selectedDate={selectedDate}
+            currentMonth={currentMonth}
+            onMonthChange={setCurrentMonth}
+            onSelectDate={(date) => {
+              setSelectedDate(date);
 
-          // Load existing periods for this date
-          const existingUnavailabilities = unavailabilities.filter(
-            (u) => u.unavailable_date === date,
-          );
+              const existingUnavailabilities = unavailabilities.filter(
+                (u) => u.unavailable_date === date,
+              );
 
-          if (existingUnavailabilities.length > 0) {
-            setSelectedPeriods(existingUnavailabilities.map((u) => u.period));
-            setReason(existingUnavailabilities[0].reason || "");
-          } else {
-            setSelectedPeriods([]);
-            setReason("");
-          }
+              if (existingUnavailabilities.length > 0) {
+                setSelectedPeriods(
+                  existingUnavailabilities.map((u) => u.period),
+                );
+                setReason(existingUnavailabilities[0].reason || "");
+              } else {
+                setSelectedPeriods([]);
+                setReason("");
+              }
 
-          setError(null);
-          setOpen(true);
-        }}
-      />
+              setError(null);
+              setOpen(true);
+            }}
+          />
+        </CardContent>
+      </Card>
 
       <Dialog
         open={open}
@@ -370,7 +380,7 @@ export default function DisponibilidadePage() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader>
             <DialogTitle>
               Adicionar Indisponibilidade
@@ -389,7 +399,7 @@ export default function DisponibilidadePage() {
           </DialogHeader>
           <div className="space-y-4 pt-4">
             {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}

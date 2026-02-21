@@ -31,24 +31,24 @@ export default function LoginPage() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ email, password }),
-    })
+    });
 
     if (!loginResponse.ok) {
-      const body = await loginResponse.json().catch(() => null)
+      const body = await loginResponse.json().catch(() => null);
 
       if (loginResponse.status === 429) {
-        const retryAfter = loginResponse.headers.get("Retry-After")
+        const retryAfter = loginResponse.headers.get("Retry-After");
         setError(
           retryAfter
             ? `Muitas tentativas. Aguarde ${retryAfter} segundos e tente novamente.`
-            : "Muitas tentativas. Aguarde um pouco e tente novamente."
-        )
+            : "Muitas tentativas. Aguarde um pouco e tente novamente.",
+        );
       } else {
-        setError(body?.error || "Email ou senha incorretos. Tente novamente.")
+        setError(body?.error || "Email ou senha incorretos. Tente novamente.");
       }
 
-      setLoading(false)
-      return
+      setLoading(false);
+      return;
     }
 
     // Check if profile is complete
@@ -102,8 +102,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/20 px-4 py-10">
+      <div className="w-full max-w-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="mb-8 text-center">
           <Link href="/" className="mb-6 inline-flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
@@ -121,72 +121,74 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Senha</Label>
-              <Link
-                href="/auth/forgot-password"
-                className="text-sm text-primary hover:underline"
-              >
-                Esqueceu a senha?
-              </Link>
-            </div>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Sua senha"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Entrando...
-              </>
-            ) : (
-              "Entrar"
+        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
             )}
-          </Button>
-        </form>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Senha</Label>
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-sm text-primary hover:underline"
+                >
+                  Esqueceu a senha?
+                </Link>
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Sua senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Entrando...
+                </>
+              ) : (
+                "Entrar"
+              )}
+            </Button>
+          </form>
+        </div>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Ainda não tem uma conta?{" "}

@@ -55,7 +55,7 @@ export function MinistryLeaderManager({
   // Filter out people who are already leaders
   const leaderIds = leaders.map((l) => l.profiles?.id).filter(Boolean);
   const filteredVolunteers = availableVolunteers.filter(
-    (v) => !leaderIds.includes(v.id)
+    (v) => !leaderIds.includes(v.id),
   );
 
   async function handleAddLeader() {
@@ -110,11 +110,16 @@ export function MinistryLeaderManager({
                   </div>
                 </div>
 
-                <p className="text-sm text-muted-foreground">
-                  {leader.profiles?.email || "-"}
-                </p>
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-muted-foreground">
+                    {leader.profiles?.email || "-"}
+                  </p>
+                </div>
 
-                <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">
+                <Badge
+                  variant="secondary"
+                  className="w-fit shrink-0 bg-amber-500/10 text-amber-600"
+                >
                   Lider
                 </Badge>
               </div>
@@ -158,11 +163,16 @@ export function MinistryLeaderManager({
                 </div>
               </div>
 
-              <p className="text-sm text-muted-foreground">
-                {leader.profiles?.email || "-"}
-              </p>
+              <div className="min-w-0">
+                <p className="truncate text-sm text-muted-foreground">
+                  {leader.profiles?.email || "-"}
+                </p>
+              </div>
 
-              <Badge variant="secondary" className="bg-amber-500/10 text-amber-600">
+              <Badge
+                variant="secondary"
+                className="w-fit shrink-0 bg-amber-500/10 text-amber-600"
+              >
                 Lider
               </Badge>
 
@@ -234,8 +244,8 @@ export function MinistryLeaderManager({
                 </div>
 
                 <p className="text-sm text-muted-foreground">
-                  Lideres podem adicionar e remover voluntarios do ministerio
-                  e escalar voluntarios para eventos.
+                  Lideres podem adicionar e remover voluntarios do ministerio e
+                  escalar voluntarios para eventos.
                 </p>
 
                 <Button
