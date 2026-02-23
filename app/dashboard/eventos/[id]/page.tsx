@@ -100,8 +100,6 @@ export default async function EventPage({ params }: EventPageProps) {
         .maybeSingle()
     : { data: null };
 
-  const permissions = await getUserPermissions(supabase);
-  // Get user permissions
   const permissions = user
     ? await getUserPermissionsByProfile(supabase, user.id, profile?.role)
     : null;

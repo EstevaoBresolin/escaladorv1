@@ -61,8 +61,6 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
     .eq("id", user?.id)
     .single();
 
-  const permissions = await getUserPermissions(supabase);
-  // Get user permissions
   const permissions = user
     ? await getUserPermissionsByProfile(supabase, user.id, profile?.role)
     : null;

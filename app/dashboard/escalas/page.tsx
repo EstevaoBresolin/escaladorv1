@@ -93,7 +93,6 @@ export default function EscalasPage() {
         return;
       }
 
-      const permissions = await getUserPermissions(supabase);
       if (profile.role === "volunteer") {
         const selfOption = {
           id: profile.id,
@@ -181,9 +180,6 @@ export default function EscalasPage() {
         };
         setVolunteers([selfOption]);
         setSelectedVolunteerId(selfOption.id);
-        if (options.length > 0) {
-          setSelectedVolunteerId((prev) => prev || options[0].id);
-        }
         setLoading(false);
         return;
       }

@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CalendarCheck, Loader2, Eye, EyeOff } from "lucide-react";
+import { CalendarCheck, Eye, EyeOff, Loader2 } from "lucide-react";
 
 const LOGIN_BLOCKED_UNTIL_KEY = "login-blocked-until";
 
@@ -30,7 +30,7 @@ export default function LoginPage() {
 
   const remainingBlockSeconds = Math.max(
     Math.ceil((blockedUntil - now) / 1000),
-    0
+    0,
   );
   const isBlocked = remainingBlockSeconds > 0;
   const displayError = isBlocked
@@ -97,26 +97,23 @@ export default function LoginPage() {
       const body = await loginResponse.json().catch(() => null);
 
       if (loginResponse.status === 429) {
-        const retryAfter = loginResponse.headers.get("Retry-After");
-        setError(
-          retryAfter
-            ? `Muitas tentativas. Aguarde ${retryAfter} segundos e tente novamente.`
-            : "Muitas tentativas. Aguarde um pouco e tente novamente.",
-        );
+        const retryAfter = Number(loginResponse.headers.get("Retry-After"));
+        blockLoginForSeconds(retryAfter);
       } else {
-        setError(body?.error || "Email ou senha incorretos. Tente novamente.");
-        const retryAfter = Number(loginResponse.headers.get("Retry-After"))
-        blockLoginForSeconds(retryAfter)
-      } else {
-        const remainingAttempts = Number(body?.remainingAttempts)
-
-        if (Number.isFinite(remainingAttempts) && remainingAttempts > 0) {
-          const tentativaLabel = remainingAttempts === 1 ? "tentativa" : "tentativas"
-          setError(
-            `Email ou senha incorretos. Restam ${remainingAttempts} ${tentativaLabel}.`
-          )
+        const retryAfter = Number(loginResponse.headers.get("Retry-After"));
+        if (Number.isFinite(retryAfter) && retryAfter > 0) {
+          blockLoginForSeconds(retryAfter);
         } else {
-          setError(body?.error || "Email ou senha incorretos. Tente novamente.")
+          const remainingAttempts = Number(body?.remainingAttempts);
+
+          if (Number.isFinite(remainingAttempts) && remainingAttempts > 0) {
+            const tentativaLabel = remainingAttempts === 1 ? "tentativa" : "tentativas";
+            setError(
+              `Email ou senha incorretos. Restam ${remainingAttempts} ${tentativaLabel}.`,
+            );
+          } else {
+            setError(body?.error || "Email ou senha incorretos. Tente novamente.");
+          }
         }
       }
 
@@ -124,7 +121,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Check if profile is complete
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -136,7 +132,6 @@ export default function LoginPage() {
         .eq("id", user.id)
         .single();
 
-      // If profile is incomplete, redirect to complete-profile page
       if (!profile?.phone || !profile?.church_id) {
         router.push("/complete-profile");
         router.refresh();
@@ -170,7 +165,6 @@ export default function LoginPage() {
       }
 
       router.push("/dashboard/disponibilidade");
-      return;
     }
   }
 
@@ -182,59 +176,22 @@ export default function LoginPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
               <CalendarCheck className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-semibold text-foreground">
-              Conecte Escalas
-            </span>
+            <span className="text-2xl font-semibold text-foreground">Conecte Escalas</span>
           </Link>
-          <h1 className="mt-6 text-2xl font-bold text-foreground">
-            Bem-vindo de volta
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Entre na sua conta para continuar
-          </p>
+          <h1 className="mt-6 text-2xl font-bold text-foreground">Bem-vindo de volta</h1>
+          <p className="mt-2 text-muted-foreground">Entre na sua conta para continuar</p>
         </div>
 
         <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
+            {displayError && (
+              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                {displayError}
               </div>
             )}
 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {displayError && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {displayError}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Senha</Label>
-              <Link
-                href="/auth/forgot-password"
-                className="text-sm text-primary hover:underline"
-              >
-                Esqueceu a senha?
-              </Link>
-            </div>
-            <div className="relative">
               <Input
                 id="email"
                 type="email"
@@ -249,10 +206,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Senha</Label>
-                <Link
-                  href="/auth/forgot-password"
-                  className="text-sm text-primary hover:underline"
-                >
+                <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
                   Esqueceu a senha?
                 </Link>
               </div>
@@ -272,49 +226,32 @@ export default function LoginPage() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading || isBlocked}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Entrando...
                 </>
+              ) : isBlocked ? (
+                `Bloqueado (${formatRemainingMinutes(remainingBlockSeconds)})`
               ) : (
                 "Entrar"
               )}
             </Button>
           </form>
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Ainda não tem uma conta?{" "}
+            <Link href="/auth/sign-up" className="text-primary hover:underline">
+              Criar conta grátis
+            </Link>
+          </p>
         </div>
-          </div>
-
-          <Button type="submit" className="w-full" disabled={loading || isBlocked}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Entrando...
-              </>
-            ) : isBlocked ? (
-              `Bloqueado (${formatRemainingMinutes(remainingBlockSeconds)})`
-            ) : (
-              "Entrar"
-            )}
-          </Button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          Ainda não tem uma conta?{" "}
-          <Link href="/auth/sign-up" className="text-primary hover:underline">
-            Criar conta grátis
-          </Link>
-        </p>
       </div>
     </div>
   );

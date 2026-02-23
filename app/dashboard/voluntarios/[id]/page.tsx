@@ -18,11 +18,6 @@ export default async function VolunteerPage({ params }: VolunteerPageProps) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const permissions = await getUserPermissions(supabase);
-  // Get current user and permissions
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   const { data: currentProfile } = await supabase
     .from("profiles")
     .select("role")

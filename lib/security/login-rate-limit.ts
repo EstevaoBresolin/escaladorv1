@@ -18,45 +18,6 @@ export function buildLoginKey(
   return `rl:login:${ip.toLowerCase()}::${email.trim().toLowerCase()}::${safeFingerprint}`;
 }
 
-function hasUpstashConfig() {
-  return Boolean(UPSTASH_URL && UPSTASH_TOKEN)
-}
-
-async function upstashCommand<T = unknown>(command: unknown[]): Promise<T> {
-  if (!UPSTASH_URL || !UPSTASH_TOKEN) {
-    throw new Error("Upstash Redis is not configured")
-  }
-
-  const baseUrl = UPSTASH_URL.endsWith("/") ? UPSTASH_URL.slice(0, -1) : UPSTASH_URL
-
-  const headers = {
-    Authorization: `Bearer ${UPSTASH_TOKEN}`,
-    "Content-Type": "application/json",
-  }
-
-  const response = await fetch(`${baseUrl}/pipeline`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify([command]),
-    cache: "no-store",
-  })
-
-  if (!response.ok) {
-    throw new Error(`Upstash command failed with status ${response.status}`)
-  }
-
-  const data = (await response.json()) as Array<{ result?: T; error?: string }>
-  const first = data?.[0]
-
-  if (!first) {
-    throw new Error("Upstash pipeline returned an empty response")
-  }
-
-  if (first.error) {
-    throw new Error(first.error)
-  }
-
-  return first.result as T
 export function getClientIp(headers: Headers): string {
   const forwardedFor = headers.get("x-forwarded-for");
   if (forwardedFor) {

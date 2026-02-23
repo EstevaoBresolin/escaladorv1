@@ -1,7 +1,5 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -77,10 +75,6 @@ export default function EditarEventoPage() {
       const ministryIds =
         eventData.event_ministries?.map(
           (eventMinistry: { ministry_id: string }) => eventMinistry.ministry_id,
-      // Set selected ministries
-      const ministryIds =
-        eventData.event_ministries?.map(
-          (em: { ministry_id: string }) => em.ministry_id,
         ) || [];
       setSelectedMinistries(ministryIds);
 

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,7 +13,6 @@ import {
   Search,
   UserCheck,
 } from "lucide-react";
-import { Users, Mail, Phone, MoreVertical, Search } from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -30,7 +28,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getUserPermissions } from "@/lib/permissions";
 import { DashboardEmptyState } from "@/components/dashboard/dashboard-feedback";
 import { getUserPermissionsByProfile } from "@/lib/permissions";
 
@@ -67,7 +64,6 @@ export default function VoluntariosPage() {
         setLoading(false);
         return;
       }
-      if (!user) return;
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -75,7 +71,11 @@ export default function VoluntariosPage() {
         .eq("id", user.id)
         .single();
 
-      const permissions = await getUserPermissions(supabase);
+      const permissions = await getUserPermissionsByProfile(
+        supabase,
+        user.id,
+        profile?.role,
+      );
       setIsAdmin(permissions?.isAdmin || false);
       const ledMinistryIds = permissions?.ledMinistryIds || [];
       setIsLeader(ledMinistryIds.length > 0);
@@ -124,27 +124,6 @@ export default function VoluntariosPage() {
       }
 
       setVolunteers(volunteersData);
-      // Get user permissions
-      const permissions = await getUserPermissionsByProfile(
-        supabase,
-        user.id,
-        profile?.role,
-      );
-      setIsAdmin(permissions?.isAdmin || false);
-      setCurrentUserId(user.id);
-
-      const { data: volunteersData } = await supabase
-        .from("profiles")
-        .select(
-          `
-          *,
-          user_ministries(ministry_id, ministries(name, color))
-        `,
-        )
-        .eq("church_id", profile?.church_id)
-        .order("name");
-
-      setVolunteers(volunteersData || []);
       setLoading(false);
     }
 
@@ -164,20 +143,6 @@ export default function VoluntariosPage() {
       if (volunteer.user_ministries && volunteer.user_ministries.length > 0) {
         return volunteer.user_ministries.some((userMinistry) =>
           userMinistry.ministries.name.toLowerCase().includes(term),
-      // Search by name
-      if (volunteer.name && volunteer.name.toLowerCase().includes(term)) {
-        return true;
-      }
-
-      // Search by email
-      if (volunteer.email && volunteer.email.toLowerCase().includes(term)) {
-        return true;
-      }
-
-      // Search by ministry names
-      if (volunteer.user_ministries && volunteer.user_ministries.length > 0) {
-        return volunteer.user_ministries.some((um) =>
-          um.ministries.name.toLowerCase().includes(term),
         );
       }
 
