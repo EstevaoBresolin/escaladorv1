@@ -5,6 +5,8 @@ import {
   getCachedProfile,
   getCachedUser,
 } from "@/lib/supabase/cache";
+import { getUserPermissionsByProfile } from "@/lib/permissions";
+import { EventsPageClient } from "@/components/dashboard/eventos-page-client";
 
 export default async function EventosPage() {
   const supabase = await createClient();
@@ -18,6 +20,16 @@ export default async function EventosPage() {
 
   // Get user permissions
   const permissions = await getCachedPermissions(user.id);
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("church_id, role")
+    .eq("id", user?.id)
+    .single();
+
+  // Get user permissions
+  const permissions = user
+    ? await getUserPermissionsByProfile(supabase, user.id, profile?.role)
+    : null;
   const isAdmin = permissions?.isAdmin || false;
   const ledMinistryIds = permissions?.ledMinistryIds || [];
 

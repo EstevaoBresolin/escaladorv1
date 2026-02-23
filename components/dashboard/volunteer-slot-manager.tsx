@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -110,7 +110,7 @@ export function VolunteerSlotManager({
   >([]);
   const [monthlyEventsCount, setMonthlyEventsCount] = useState(0);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   // Determine if user needs to select ministry or if it's auto-selected
   const needsMinistrySelection = isAdmin || ledMinistryIds.length > 1;

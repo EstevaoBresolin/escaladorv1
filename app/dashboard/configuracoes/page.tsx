@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getUserPermissions } from "@/lib/permissions";
+import { getUserPermissionsByProfile } from "@/lib/permissions";
 import { Loader2, Building2 } from "lucide-react";
 import { ReminderManager } from "@/components/dashboard/reminder-manager";
 
@@ -34,7 +34,7 @@ export default function ConfiguracoesPage() {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     async function loadSettings() {
@@ -50,7 +50,7 @@ export default function ConfiguracoesPage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("church_id, churches(*)")
+        .select("church_id, role, churches(*)")
         .eq("id", user.id)
         .single();
 
@@ -64,7 +64,11 @@ export default function ConfiguracoesPage() {
       }
 
       // Get user permissions
-      const permissions = await getUserPermissions(supabase);
+      const permissions = await getUserPermissionsByProfile(
+        supabase,
+        user.id,
+        profile?.role,
+      );
       setIsAdmin(permissions?.isAdmin || false);
       setInitialLoading(false);
     }

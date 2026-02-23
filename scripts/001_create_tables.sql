@@ -22,7 +22,6 @@ create table if not exists public.profiles (
   phone text,
   church_id uuid references public.churches(id) on delete set null,
   role text not null default 'volunteer' check (role in ('admin', 'leader', 'volunteer')),
-  avatar_url text,
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );

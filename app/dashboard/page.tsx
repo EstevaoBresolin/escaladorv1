@@ -17,6 +17,7 @@ import {
   getCachedProfile,
   getCachedUser,
 } from "@/lib/supabase/cache";
+import { getUserPermissionsByProfile } from "@/lib/permissions";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -28,6 +29,16 @@ export default async function DashboardPage() {
 
   const profile = await getCachedProfile(user.id);
   const permissions = await getCachedPermissions(user.id);
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("church_id, role")
+    .eq("id", user?.id)
+    .single();
+
+  // Get user permissions
+  const permissions = user
+    ? await getUserPermissionsByProfile(supabase, user.id, profile?.role)
+    : null;
   const isAdmin = permissions?.isAdmin || false;
 
   const [ministriesResult, volunteersResult, eventsResult] = await Promise.all([
@@ -91,6 +102,18 @@ export default async function DashboardPage() {
       iconClass: "bg-chart-3/15 text-chart-3",
     },
   ];
+
+  // Get today's date in local timezone (not UTC)
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const { data: upcomingEvents } = await supabase
+    .from("events")
+    .select("*, event_ministries(ministry_id, ministries(name))")
+    .eq("church_id", profile?.church_id)
+    .gte("date", todayStr)
+    .order("date", { ascending: true })
+    .limit(5);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">

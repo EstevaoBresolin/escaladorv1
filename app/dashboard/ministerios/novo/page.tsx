@@ -3,6 +3,11 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import React from "react";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { dbQuery } from "@/lib/api/db-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +38,8 @@ export default function NovoMinisterioPage() {
 
   const router = useRouter();
   const supabase = createClient();
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -69,6 +76,17 @@ export default function NovoMinisterioPage() {
     });
 
     if (insertError) {
+    try {
+      await dbQuery({
+        table: "ministries",
+        action: "insert",
+        values: {
+          name,
+          description,
+          color,
+        },
+      });
+    } catch {
       setError("Erro ao criar ministério. Tente novamente.");
       setLoading(false);
       return;
@@ -110,6 +128,20 @@ export default function NovoMinisterioPage() {
             )}
             Voltar
           </Button>
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/dashboard/ministerios">
+            <ArrowLeft className="h-5 w-5" />
+            <span className="sr-only">Voltar</span>
+          </Link>
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">
+            Novo Ministério
+          </h1>
+          <p className="text-muted-foreground">
+            Crie um novo ministério para sua igreja
+          </p>
         </div>
       </section>
 

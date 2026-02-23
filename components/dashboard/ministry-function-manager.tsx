@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { dbQuery } from "@/lib/api/db-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +31,6 @@ export function MinistryFunctionManager({
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
 
   async function handleAddFunction(e: React.FormEvent) {
     e.preventDefault();
@@ -44,35 +43,44 @@ export function MinistryFunctionManager({
     setLoading(true);
     setError(null);
 
-    const { data, error: insertError } = await supabase
-      .from("ministry_functions")
-      .insert({ ministry_id: ministryId, name: trimmed })
-      .select("id, name")
-      .single();
+    try {
+      const data = await dbQuery<MinistryFunction>({
+        table: "ministry_functions",
+        action: "insert",
+        values: { ministry_id: ministryId, name: trimmed },
+        select: "id, name",
+        single: true,
+      });
 
-    if (insertError || !data) {
+      if (!data) {
+        setError("Erro ao criar função. Tente novamente.");
+        setLoading(false);
+        return;
+      }
+
+      setFunctions((prev) =>
+        [...prev, data].sort((a, b) => a.name.localeCompare(b.name)),
+      );
+      setName("");
+      setLoading(false);
+    } catch {
       setError("Erro ao criar função. Tente novamente.");
       setLoading(false);
       return;
     }
-
-    setFunctions((prev) =>
-      [...prev, data].sort((a, b) => a.name.localeCompare(b.name)),
-    );
-    setName("");
-    setLoading(false);
   }
 
   async function handleDeleteFunction(functionId: string) {
     setLoading(true);
     setError(null);
 
-    const { error: deleteError } = await supabase
-      .from("ministry_functions")
-      .delete()
-      .eq("id", functionId);
-
-    if (deleteError) {
+    try {
+      await dbQuery({
+        table: "ministry_functions",
+        action: "delete",
+        filters: [{ field: "id", operator: "eq", value: functionId }],
+      });
+    } catch {
       setError("Erro ao remover função. Tente novamente.");
       setLoading(false);
       return;

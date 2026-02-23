@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getUserPermissions } from "@/lib/permissions";
+import { getUserPermissionsByProfile } from "@/lib/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,7 +50,7 @@ export default function EscalasPage() {
   const [loading, setLoading] = useState(true);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const monthLabel = currentMonth.toLocaleDateString("pt-BR", {
     month: "long",
@@ -94,6 +94,23 @@ export default function EscalasPage() {
       }
 
       const permissions = await getUserPermissions(supabase);
+      if (profile.role === "volunteer") {
+        const selfOption = {
+          id: profile.id,
+          name: profile.name || user.email || "Voluntário",
+          email: profile.email || user.email || "",
+        };
+        setVolunteers([selfOption]);
+        setSelectedVolunteerId(profile.id);
+        setLoading(false);
+        return;
+      }
+
+      const permissions = await getUserPermissionsByProfile(
+        supabase,
+        user.id,
+        profile.role,
+      );
       const isAdmin = permissions?.isAdmin || false;
       const ledMinistryIds = permissions?.ledMinistryIds || [];
 
@@ -116,6 +133,9 @@ export default function EscalasPage() {
             ? current
             : options[0]?.id || "",
         );
+        if (options.length > 0) {
+          setSelectedVolunteerId((prev) => prev || options[0].id);
+        }
         setLoading(false);
         return;
       }
@@ -161,6 +181,9 @@ export default function EscalasPage() {
         };
         setVolunteers([selfOption]);
         setSelectedVolunteerId(selfOption.id);
+        if (options.length > 0) {
+          setSelectedVolunteerId((prev) => prev || options[0].id);
+        }
         setLoading(false);
         return;
       }
@@ -187,9 +210,7 @@ export default function EscalasPage() {
         )
         .eq("user_id", selectedVolunteerId)
         .gte("events.date", monthRange.startStr)
-        .lte("events.date", monthRange.endStr)
-        .order("date", { ascending: true, foreignTable: "events" })
-        .order("start_time", { ascending: true, foreignTable: "events" });
+        .lte("events.date", monthRange.endStr);
 
       if (error) {
         setError("Erro ao carregar escalas. Tente novamente.");
@@ -207,6 +228,14 @@ export default function EscalasPage() {
         ministryName: row.ministries?.name || null,
         ministryColor: row.ministries?.color || null,
       }));
+
+      mapped.sort((a, b) => {
+        const dateCompare = (a.date || "").localeCompare(b.date || "");
+        if (dateCompare !== 0) {
+          return dateCompare;
+        }
+        return (a.startTime || "").localeCompare(b.startTime || "");
+      });
 
       setSchedules(mapped);
       setLoadingSchedules(false);

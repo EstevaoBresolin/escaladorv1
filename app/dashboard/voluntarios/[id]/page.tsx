@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Edit, Mail, Phone, UserRound, Church } from "lucide-react";
 import Link from "next/link";
-import { getUserPermissions } from "@/lib/permissions";
+import { getUserPermissionsByProfile } from "@/lib/permissions";
 
 interface VolunteerPageProps {
   params: Promise<{ id: string }>;
@@ -19,6 +19,18 @@ export default async function VolunteerPage({ params }: VolunteerPageProps) {
   } = await supabase.auth.getUser();
 
   const permissions = await getUserPermissions(supabase);
+  // Get current user and permissions
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: currentProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user?.id)
+    .single();
+  const permissions = user
+    ? await getUserPermissionsByProfile(supabase, user.id, currentProfile?.role)
+    : null;
   const isAdmin = permissions?.isAdmin || false;
   const isOwnProfile = user?.id === id;
   const canEdit = isAdmin || isOwnProfile;

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { dbQuery } from "@/lib/api/db-client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -62,15 +63,21 @@ export function MinistryLeaderManager({
     if (!selectedVolunteer) return;
     setLoading(true);
 
-    const { error } = await supabase.from("ministry_leaders").insert({
-      ministry_id: ministryId,
-      user_id: selectedVolunteer,
-    });
+    try {
+      await dbQuery({
+        table: "ministry_leaders",
+        action: "insert",
+        values: {
+          ministry_id: ministryId,
+          user_id: selectedVolunteer,
+        },
+      });
 
-    if (!error) {
       setOpen(false);
       setSelectedVolunteer("");
       window.location.reload();
+    } catch {
+      // mantém UX atual sem toast adicional
     }
 
     setLoading(false);
@@ -78,7 +85,11 @@ export function MinistryLeaderManager({
 
   async function handleRemoveLeader(leaderId: string) {
     setRemovingId(leaderId);
-    await supabase.from("ministry_leaders").delete().eq("id", leaderId);
+    await dbQuery({
+      table: "ministry_leaders",
+      action: "delete",
+      filters: [{ field: "id", operator: "eq", value: leaderId }],
+    });
     setRemovingId(null);
     window.location.reload();
   }
@@ -119,6 +130,9 @@ export function MinistryLeaderManager({
                 <Badge
                   variant="secondary"
                   className="w-fit shrink-0 bg-amber-500/10 text-amber-600"
+                <Badge
+                  variant="secondary"
+                  className="bg-amber-500/10 text-amber-600"
                 >
                   Lider
                 </Badge>
@@ -167,6 +181,27 @@ export function MinistryLeaderManager({
                 <p className="truncate text-sm text-muted-foreground">
                   {leader.profiles?.email || "-"}
                 </p>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="secondary"
+                  className="bg-amber-500/10 text-amber-600"
+                >
+                  Lider
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  onClick={() => handleRemoveLeader(leader.id)}
+                  disabled={removingId === leader.id}
+                >
+                  {removingId === leader.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  <span className="sr-only">Remover</span>
+                </Button>
               </div>
 
               <Badge

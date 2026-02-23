@@ -27,6 +27,24 @@ export default async function MinisteriosPage() {
 
   const profile = await getCachedProfile(user.id);
   const permissions = await getCachedPermissions(user.id);
+import { getUserPermissionsByProfile } from "@/lib/permissions";
+
+export default async function MinisteriosPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("church_id, role")
+    .eq("id", user?.id)
+    .single();
+
+  // Get user permissions
+  const permissions = user
+    ? await getUserPermissionsByProfile(supabase, user.id, profile?.role)
+    : null;
   const isAdmin = permissions?.isAdmin || false;
   const leaderMinistryIds = permissions?.ledMinistryIds || [];
 
