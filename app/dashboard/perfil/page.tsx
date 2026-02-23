@@ -218,12 +218,13 @@ export default function PerfilPage() {
   if (initialLoading) {
     return (
       <div className="space-y-6 animate-pulse">
-        <div className="space-y-2">
-          <div className="h-8 w-40 rounded bg-muted" />
-          <div className="h-4 w-64 rounded bg-muted" />
+        <div className="rounded-2xl border border-border/70 bg-card p-6">
+          <div className="h-5 w-36 rounded bg-muted" />
+          <div className="mt-2 h-8 w-56 rounded bg-muted" />
+          <div className="mt-2 h-4 w-72 rounded bg-muted" />
         </div>
         <div className="grid gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
+          <Card className="rounded-2xl lg:col-span-2">
             <CardContent className="space-y-4 p-6">
               <div className="h-10 w-full rounded bg-muted" />
               <div className="h-10 w-full rounded bg-muted" />
@@ -231,7 +232,7 @@ export default function PerfilPage() {
               <div className="h-10 w-36 rounded bg-muted" />
             </CardContent>
           </Card>
-          <Card>
+          <Card className="rounded-2xl">
             <CardContent className="space-y-4 p-6">
               <div className="h-24 w-24 rounded-full bg-muted mx-auto" />
               <div className="h-4 w-2/3 rounded bg-muted mx-auto" />
@@ -245,28 +246,31 @@ export default function PerfilPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Meu Perfil</h1>
-        <p className="text-muted-foreground">
-          Gerencie suas informações pessoais
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <p className="text-sm font-medium text-primary">Área da conta</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+          Meu Perfil
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Atualize seus dados pessoais, igreja vinculada e segurança da conta.
         </p>
-      </div>
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card className="rounded-2xl lg:col-span-2">
           <CardHeader>
             <CardTitle>Informações Pessoais</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
                   {error}
                 </div>
               )}
 
               {success && (
-                <div className="rounded-md bg-emerald-500/10 p-3 text-sm text-emerald-600">
+                <div className="rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-600">
                   Perfil atualizado com sucesso!
                 </div>
               )}
@@ -306,7 +310,7 @@ export default function PerfilPage() {
                 </div>
                 <select
                   id="church"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={churchId || ""}
                   onChange={(e) => setChurchId(e.target.value || null)}
                 >
@@ -356,7 +360,7 @@ export default function PerfilPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-2xl">
           <CardHeader>
             <CardTitle>Foto do Perfil</CardTitle>
           </CardHeader>
@@ -367,6 +371,14 @@ export default function PerfilPage() {
             <p className="text-center text-sm text-muted-foreground">
               A foto do perfil é gerada automaticamente com suas iniciais.
             </p>
+            <div className="mt-5 w-full rounded-xl border border-border bg-background/70 p-3">
+              <p className="text-xs font-medium text-foreground">
+                Conta vinculada
+              </p>
+              <p className="mt-1 break-all text-xs text-muted-foreground">
+                {email}
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

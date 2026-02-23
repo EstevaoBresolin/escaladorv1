@@ -1,12 +1,13 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
-import { DashboardTopbar } from "@/components/dashboard/dashboard-topbar";
+import { DashboardSidebar } from "../../components/dashboard/dashboard-sidebar";
+import { DashboardTopbar } from "../../components/dashboard/dashboard-topbar";
 import {
   getCachedPermissions,
   getCachedProfile,
   getCachedUser,
-} from "@/lib/supabase/cache";
+} from "../../lib/supabase/cache";
+import { PageTransition } from "../../components/ui/page-transition";
 
 // Cache por 60 segundos para melhor performance
 export const revalidate = 60;
@@ -34,9 +35,13 @@ export default async function DashboardLayout({
         profile={profile}
         canViewVolunteers={canViewVolunteers}
       />
-      <div className="flex flex-1 flex-col lg:pl-64">
+      <div className="flex flex-1 flex-col bg-muted/30 lg:pl-72">
         <DashboardTopbar profile={profile} />
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6">
+          <div className="mx-auto w-full max-w-7xl">
+            <PageTransition>{children}</PageTransition>
+          </div>
+        </main>
       </div>
     </div>
   );

@@ -155,12 +155,13 @@ export default function ConfiguracoesPage() {
   if (initialLoading) {
     return (
       <div className="space-y-6 animate-pulse">
-        <div className="space-y-2">
-          <div className="h-8 w-44 rounded bg-muted" />
-          <div className="h-4 w-72 rounded bg-muted" />
+        <div className="rounded-2xl border border-border/70 bg-card p-6">
+          <div className="h-5 w-40 rounded bg-muted" />
+          <div className="mt-2 h-8 w-56 rounded bg-muted" />
+          <div className="mt-2 h-4 w-72 rounded bg-muted" />
         </div>
         <div className="max-w-2xl space-y-6">
-          <Card>
+          <Card className="rounded-2xl">
             <CardHeader className="space-y-2">
               <div className="h-6 w-40 rounded bg-muted" />
               <div className="h-4 w-56 rounded bg-muted" />
@@ -180,17 +181,23 @@ export default function ConfiguracoesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
-        <p className="text-muted-foreground">
-          Gerencie as configurações da sua igreja
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <p className="text-sm font-medium text-primary">
+          Administração da conta
         </p>
-      </div>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+          Configurações
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Gerencie informações da igreja, lembretes e preferências
+          administrativas.
+        </p>
+      </section>
 
-      <div className="space-y-6 max-w-2xl">
+      <div className="max-w-3xl space-y-6">
         {isAdmin && (
           <>
-            <Card>
+            <Card className="rounded-2xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5" />
@@ -203,13 +210,13 @@ export default function ConfiguracoesPage() {
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {error && (
-                    <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                    <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
                       {error}
                     </div>
                   )}
 
                   {success && (
-                    <div className="rounded-md bg-emerald-500/10 p-3 text-sm text-emerald-600">
+                    <div className="rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-600">
                       Configurações salvas com sucesso!
                     </div>
                   )}
@@ -301,11 +308,13 @@ export default function ConfiguracoesPage() {
                 </form>
               </CardContent>
             </Card>
-            <ReminderManager />
+            <div className="rounded-2xl border border-border/70 bg-card p-4">
+              <ReminderManager />
+            </div>
           </>
         )}
 
-        <Card className="border-destructive/50">
+        <Card className="rounded-2xl border-destructive/50">
           <CardHeader>
             <CardTitle className="text-destructive">Zona de Perigo</CardTitle>
             <CardDescription>

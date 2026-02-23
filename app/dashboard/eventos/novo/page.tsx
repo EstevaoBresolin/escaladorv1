@@ -1,8 +1,6 @@
 "use client";
 
-import React from "react";
-
-import { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import type { Ministry } from "@/lib/types";
+import { DashboardErrorAlert } from "@/components/dashboard/dashboard-feedback";
 
 export default function NovoEventoPage() {
   const [name, setName] = useState("");
@@ -26,6 +25,7 @@ export default function NovoEventoPage() {
   const [loading, setLoading] = useState(false);
   const [navigatingBack, setNavigatingBack] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -141,43 +141,44 @@ export default function NovoEventoPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleBackNavigation}
-          disabled={navigatingBack}
-          aria-label="Voltar"
-        >
-          {navigatingBack ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <ArrowLeft className="h-5 w-5" />
-          )}
-          <span className="sr-only">Voltar</span>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Novo Evento</h1>
-          <p className="text-muted-foreground">
-            Crie um novo evento para sua igreja
-          </p>
-        </div>
-      </div>
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-primary">Novo cadastro</p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+              Novo Evento
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Crie o evento e defina os ministérios envolvidos para facilitar a
+              escala.
+            </p>
+          </div>
 
-      <Card className="max-w-2xl">
+          <Button
+            variant="outline"
+            onClick={handleBackNavigation}
+            disabled={navigatingBack}
+          >
+            {navigatingBack ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowLeft className="mr-2 h-4 w-4" />
+            )}
+            Voltar
+          </Button>
+        </div>
+      </section>
+
+      <Card className="max-w-3xl rounded-2xl">
         <CardHeader>
-          <CardTitle>Informações do Evento</CardTitle>
+          <CardTitle>Informações do evento</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
+            {error && <DashboardErrorAlert message={error} />}
 
             <div className="space-y-2">
-              <Label htmlFor="name">Nome do Evento *</Label>
+              <Label htmlFor="name">Nome do evento *</Label>
               <Input
                 id="name"
                 placeholder="Ex: Culto de Domingo, Ensaio do Louvor..."
@@ -226,13 +227,13 @@ export default function NovoEventoPage() {
                 placeholder="Adicione detalhes sobre o evento..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={3}
+                rows={4}
               />
             </div>
 
             {ministries.length > 0 && (
-              <div className="space-y-3">
-                <Label>Ministérios Envolvidos</Label>
+              <div className="space-y-3 rounded-xl border border-border bg-background/60 p-4">
+                <Label>Ministérios envolvidos</Label>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {ministries.map((ministry) => (
                     <div
@@ -246,7 +247,7 @@ export default function NovoEventoPage() {
                       />
                       <label
                         htmlFor={ministry.id}
-                        className="flex items-center gap-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        className="flex items-center gap-2 text-sm font-medium"
                       >
                         <span
                           className="h-2 w-2 rounded-full"
@@ -260,7 +261,7 @@ export default function NovoEventoPage() {
               </div>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Button type="submit" disabled={loading}>
                 {loading ? (
                   <>

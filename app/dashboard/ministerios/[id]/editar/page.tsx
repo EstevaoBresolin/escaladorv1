@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { LoadingCard } from "@/components/ui/spinner";
+import {
+  DashboardEmptyState,
+  DashboardErrorAlert,
+} from "@/components/dashboard/dashboard-feedback";
 
 interface Ministry {
   id: string;
@@ -28,6 +32,7 @@ export default function EditarMinisterioPage() {
   const [saving, setSaving] = useState(false);
   const [navigatingBack, setNavigatingBack] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const router = useRouter();
   const params = useParams();
   const ministryId = params.id as string;
@@ -92,61 +97,60 @@ export default function EditarMinisterioPage() {
 
   if (!ministry) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/dashboard/ministerios">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
+      <DashboardEmptyState
+        icon={ArrowLeft}
+        title="Ministério não encontrado"
+        description="Este ministério não está disponível ou foi removido."
+        action={
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/ministerios">Voltar para ministérios</Link>
           </Button>
-          <h1 className="text-2xl font-bold text-foreground">
-            Ministério não encontrado
-          </h1>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleBackNavigation}
-          disabled={navigatingBack}
-          aria-label="Voltar"
-        >
-          {navigatingBack ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <ArrowLeft className="h-5 w-5" />
-          )}
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Editar Ministério
-          </h1>
-          <p className="text-muted-foreground">
-            Atualize as informações do ministério
-          </p>
-        </div>
-      </div>
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-primary">
+              Atualização de cadastro
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+              Editar Ministério
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Ajuste nome, cor e descrição para manter o módulo organizado.
+            </p>
+          </div>
 
-      <Card className="max-w-2xl">
+          <Button
+            variant="outline"
+            onClick={handleBackNavigation}
+            disabled={navigatingBack}
+          >
+            {navigatingBack ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowLeft className="mr-2 h-4 w-4" />
+            )}
+            Voltar
+          </Button>
+        </div>
+      </section>
+
+      <Card className="max-w-3xl rounded-2xl">
         <CardHeader>
-          <CardTitle>Informações do Ministério</CardTitle>
+          <CardTitle>Informações do ministério</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
+            {error && <DashboardErrorAlert message={error} />}
 
             <div className="space-y-2">
-              <Label htmlFor="name">Nome do Ministério *</Label>
+              <Label htmlFor="name">Nome do ministério *</Label>
               <Input
                 id="name"
                 placeholder="Ex: Louvor, Diaconia, Infantil..."
@@ -182,11 +186,11 @@ export default function EditarMinisterioPage() {
                 placeholder="Descreva o ministério..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={3}
+                rows={4}
               />
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Button type="submit" disabled={saving}>
                 {saving ? (
                   <>

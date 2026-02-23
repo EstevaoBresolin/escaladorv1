@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, MoreVertical, Church } from "lucide-react";
+import { Plus, Users, MoreVertical, Church, Layers3 } from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -15,6 +15,7 @@ import {
   getCachedProfile,
   getCachedUser,
 } from "@/lib/supabase/cache";
+import { DashboardEmptyState } from "@/components/dashboard/dashboard-feedback";
 
 export default async function MinisteriosPage() {
   const supabase = await createClient();
@@ -25,8 +26,6 @@ export default async function MinisteriosPage() {
   }
 
   const profile = await getCachedProfile(user.id);
-
-  // Get user permissions
   const permissions = await getCachedPermissions(user.id);
   const isAdmin = permissions?.isAdmin || false;
   const leaderMinistryIds = permissions?.ledMinistryIds || [];
@@ -38,7 +37,9 @@ export default async function MinisteriosPage() {
             .from("user_ministries")
             .select("ministry_id")
             .eq("user_id", user.id)
-        ).data?.map((m: { ministry_id: string }) => m.ministry_id) || []
+        ).data?.map(
+          (ministry: { ministry_id: string }) => ministry.ministry_id,
+        ) || []
       : [];
 
   let ministriesQuery = supabase
@@ -59,62 +60,108 @@ export default async function MinisteriosPage() {
     if (allowedMinistryIds.length === 0) {
       return (
         <div className="space-y-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">
-                Ministérios
-              </h1>
-              <p className="text-muted-foreground">
-                Gerencie os ministérios da sua igreja
-              </p>
-            </div>
-          </div>
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Church className="mb-4 h-12 w-12 text-muted-foreground/50" />
-              <h3 className="mb-2 text-lg font-semibold text-card-foreground">
-                Nenhum ministério cadastrado
-              </h3>
-              <p className="mb-4 text-center text-muted-foreground">
-                Nenhum ministério disponível no momento.
-              </p>
-            </CardContent>
-          </Card>
+          <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+            <p className="text-sm font-medium text-primary">
+              Estrutura ministerial
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+              Ministérios
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Nenhum ministério disponível para seu perfil no momento.
+            </p>
+          </section>
+
+          <DashboardEmptyState
+            icon={Church}
+            title="Sem ministérios acessíveis"
+            description="Fale com um administrador para ser vinculado a um ministério."
+          />
         </div>
       );
     }
+
     ministriesQuery = ministriesQuery.in("id", allowedMinistryIds);
   }
 
   const { data: ministries } = await ministriesQuery;
+  const ministryCount = ministries?.length || 0;
+  const totalVolunteers =
+    ministries?.reduce(
+      (accumulator, ministry) =>
+        accumulator + (ministry.user_ministries?.[0]?.count || 0),
+      0,
+    ) || 0;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Ministérios</h1>
-          <p className="text-muted-foreground">
-            Gerencie os ministérios da sua igreja
-          </p>
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-sm font-medium text-primary">
+              Estrutura ministerial
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+              Ministérios
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              Organize equipes por áreas e mantenha papéis claros para cada
+              função.
+            </p>
+          </div>
+          {isAdmin && (
+            <Button asChild>
+              <Link href="/dashboard/ministerios/novo">
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Ministério
+              </Link>
+            </Button>
+          )}
         </div>
-        {isAdmin && (
-          <Button asChild>
-            <Link href="/dashboard/ministerios/novo">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Ministério
-            </Link>
-          </Button>
-        )}
-      </div>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2">
+        <Card className="rounded-2xl">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">
+                Ministérios ativos
+              </p>
+              <span className="rounded-lg bg-primary/15 p-2 text-primary">
+                <Layers3 className="h-4 w-4" />
+              </span>
+            </div>
+            <p className="mt-2 text-3xl font-semibold tracking-tight text-card-foreground">
+              {ministryCount}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">
+                Voluntários alocados
+              </p>
+              <span className="rounded-lg bg-chart-1/15 p-2 text-chart-1">
+                <Users className="h-4 w-4" />
+              </span>
+            </div>
+            <p className="mt-2 text-3xl font-semibold tracking-tight text-card-foreground">
+              {totalVolunteers}
+            </p>
+          </CardContent>
+        </Card>
+      </section>
 
       {ministries && ministries.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {ministries.map((ministry) => (
-            <Card key={ministry.id} className="relative">
+            <Card key={ministry.id} className="rounded-2xl">
               <CardHeader className="flex flex-row items-start justify-between pb-2">
                 <div className="flex items-center gap-3">
                   <div
-                    className="flex h-10 w-10 items-center justify-center rounded-lg"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl"
                     style={{
                       backgroundColor: `${ministry.color}20`,
                       color: ministry.color,
@@ -124,8 +171,12 @@ export default async function MinisteriosPage() {
                   </div>
                   <div>
                     <CardTitle className="text-base">{ministry.name}</CardTitle>
+                    <p className="text-xs text-muted-foreground">
+                      Módulo ministerial
+                    </p>
                   </div>
                 </div>
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -157,12 +208,18 @@ export default async function MinisteriosPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </CardHeader>
+
               <CardContent>
-                {ministry.description && (
+                {ministry.description ? (
                   <p className="mb-3 line-clamp-2 text-sm text-muted-foreground">
                     {ministry.description}
                   </p>
+                ) : (
+                  <p className="mb-3 text-sm text-muted-foreground">
+                    Sem descrição cadastrada.
+                  </p>
                 )}
+
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
                   <Users className="h-4 w-4" />
                   <span>
@@ -172,29 +229,27 @@ export default async function MinisteriosPage() {
               </CardContent>
             </Card>
           ))}
-        </div>
+        </section>
       ) : (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Church className="mb-4 h-12 w-12 text-muted-foreground/50" />
-            <h3 className="mb-2 text-lg font-semibold text-card-foreground">
-              Nenhum ministério cadastrado
-            </h3>
-            <p className="mb-4 text-center text-muted-foreground">
-              {isAdmin
-                ? "Comece criando o primeiro ministério da sua igreja."
-                : "Nenhum ministério disponível no momento."}
-            </p>
-            {isAdmin && (
+        <DashboardEmptyState
+          icon={Church}
+          title="Nenhum ministério cadastrado"
+          description={
+            isAdmin
+              ? "Comece criando o primeiro ministério da sua igreja."
+              : "Nenhum ministério disponível no momento."
+          }
+          action={
+            isAdmin ? (
               <Button asChild>
                 <Link href="/dashboard/ministerios/novo">
                   <Plus className="mr-2 h-4 w-4" />
                   Criar Ministério
                 </Link>
               </Button>
-            )}
-          </CardContent>
-        </Card>
+            ) : null
+          }
+        />
       )}
     </div>
   );

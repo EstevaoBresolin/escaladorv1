@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { EventsPageClient } from "@/components/dashboard/eventos-page-client";
+import { EventsPageClient } from "../../../components/dashboard/eventos-page-client";
 import {
   getCachedPermissions,
   getCachedProfile,

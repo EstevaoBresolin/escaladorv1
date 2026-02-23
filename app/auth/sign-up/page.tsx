@@ -118,8 +118,8 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
-      <div className="w-full max-w-sm">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/20 px-4 py-12">
+      <div className="w-full max-w-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="mb-8 text-center">
           <Link href="/" className="mb-6 inline-flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
@@ -137,119 +137,121 @@ export default function SignUpPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-              {error.includes("já está cadastrado") && (
-                <div className="mt-2">
-                  <Link
-                    href="/auth/login"
-                    className="font-medium underline hover:text-destructive/80"
-                  >
-                    Ir para página de login →
-                  </Link>
+        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+                {error.includes("já está cadastrado") && (
+                  <div className="mt-2">
+                    <Link
+                      href="/auth/login"
+                      className="font-medium underline hover:text-destructive/80"
+                    >
+                      Ir para página de login →
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Nome completo</Label>
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="Seu nome"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                autoComplete="name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Digite uma senha forte"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setShowPasswordRequirements(true)}
+                  required
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+
+              {/* Indicador de requisitos de senha */}
+              {showPasswordRequirements && password.length > 0 && (
+                <div className="space-y-1.5 rounded-lg border bg-muted/50 p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">
+                    Requisitos da senha:
+                  </p>
+                  <div className="space-y-1">
+                    <PasswordRequirement
+                      met={passwordRequirements.minLength}
+                      text="Mínimo de 8 caracteres"
+                    />
+                    <PasswordRequirement
+                      met={passwordRequirements.hasUpperCase}
+                      text="Uma letra maiúscula (A-Z)"
+                    />
+                    <PasswordRequirement
+                      met={passwordRequirements.hasLowerCase}
+                      text="Uma letra minúscula (a-z)"
+                    />
+                    <PasswordRequirement
+                      met={passwordRequirements.hasNumber}
+                      text="Um número (0-9)"
+                    />
+                    <PasswordRequirement
+                      met={passwordRequirements.hasSpecialChar}
+                      text="Um caractere especial (!@#$%...)"
+                    />
+                  </div>
                 </div>
               )}
             </div>
-          )}
 
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Nome completo</Label>
-            <Input
-              id="fullName"
-              type="text"
-              placeholder="Seu nome"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              autoComplete="name"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Digite uma senha forte"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onFocus={() => setShowPasswordRequirements(true)}
-                required
-                autoComplete="new-password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-
-            {/* Indicador de requisitos de senha */}
-            {showPasswordRequirements && password.length > 0 && (
-              <div className="rounded-md border bg-muted/50 p-3 space-y-1.5">
-                <p className="text-xs font-medium text-muted-foreground mb-2">
-                  Requisitos da senha:
-                </p>
-                <div className="space-y-1">
-                  <PasswordRequirement
-                    met={passwordRequirements.minLength}
-                    text="Mínimo de 8 caracteres"
-                  />
-                  <PasswordRequirement
-                    met={passwordRequirements.hasUpperCase}
-                    text="Uma letra maiúscula (A-Z)"
-                  />
-                  <PasswordRequirement
-                    met={passwordRequirements.hasLowerCase}
-                    text="Uma letra minúscula (a-z)"
-                  />
-                  <PasswordRequirement
-                    met={passwordRequirements.hasNumber}
-                    text="Um número (0-9)"
-                  />
-                  <PasswordRequirement
-                    met={passwordRequirements.hasSpecialChar}
-                    text="Um caractere especial (!@#$%...)"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Criando conta...
-              </>
-            ) : (
-              "Criar conta grátis"
-            )}
-          </Button>
-        </form>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Criando conta...
+                </>
+              ) : (
+                "Criar conta grátis"
+              )}
+            </Button>
+          </form>
+        </div>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Já tem uma conta?{" "}
@@ -279,14 +281,12 @@ function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
   return (
     <div className="flex items-center gap-2 text-xs">
       {met ? (
-        <Check className="h-3.5 w-3.5 text-emerald-600 flex-shrink-0" />
+        <Check className="h-3.5 w-3.5 flex-shrink-0 text-chart-2" />
       ) : (
-        <X className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+        <X className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
       )}
       <span
-        className={
-          met ? "text-emerald-600 font-medium" : "text-muted-foreground"
-        }
+        className={met ? "font-medium text-chart-2" : "text-muted-foreground"}
       >
         {text}
       </span>

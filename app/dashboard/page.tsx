@@ -1,7 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Church, Users, Calendar, Bell, Plus, ArrowRight } from "lucide-react";
+import {
+  Church,
+  Users,
+  Calendar,
+  Bell,
+  Plus,
+  ArrowRight,
+  Clock3,
+  MapPin,
+} from "lucide-react";
 import Link from "next/link";
 import {
   getCachedPermissions,
@@ -18,8 +27,6 @@ export default async function DashboardPage() {
   }
 
   const profile = await getCachedProfile(user.id);
-
-  // Get user permissions
   const permissions = await getCachedPermissions(user.id);
   const isAdmin = permissions?.isAdmin || false;
 
@@ -39,38 +46,6 @@ export default async function DashboardPage() {
       .gte("date", new Date().toISOString().split("T")[0]),
   ]);
 
-  const stats = [
-    {
-      label: "Ministérios",
-      value: ministriesResult.count || 0,
-      icon: Church,
-      href: "/dashboard/ministerios",
-      color: "bg-primary/10 text-primary",
-    },
-    {
-      label: "Voluntários",
-      value: volunteersResult.count || 0,
-      icon: Users,
-      href: "/dashboard/voluntarios",
-      color: "bg-accent/20 text-accent",
-    },
-    {
-      label: "Eventos Futuros",
-      value: eventsResult.count || 0,
-      icon: Calendar,
-      href: "/dashboard/eventos",
-      color: "bg-chart-2/20 text-chart-2",
-    },
-    {
-      label: "Notificações",
-      value: 0,
-      icon: Bell,
-      href: "/dashboard/notificacoes",
-      color: "bg-chart-3/20 text-chart-3",
-    },
-  ];
-
-  // Get today's date in local timezone (not UTC)
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
@@ -80,163 +55,229 @@ export default async function DashboardPage() {
     .eq("church_id", profile?.church_id)
     .gte("date", todayStr)
     .order("date", { ascending: true })
-    .limit(5);
+    .limit(6);
+
+  const stats = [
+    {
+      title: "Ministérios ativos",
+      value: ministriesResult.count || 0,
+      subtitle: "Estruturas cadastradas na igreja",
+      icon: Church,
+      href: "/dashboard/ministerios",
+      iconClass: "bg-primary/15 text-primary",
+    },
+    {
+      title: "Voluntários",
+      value: volunteersResult.count || 0,
+      subtitle: "Pessoas disponíveis para escala",
+      icon: Users,
+      href: "/dashboard/voluntarios",
+      iconClass: "bg-chart-1/15 text-chart-1",
+    },
+    {
+      title: "Eventos futuros",
+      value: eventsResult.count || 0,
+      subtitle: "Agenda confirmada para próximos dias",
+      icon: Calendar,
+      href: "/dashboard/eventos",
+      iconClass: "bg-chart-2/15 text-chart-2",
+    },
+    {
+      title: "Notificações",
+      value: 0,
+      subtitle: "Lembretes e comunicados pendentes",
+      icon: Bell,
+      href: "/dashboard/notificacoes",
+      iconClass: "bg-chart-3/15 text-chart-3",
+    },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">Visão geral da sua igreja</p>
-        </div>
-        {isAdmin && (
-          <div className="flex gap-2">
-            <Button asChild>
-              <Link href="/dashboard/eventos/novo">
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Evento
-              </Link>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-sm font-medium text-primary">
+              Visão operacional
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+              Dashboard da igreja
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              Acompanhe indicadores, próximos eventos e ações importantes em um
+              único lugar.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {isAdmin && (
+              <Button asChild>
+                <Link href="/dashboard/eventos/novo">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Novo Evento
+                </Link>
+              </Button>
+            )}
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/escalas">Ver escalas</Link>
             </Button>
           </div>
-        )}
-      </div>
+        </div>
+      </section>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.label}
-              </CardTitle>
-              <div className={`rounded-lg p-2 ${stat.color}`}>
-                <stat.icon className="h-4 w-4" />
+          <Card key={stat.title} className="rounded-2xl">
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {stat.title}
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold tracking-tight text-card-foreground">
+                    {stat.value}
+                  </p>
+                </div>
+                <span className={`rounded-xl p-2.5 ${stat.iconClass}`}>
+                  <stat.icon className="h-5 w-5" />
+                </span>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-card-foreground">
-                {stat.value}
-              </div>
+              <p className="mt-3 text-xs text-muted-foreground">
+                {stat.subtitle}
+              </p>
               <Link
                 href={stat.href}
-                className="mt-1 inline-flex items-center text-sm text-primary hover:underline"
+                className="mt-4 inline-flex items-center text-sm font-medium text-primary hover:underline"
               >
-                Ver todos
-                <ArrowRight className="ml-1 h-3 w-3" />
+                Abrir módulo
+                <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Link>
             </CardContent>
           </Card>
         ))}
-      </div>
+      </section>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Próximos Eventos</CardTitle>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/dashboard/eventos">Ver todos</Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {upcomingEvents && upcomingEvents.length > 0 ? (
-            <div className="overflow-hidden rounded-lg border border-border">
-              <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_auto] gap-4 border-b border-border bg-muted/30 px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground md:grid">
-                <p>Evento</p>
-                <p>Detalhes</p>
-                <p>Ministérios</p>
-                <span className="sr-only">Ações</span>
-              </div>
-              {upcomingEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="grid gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_auto] md:items-center md:gap-4"
-                >
-                  <div>
-                    <p className="font-medium text-card-foreground">
-                      {event.title}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(event.date + "T12:00:00").toLocaleDateString(
-                        "pt-BR",
-                        {
-                          weekday: "long",
-                          day: "numeric",
-                          month: "long",
-                        },
+      <section className="grid gap-4 xl:grid-cols-[2fr_1fr]">
+        <Card className="rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Próximos eventos</CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/dashboard/eventos">Ver todos</Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {upcomingEvents && upcomingEvents.length > 0 ? (
+              <div className="space-y-3">
+                {upcomingEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className="rounded-xl border border-border/70 bg-background/70 p-4"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="font-medium text-card-foreground">
+                          {event.title}
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground capitalize">
+                          {new Date(
+                            event.date + "T12:00:00",
+                          ).toLocaleDateString("pt-BR", {
+                            weekday: "long",
+                            day: "numeric",
+                            month: "long",
+                          })}
+                        </p>
+                      </div>
+
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/dashboard/eventos/${event.id}`}>
+                          Detalhes
+                        </Link>
+                      </Button>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                      {(event.start_time || event.time) && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Clock3 className="h-3.5 w-3.5" />
+                          {(event.start_time || event.time).slice(0, 5)}
+                        </span>
                       )}
-                      {(event.start_time || event.time) &&
-                        ` às ${(event.start_time || event.time).slice(0, 5)}`}
-                    </p>
+                      <span className="inline-flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {event.location || "Local não informado"}
+                      </span>
+                    </div>
                   </div>
-
-                  <div className="text-sm text-muted-foreground">
-                    {(event.start_time || event.time) && (
-                      <p>Horário: {(event.start_time || event.time).slice(0, 5)}</p>
-                    )}
-                    <p className="truncate">
-                      Local: {event.location ? event.location : "Não informado"}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5">
-                    {event.event_ministries && event.event_ministries.length > 0 ? (
-                      event.event_ministries.map(
-                        (
-                          ministry: {
-                            ministry_id: string;
-                            ministries?: {
-                              name?: string | null;
-                              color?: string | null;
-                            } | null;
-                          },
-                          index: number,
-                        ) => (
-                          <span
-                            key={`${event.id}-${ministry.ministry_id ?? index}`}
-                            className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
-                            style={{
-                              backgroundColor: ministry.ministries?.color
-                                ? `${ministry.ministries.color}1A`
-                                : undefined,
-                              color: ministry.ministries?.color || undefined,
-                              borderColor: ministry.ministries?.color || undefined,
-                            }}
-                          >
-                            {ministry.ministries?.name || "Ministério"}
-                          </span>
-                        ),
-                      )
-                    ) : (
-                      <span className="text-sm text-muted-foreground">-</span>
-                    )}
-                  </div>
-
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/dashboard/eventos/${event.id}`}>
-                      <ArrowRight className="h-4 w-4" />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-border bg-background/70 p-8 text-center">
+                <Calendar className="mx-auto mb-3 h-10 w-10 text-muted-foreground/60" />
+                <p className="text-sm text-muted-foreground">
+                  Nenhum evento programado no momento.
+                </p>
+                {isAdmin && (
+                  <Button asChild className="mt-4">
+                    <Link href="/dashboard/eventos/novo">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Criar primeiro evento
                     </Link>
                   </Button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Calendar className="mb-4 h-12 w-12 text-muted-foreground/50" />
-              <p className="text-muted-foreground">Nenhum evento programado</p>
-              {isAdmin && (
-                <Button
-                  asChild
-                  className="mt-4 bg-transparent"
-                  variant="outline"
-                >
-                  <Link href="/dashboard/eventos/novo">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Criar Evento
-                  </Link>
-                </Button>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle>Ações rápidas</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Button
+              variant="outline"
+              className="w-full justify-between"
+              asChild
+            >
+              <Link href="/dashboard/ministerios">
+                Gerenciar ministérios
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-between"
+              asChild
+            >
+              <Link href="/dashboard/voluntarios">
+                Gerenciar voluntários
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-between"
+              asChild
+            >
+              <Link href="/dashboard/disponibilidade">
+                Atualizar disponibilidade
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-between"
+              asChild
+            >
+              <Link href="/dashboard/escalas">
+                Consultar escalas
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }

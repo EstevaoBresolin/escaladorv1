@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit, Crown, Users } from "lucide-react";
+import { ArrowLeft, Edit, Crown, Users, Church } from "lucide-react";
 import Link from "next/link";
 import { MinistryVolunteerManager } from "@/components/dashboard/ministry-volunteer-manager";
 import { MinistryLeaderManager } from "@/components/dashboard/ministry-leader-manager";
@@ -44,12 +44,13 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
     )
     .eq("ministry_id", id);
 
-  const volunteers = (volunteersRaw || []).map((v: any) => ({
-    id: v.id,
-    profiles: Array.isArray(v.profiles) ? v.profiles[0] : v.profiles,
+  const volunteers = (volunteersRaw || []).map((volunteer: any) => ({
+    id: volunteer.id,
+    profiles: Array.isArray(volunteer.profiles)
+      ? volunteer.profiles[0]
+      : volunteer.profiles,
   }));
 
-  // Get the current user's church to fetch all available volunteers
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -60,21 +61,18 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
     .eq("id", user?.id)
     .single();
 
-  // Get user permissions
   const permissions = await getUserPermissions(supabase);
   const isAdmin = permissions?.isAdmin || false;
   const isLeaderOfThisMinistry =
     permissions?.ledMinistryIds.includes(id) || false;
   const canManage = isAdmin || isLeaderOfThisMinistry;
 
-  // Get all volunteers from the same church
   const { data: allVolunteers } = await supabase
     .from("profiles")
     .select("id, name, email")
     .eq("church_id", profile?.church_id)
     .order("name");
 
-  // Get ministry leaders
   const { data: leadersRaw } = await supabase
     .from("ministry_leaders")
     .select(
@@ -94,7 +92,6 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
       : leader.profiles,
   }));
 
-  // Get ministry functions
   const { data: ministryFunctions } = await supabase
     .from("ministry_functions")
     .select("id, name")
@@ -103,53 +100,90 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/dashboard/ministerios">
-              <ArrowLeft className="h-5 w-5" />
-              <span className="sr-only">Voltar</span>
-            </Link>
-          </Button>
+      <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
+            <p className="text-sm font-medium text-primary">
+              Gestão ministerial
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
               {ministry.name}
             </h1>
-            <p className="text-muted-foreground">Detalhes do ministério</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Painel de organização do ministério.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/ministerios">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar
+              </Link>
+            </Button>
+            {isAdmin && (
+              <Button variant="outline" asChild>
+                <Link href={`/dashboard/ministerios/${id}/editar`}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Editar
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
-        {isAdmin && (
-          <Button variant="outline" asChild>
-            <Link href={`/dashboard/ministerios/${id}/editar`}>
-              <Edit className="mr-2 h-4 w-4" />
-              Editar
-            </Link>
-          </Button>
-        )}
-      </div>
+      </section>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <Card>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Card className="rounded-2xl">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Líderes</p>
+            <p className="mt-1 text-3xl font-semibold tracking-tight text-amber-500">
+              {leaders?.length || 0}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Voluntários</p>
+            <p className="mt-1 text-3xl font-semibold tracking-tight text-primary">
+              {volunteers?.length || 0}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Funções</p>
+            <p className="mt-1 text-3xl font-semibold tracking-tight text-card-foreground">
+              {ministryFunctions?.length || 0}
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-1">
+          <Card className="rounded-2xl">
             <CardHeader>
               <CardTitle>Informações</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground">Nome</p>
+                <p className="text-xs text-muted-foreground">Nome</p>
                 <p className="font-medium text-card-foreground">
                   {ministry.name}
                 </p>
               </div>
 
               <div>
-                <p className="text-sm text-muted-foreground">Cor</p>
-                <div className="flex items-center gap-2">
+                <p className="text-xs text-muted-foreground">Cor</p>
+                <div className="mt-1 flex items-center gap-2">
                   <div
-                    className="h-6 w-6 rounded border"
+                    className="h-5 w-5 rounded border"
                     style={{ backgroundColor: ministry.color }}
                   />
-                  <p className="font-medium text-card-foreground">
+                  <p className="text-sm font-medium text-card-foreground">
                     {ministry.color}
                   </p>
                 </div>
@@ -157,147 +191,116 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
 
               {ministry.description && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Descrição</p>
-                  <p className="text-card-foreground">{ministry.description}</p>
+                  <p className="text-xs text-muted-foreground">Descrição</p>
+                  <p className="mt-1 text-sm text-card-foreground">
+                    {ministry.description}
+                  </p>
                 </div>
               )}
             </CardContent>
           </Card>
-        </div>
 
-        <div className="space-y-6">
-          <Card>
+          <Card className="rounded-2xl">
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-base">
                 <Crown className="h-4 w-4 text-amber-500" />
-                Lideres
+                Lideranças
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-amber-500">
-                {leaders?.length || 0}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                lideres deste ministerio
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" />
-                Voluntarios
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-primary">
-                {volunteers?.length || 0}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                voluntarios neste ministerio
-              </p>
+              <MinistryLeaderManager
+                ministryId={id}
+                leaders={leaders || []}
+                availableVolunteers={allVolunteers || []}
+                isAdmin={isAdmin}
+              />
             </CardContent>
           </Card>
         </div>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Crown className="h-5 w-5 text-amber-500" />
-            Lideres do Ministerio
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <MinistryLeaderManager
-            ministryId={id}
-            leaders={leaders || []}
-            availableVolunteers={allVolunteers || []}
-            isAdmin={isAdmin}
-          />
-        </CardContent>
-      </Card>
+        <div className="space-y-6 lg:col-span-2">
+          <Card className="rounded-2xl">
+            <CardHeader>
+              <CardTitle>Funções do ministério</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MinistryFunctionManager
+                ministryId={id}
+                initialFunctions={ministryFunctions || []}
+                canManage={canManage}
+              />
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Funções do Ministério</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <MinistryFunctionManager
-            ministryId={id}
-            initialFunctions={ministryFunctions || []}
-            canManage={canManage}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            Voluntarios do Ministerio
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {canManage ? (
-            <MinistryVolunteerManager
-              ministryId={id}
-              members={volunteers || []}
-              availableVolunteers={allVolunteers || []}
-            />
-          ) : (
-            <div className="space-y-2">
-              {(volunteers || []).length > 0 ? (
-                <div className="overflow-hidden rounded-lg border border-border">
-                  <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,2fr)] gap-4 border-b border-border bg-muted/30 px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground md:grid">
-                    <p>Nome</p>
-                    <p>Contato</p>
-                  </div>
-                  {(volunteers || []).map(
-                    (member: {
-                      id: string;
-                      profiles: {
-                        id: string;
-                        name: string;
-                        email: string;
-                      } | null;
-                    }) => (
-                      <div
-                        key={member.id}
-                        className="grid gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)] md:items-center md:gap-4"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                            {member.profiles?.name
-                              ? member.profiles.name
-                                  .split(" ")
-                                  .map((n: string) => n[0])
-                                  .join("")
-                                  .slice(0, 2)
-                                  .toUpperCase()
-                              : "?"}
-                          </div>
-                          <p className="font-medium text-card-foreground">
-                            {member.profiles?.name || "Voluntario nao encontrado"}
-                          </p>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {member.profiles?.email || "-"}
-                        </p>
+          <Card className="rounded-2xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                Voluntários do ministério
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {canManage ? (
+                <MinistryVolunteerManager
+                  ministryId={id}
+                  members={volunteers || []}
+                  availableVolunteers={allVolunteers || []}
+                />
+              ) : (
+                <div className="space-y-2">
+                  {(volunteers || []).length > 0 ? (
+                    <div className="overflow-hidden rounded-lg border border-border">
+                      <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,2fr)] gap-4 border-b border-border bg-muted/30 px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground md:grid">
+                        <p>Nome</p>
+                        <p>Contato</p>
                       </div>
-                    ),
+                      {(volunteers || []).map(
+                        (member: {
+                          id: string;
+                          profiles: {
+                            id: string;
+                            name: string;
+                            email: string;
+                          } | null;
+                        }) => (
+                          <div
+                            key={member.id}
+                            className="grid gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)] md:items-center md:gap-4"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                                {member.profiles?.name
+                                  ? member.profiles.name
+                                      .split(" ")
+                                      .map((namePart: string) => namePart[0])
+                                      .join("")
+                                      .slice(0, 2)
+                                      .toUpperCase()
+                                  : "?"}
+                              </div>
+                              <p className="font-medium text-card-foreground">
+                                {member.profiles?.name ||
+                                  "Voluntário não encontrado"}
+                              </p>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {member.profiles?.email || "-"}
+                            </p>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                      Nenhum voluntário neste ministério.
+                    </div>
                   )}
                 </div>
-              ) : (
-                <p className="text-center text-muted-foreground py-4">
-                  Nenhum voluntario neste ministerio.
-                </p>
               )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
     </div>
   );
 }
