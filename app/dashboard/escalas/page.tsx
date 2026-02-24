@@ -39,6 +39,12 @@ interface VolunteerScheduleItem {
 export default function EscalasPage() {
   const [volunteers, setVolunteers] = useState<VolunteerOption[]>([]);
   const [selectedVolunteerId, setSelectedVolunteerId] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loadingVolunteers, setLoadingVolunteers] = useState(false);
+  const [churchId, setChurchId] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [ledMinistryIds, setLedMinistryIds] = useState<string[]>([]);
+  const [isVolunteerOnly, setIsVolunteerOnly] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [schedules, setSchedules] = useState<VolunteerScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,68 +93,23 @@ export default function EscalasPage() {
         return;
       }
 
+      setChurchId(profile.church_id);
+
       const permissions = await getUserPermissionsByProfile(
         supabase,
         user.id,
         profile.role,
       );
-      const isAdmin = permissions?.isAdmin || false;
-      const ledMinistryIds = permissions?.ledMinistryIds || [];
+      const isAdminUser = permissions?.isAdmin || false;
+      const ledIds = permissions?.ledMinistryIds || [];
 
-      if (isAdmin) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, name, email")
-          .eq("church_id", profile.church_id)
-          .order("name");
+      setIsAdmin(isAdminUser);
+      setLedMinistryIds(ledIds);
 
-        const options = (profiles || []).map((p) => ({
-          id: p.id,
-          name: p.name || p.email,
-          email: p.email || "",
-        }));
-
-        setVolunteers(options);
-        setSelectedVolunteerId((current) =>
-          current && options.some((opt) => opt.id === current)
-            ? current
-            : options[0]?.id || "",
-        );
-        if (options.length > 0) {
-          setSelectedVolunteerId((prev) => prev || options[0].id);
-        }
-        setLoading(false);
-        return;
-      }
-
-      if (ledMinistryIds.length > 0) {
-        const { data: ministryVolunteers } = await supabase
-          .from("profiles")
-          .select("id, name, email, user_ministries!inner(ministry_id)")
-          .eq("church_id", profile.church_id)
-          .in("user_ministries.ministry_id", ledMinistryIds)
-          .order("name");
-
-        const map = new Map<string, VolunteerOption>();
-        (ministryVolunteers || []).forEach((row: any) => {
-          if (!row?.id) return;
-          map.set(row.id, {
-            id: row.id,
-            name: row.name || row.email,
-            email: row.email || "",
-          });
-        });
-
-        const options = Array.from(map.values()).sort((a, b) =>
-          a.name.localeCompare(b.name),
-        );
-
-        setVolunteers(options);
-        setSelectedVolunteerId((current) =>
-          current && options.some((opt) => opt.id === current)
-            ? current
-            : options[0]?.id || "",
-        );
+      if (isAdminUser || ledIds.length > 0) {
+        setVolunteers([]);
+        setSelectedVolunteerId("");
+        setIsVolunteerOnly(false);
         setLoading(false);
         return;
       }
@@ -161,6 +122,7 @@ export default function EscalasPage() {
         };
         setVolunteers([selfOption]);
         setSelectedVolunteerId(selfOption.id);
+        setIsVolunteerOnly(true);
         setLoading(false);
         return;
       }
@@ -172,6 +134,96 @@ export default function EscalasPage() {
 
     loadVolunteers();
   }, [supabase]);
+
+  useEffect(() => {
+    if (!churchId) return;
+    if (isVolunteerOnly) return;
+
+    const term = searchTerm.trim();
+    if (!term) {
+      setVolunteers([]);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(async () => {
+      setLoadingVolunteers(true);
+
+      const buildNameQuery = () => {
+        if (isAdmin) {
+          return supabase
+            .from("profiles")
+            .select("id, name, email")
+            .eq("church_id", churchId)
+            .ilike("name", `%${term}%`)
+            .order("name")
+            .limit(50);
+        }
+
+        return supabase
+          .from("profiles")
+          .select("id, name, email, user_ministries!inner(ministry_id)")
+          .eq("church_id", churchId)
+          .in("user_ministries.ministry_id", ledMinistryIds)
+          .ilike("name", `%${term}%`)
+          .order("name")
+          .limit(50);
+      };
+
+      const buildEmailQuery = () => {
+        if (isAdmin) {
+          return supabase
+            .from("profiles")
+            .select("id, name, email")
+            .eq("church_id", churchId)
+            .ilike("email", `%${term}%`)
+            .order("name")
+            .limit(50);
+        }
+
+        return supabase
+          .from("profiles")
+          .select("id, name, email, user_ministries!inner(ministry_id)")
+          .eq("church_id", churchId)
+          .in("user_ministries.ministry_id", ledMinistryIds)
+          .ilike("email", `%${term}%`)
+          .order("name")
+          .limit(50);
+      };
+
+      const [{ data: nameMatches }, { data: emailMatches }] = await Promise.all([
+        buildNameQuery(),
+        buildEmailQuery(),
+      ]);
+
+      const byId = new Map<string, VolunteerOption>();
+      ([...(nameMatches || []), ...(emailMatches || [])] as any[]).forEach(
+        (row) => {
+          if (!row?.id) return;
+          byId.set(row.id, {
+            id: row.id,
+            name: row.name || row.email,
+            email: row.email || "",
+          });
+        },
+      );
+
+      const options = Array.from(byId.values()).sort((a, b) =>
+        a.name.localeCompare(b.name),
+      );
+
+      setVolunteers(options);
+      setLoadingVolunteers(false);
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    churchId,
+    isVolunteerOnly,
+    searchTerm,
+    isAdmin,
+    ledMinistryIds,
+    supabase,
+  ]);
 
   useEffect(() => {
     async function loadSchedules() {
@@ -292,11 +344,14 @@ export default function EscalasPage() {
                   <div className="h-10 w-full animate-pulse rounded-lg border border-input bg-muted/40" />
                   <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
                 </div>
-              ) : volunteers.length > 0 ? (
+              ) : isVolunteerOnly || isAdmin || ledMinistryIds.length > 0 ? (
                 <VolunteerSearch
                   volunteers={volunteers}
                   selectedVolunteerId={selectedVolunteerId}
                   onSelectVolunteer={setSelectedVolunteerId}
+                  searchTerm={isVolunteerOnly ? undefined : searchTerm}
+                  onSearchTermChange={isVolunteerOnly ? undefined : setSearchTerm}
+                  loading={loadingVolunteers}
                   showEventStats={false}
                   showLabel={false}
                 />
@@ -305,6 +360,17 @@ export default function EscalasPage() {
                   Nenhum voluntário disponível.
                 </p>
               )}
+
+              {!loading &&
+                !isVolunteerOnly &&
+                (isAdmin || ledMinistryIds.length > 0) &&
+                volunteers.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    {searchTerm.trim()
+                      ? "Nenhum voluntário encontrado com esse termo."
+                      : "Digite para buscar voluntários."}
+                  </p>
+                )}
             </div>
           </div>
         </CardHeader>

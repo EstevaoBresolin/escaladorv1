@@ -62,20 +62,23 @@ export function MinistryLeaderManager({
   useEffect(() => {
     if (!open) return;
 
+    const term = searchTerm.trim();
+    if (!term) {
+      setRemoteVolunteers([]);
+      setLoadingVolunteers(false);
+      return;
+    }
+
     const timeoutId = window.setTimeout(async () => {
       setLoadingVolunteers(true);
 
-      let query = supabase
+      const query = supabase
         .from("profiles")
         .select("id, name, email")
         .eq("church_id", churchId)
         .order("name")
+        .ilike("name", `%${term}%`)
         .limit(30);
-
-      const term = searchTerm.trim();
-      if (term) {
-        query = query.ilike("name", `%${term}%`);
-      }
 
       const { data } = await query;
       const volunteers = (data || []).map((v: any) => ({
@@ -278,13 +281,9 @@ export function MinistryLeaderManager({
               <p className="text-center text-muted-foreground py-4">
                 {loadingVolunteers
                   ? "Carregando voluntários..."
-                  : "Nenhum voluntário encontrado com os filtros atuais."}
-              </p>
-            )}
-
-            {remoteVolunteers.length > 0 && selectableVolunteers.length === 0 && (
-              <p className="text-center text-muted-foreground py-2 text-sm">
-                Todos os resultados já são líderes deste ministério.
+                  : searchTerm.trim()
+                    ? "Nenhum voluntário encontrado com os filtros atuais."
+                    : "Digite para buscar líderes."}
               </p>
             )}
 
@@ -296,7 +295,11 @@ export function MinistryLeaderManager({
             <Button
               className="w-full"
               onClick={handleAddLeader}
-              disabled={!selectedVolunteer || leaderIds.has(selectedVolunteer) || loading}
+              disabled={
+                !selectedVolunteer ||
+                leaderIds.has(selectedVolunteer) ||
+                loading
+              }
             >
               {loading ? (
                 <>

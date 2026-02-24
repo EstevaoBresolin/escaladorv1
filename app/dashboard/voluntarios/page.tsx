@@ -44,18 +44,19 @@ interface Volunteer {
 }
 
 export default function VoluntariosPage() {
-  const PAGE_SIZE = 1000;
+  const supabase = useMemo(() => createClient(), []);
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLeader, setIsLeader] = useState(false);
+  const [churchId, setChurchId] = useState<string>("");
+  const [ledMinistryIds, setLedMinistryIds] = useState<string[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>();
   const [loading, setLoading] = useState(true);
+  const [loadingSearch, setLoadingSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    async function fetchData() {
-      const supabase = createClient();
-
+    async function fetchPermissions() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -78,103 +79,115 @@ export default function VoluntariosPage() {
       ]);
 
       const isAdminUser = profile?.role === "admin";
-      const ledMinistryIds = (ledMinistries || []).map((m) => m.ministry_id);
+      const ministryIds = (ledMinistries || []).map((m) => m.ministry_id);
 
       setIsAdmin(isAdminUser);
-      setIsLeader(ledMinistryIds.length > 0);
+      setIsLeader(ministryIds.length > 0);
+      setChurchId(profile?.church_id || "");
+      setLedMinistryIds(ministryIds);
       setCurrentUserId(user.id);
-
-      let volunteersData: Volunteer[] = [];
-
-      if (isAdminUser) {
-        let offset = 0;
-
-        while (true) {
-          const { data } = await supabase
-            .from("profiles")
-            .select(
-              `
-                *,
-                user_ministries(ministry_id, ministries(name, color))
-              `,
-            )
-            .eq("church_id", profile?.church_id)
-            .order("name")
-            .range(offset, offset + PAGE_SIZE - 1);
-
-          const batch = (data || []) as Volunteer[];
-          volunteersData = volunteersData.concat(batch);
-
-          if (batch.length < PAGE_SIZE) {
-            break;
-          }
-
-          offset += PAGE_SIZE;
-        }
-      } else if (ledMinistryIds.length > 0) {
-        let offset = 0;
-        const byId = new Map<string, Volunteer>();
-
-        while (true) {
-          const { data } = await supabase
-            .from("profiles")
-            .select(
-              `
-                *,
-                user_ministries!inner(ministry_id, ministries(name, color))
-              `,
-            )
-            .eq("church_id", profile?.church_id)
-            .in("user_ministries.ministry_id", ledMinistryIds)
-            .order("name")
-            .range(offset, offset + PAGE_SIZE - 1);
-
-          const batch = (data || []) as Volunteer[];
-
-          batch.forEach((volunteer) => {
-            if (volunteer?.id) {
-              byId.set(volunteer.id, volunteer);
-            }
-          });
-
-          if (batch.length < PAGE_SIZE) {
-            break;
-          }
-
-          offset += PAGE_SIZE;
-        }
-
-        volunteersData = Array.from(byId.values()).sort((a, b) =>
-          (a.name || "").localeCompare(b.name || ""),
-        );
-      }
-
-      setVolunteers(volunteersData);
       setLoading(false);
     }
 
-    fetchData();
-  }, []);
+    fetchPermissions();
+  }, [supabase]);
 
-  const filteredVolunteers = useMemo(() => {
-    if (!searchTerm.trim()) return volunteers;
+  useEffect(() => {
+    if (!churchId) return;
 
-    const term = searchTerm.toLowerCase().trim();
-    return volunteers.filter((volunteer) => {
-      if (volunteer.name && volunteer.name.toLowerCase().includes(term))
-        return true;
-      if (volunteer.email && volunteer.email.toLowerCase().includes(term))
-        return true;
+    const term = searchTerm.trim();
 
-      if (volunteer.user_ministries && volunteer.user_ministries.length > 0) {
-        return volunteer.user_ministries.some((userMinistry) =>
-          userMinistry.ministries.name.toLowerCase().includes(term),
-        );
-      }
+    if (!term) {
+      setVolunteers([]);
+      return;
+    }
 
-      return false;
-    });
-  }, [volunteers, searchTerm]);
+    const timeoutId = window.setTimeout(async () => {
+      setLoadingSearch(true);
+
+      const selectColumns = `
+            *,
+            user_ministries(ministry_id, ministries(name, color))
+          `;
+
+      const queryByName = () => {
+        if (isAdmin) {
+          return supabase
+            .from("profiles")
+            .select(selectColumns)
+            .eq("church_id", churchId)
+            .ilike("name", `%${term}%`)
+            .order("name")
+            .limit(50);
+        }
+
+        return supabase
+          .from("profiles")
+          .select(
+            `
+              *,
+              user_ministries!inner(ministry_id, ministries(name, color))
+            `,
+          )
+          .eq("church_id", churchId)
+          .in("user_ministries.ministry_id", ledMinistryIds)
+          .ilike("name", `%${term}%`)
+          .order("name")
+          .limit(50);
+      };
+
+      const queryByEmail = () => {
+        if (isAdmin) {
+          return supabase
+            .from("profiles")
+            .select(selectColumns)
+            .eq("church_id", churchId)
+            .ilike("email", `%${term}%`)
+            .order("name")
+            .limit(50);
+        }
+
+        return supabase
+          .from("profiles")
+          .select(
+            `
+              *,
+              user_ministries!inner(ministry_id, ministries(name, color))
+            `,
+          )
+          .eq("church_id", churchId)
+          .in("user_ministries.ministry_id", ledMinistryIds)
+          .ilike("email", `%${term}%`)
+          .order("name")
+          .limit(50);
+      };
+
+      const [{ data: nameMatches }, { data: emailMatches }] = await Promise.all([
+        queryByName(),
+        queryByEmail(),
+      ]);
+
+      const byId = new Map<string, Volunteer>();
+      ([...(nameMatches || []), ...(emailMatches || [])] as Volunteer[]).forEach(
+        (volunteer) => {
+          if (volunteer?.id) {
+            byId.set(volunteer.id, volunteer);
+          }
+        },
+      );
+
+      const result = Array.from(byId.values()).sort((a, b) =>
+        (a.name || "").localeCompare(b.name || ""),
+      );
+
+      setVolunteers(result);
+      setLoadingSearch(false);
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [churchId, isAdmin, ledMinistryIds, searchTerm, supabase]);
+
+  const filteredVolunteers = volunteers;
 
   const subtitle = isAdmin
     ? "Gerencie os voluntários da sua igreja"
@@ -255,19 +268,25 @@ export default function VoluntariosPage() {
         </div>
       </section>
 
-      {volunteers.length > 0 && (
+      <Card className="rounded-2xl">
+        <CardContent className="p-4 md:p-5">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Pesquisar voluntários por nome ou email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {loadingSearch && searchTerm.trim() && (
         <Card className="rounded-2xl">
-          <CardContent className="p-4 md:p-5">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Pesquisar voluntários por nome, email ou ministério..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+          <CardContent className="p-6 text-sm text-muted-foreground">
+            Buscando voluntários...
           </CardContent>
         </Card>
       )}
@@ -394,7 +413,7 @@ export default function VoluntariosPage() {
             </Table>
           </CardContent>
         </Card>
-      ) : volunteers.length > 0 && searchTerm ? (
+      ) : searchTerm.trim() ? (
         <DashboardEmptyState
           icon={Search}
           title="Nenhum voluntário encontrado"
@@ -407,9 +426,9 @@ export default function VoluntariosPage() {
         />
       ) : (
         <DashboardEmptyState
-          icon={Users}
-          title="Nenhum voluntário cadastrado"
-          description="Os voluntários são criados através do cadastro (sign up)."
+          icon={Search}
+          title="Digite para buscar voluntários"
+          description="A listagem é carregada somente após pesquisar por nome ou email."
         />
       )}
     </div>

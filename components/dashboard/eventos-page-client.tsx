@@ -23,14 +23,18 @@ import {
 import { EventCalendar } from "@/components/dashboard/event-calendar";
 import { DeleteEventButton } from "@/components/dashboard/delete-event-button";
 import { EventQuickSchedule } from "@/components/dashboard/event-quick-schedule";
+import { ReplicateEventButton } from "@/components/dashboard/replicate-event-button";
 import { DashboardEmptyState } from "@/components/dashboard/dashboard-feedback";
 
 interface EventWithMinistries {
   id: string;
+  church_id: string;
   title: string;
+  description?: string | null;
   date: string;
   start_time: string | null;
   location: string | null;
+  has_schedules: boolean;
   event_ministries: Array<{
     ministry_id: string;
     ministries: { id: string; name: string; color: string };
@@ -251,13 +255,26 @@ export function EventsPageClient({
                         )}
 
                         {(isAdmin || ledMinistryIds.length > 0) && (
-                          <EventQuickSchedule
-                            event={event}
-                            isAdmin={isAdmin}
-                            ledMinistryIds={ledMinistryIds}
-                            triggerSize="sm"
-                            triggerClassName="mt-3"
-                          />
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <EventQuickSchedule
+                              event={event}
+                              isAdmin={isAdmin}
+                              ledMinistryIds={ledMinistryIds}
+                              triggerSize="sm"
+                            />
+                            <ReplicateEventButton
+                              eventId={event.id}
+                              title={event.title}
+                              description={event.description || null}
+                              location={event.location || null}
+                              churchId={event.church_id}
+                              ministryIds={event.event_ministries.map(
+                                (em) => em.ministry_id,
+                              )}
+                              hasSchedules={event.has_schedules}
+                              triggerSize="sm"
+                            />
+                          </div>
                         )}
                       </div>
 

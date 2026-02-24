@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { VolunteerSlotManager } from "@/components/dashboard/volunteer-slot-manager";
 import { EventQuickSchedule } from "@/components/dashboard/event-quick-schedule";
+import { ReplicateEventButton } from "@/components/dashboard/replicate-event-button";
 import {
   getUserPermissionsByProfile,
   getAssignableVolunteers,
@@ -194,17 +195,32 @@ export default async function EventPage({ params }: EventPageProps) {
                 </Link>
               </Button>
             )}
-            <EventQuickSchedule
-              event={{
-                id: event.id,
-                title: event.title,
-                date: event.date,
-                start_time: event.start_time,
-                event_ministries: event.event_ministries || [],
-              }}
-              isAdmin={isAdmin}
-              ledMinistryIds={permissions?.ledMinistryIds || []}
-            />
+            {canManageEvent && (
+              <>
+                <EventQuickSchedule
+                  event={{
+                    id: event.id,
+                    title: event.title,
+                    date: event.date,
+                    start_time: event.start_time,
+                    event_ministries: event.event_ministries || [],
+                  }}
+                  isAdmin={isAdmin}
+                  ledMinistryIds={permissions?.ledMinistryIds || []}
+                />
+                <ReplicateEventButton
+                  eventId={event.id}
+                  title={event.title}
+                  description={event.description}
+                  location={event.location}
+                  churchId={event.church_id}
+                  ministryIds={(event.event_ministries || []).map(
+                    (em: { ministry_id: string }) => em.ministry_id,
+                  )}
+                  hasSchedules={(event.volunteer_slots || []).length > 0}
+                />
+              </>
+            )}
           </div>
         </div>
 

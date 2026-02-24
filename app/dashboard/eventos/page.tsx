@@ -26,11 +26,14 @@ export default async function EventosPage() {
     .select(
       `
       id,
+      church_id,
       title,
+      description,
       date,
       start_time,
       location,
-      event_ministries(ministry_id, ministries(id, name, color))
+      event_ministries(ministry_id, ministries(id, name, color)),
+      volunteer_slots(count)
     `,
     )
     .eq("church_id", profile?.church_id)
@@ -38,10 +41,15 @@ export default async function EventosPage() {
 
   const events = (eventsRaw || []).map((event: any) => ({
     id: event.id,
+    church_id: event.church_id,
     title: event.title,
+    description: event.description,
     date: event.date,
     start_time: event.start_time,
     location: event.location,
+    has_schedules:
+      ((event.volunteer_slots || [])[0] as { count?: number } | undefined)
+        ?.count > 0,
     event_ministries: (event.event_ministries || []).map((em: any) => ({
       ministry_id: em.ministry_id,
       ministries: Array.isArray(em.ministries)

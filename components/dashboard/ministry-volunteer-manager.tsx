@@ -71,20 +71,23 @@ export function MinistryVolunteerManager({
   useEffect(() => {
     if (!open) return;
 
+    const term = searchTerm.trim();
+    if (!term) {
+      setRemoteVolunteers([]);
+      setLoadingVolunteers(false);
+      return;
+    }
+
     const timeoutId = window.setTimeout(async () => {
       setLoadingVolunteers(true);
 
-      let query = supabase
+      const query = supabase
         .from("profiles")
         .select("id, name, email")
         .eq("church_id", churchId)
         .order("name")
+        .ilike("name", `%${term}%`)
         .limit(30);
-
-      const term = searchTerm.trim();
-      if (term) {
-        query = query.ilike("name", `%${term}%`);
-      }
 
       const { data } = await query;
       const volunteers = (data || []).map((v: any) => ({
@@ -246,7 +249,9 @@ export function MinistryVolunteerManager({
               <p className="text-center text-muted-foreground py-4">
                 {loadingVolunteers
                   ? "Carregando voluntários..."
-                  : "Nenhum voluntário encontrado com os filtros atuais."}
+                  : searchTerm.trim()
+                    ? "Nenhum voluntário encontrado com os filtros atuais."
+                    : "Digite para buscar voluntários."}
               </p>
             )}
 
