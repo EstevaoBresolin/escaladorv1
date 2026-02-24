@@ -52,14 +52,21 @@ export const DB_TABLE_POLICIES: Record<string, TablePolicy> = {
   },
   events: {
     writableFields: [
-      "name",
+      "church_id",
+      "title",
       "description",
       "location",
       "date",
       "start_time",
       "end_time",
     ],
-    nonNullableFields: ["name", "date"],
+    nonNullableFields: [
+      "church_id",
+      "title",
+      "date",
+      "start_time",
+      "description",
+    ],
     filterableFields: ["id", "church_id", "date"],
     cacheTtlSeconds: 60,
     invalidateTables: ["event_ministries", "volunteer_slots"],
@@ -116,9 +123,9 @@ export const DB_TABLE_POLICIES: Record<string, TablePolicy> = {
     invalidateTables: ["events"],
   },
   volunteer_unavailability: {
-    writableFields: ["user_id", "event_id", "start_date", "end_date", "reason"],
-    nonNullableFields: ["user_id", "start_date"],
-    filterableFields: ["id", "user_id", "event_id", "start_date", "end_date"],
+    writableFields: ["user_id", "unavailable_date", "period", "reason"],
+    nonNullableFields: ["user_id", "unavailable_date"],
+    filterableFields: ["id", "user_id", "unavailable_date", "period"],
     cacheTtlSeconds: 30,
   },
 };

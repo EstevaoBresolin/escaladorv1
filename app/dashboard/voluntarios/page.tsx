@@ -29,7 +29,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DashboardEmptyState } from "@/components/dashboard/dashboard-feedback";
-import { getUserPermissionsByProfile } from "@/lib/permissions";
 
 interface UserMinistry {
   ministry_id: string;
@@ -65,25 +64,28 @@ export default function VoluntariosPage() {
         return;
       }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("church_id, role")
-        .eq("id", user.id)
-        .single();
+      const [{ data: profile }, { data: ledMinistries }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("church_id, role")
+          .eq("id", user.id)
+          .single(),
+        supabase
+          .from("ministry_leaders")
+          .select("ministry_id")
+          .eq("user_id", user.id),
+      ]);
 
-      const permissions = await getUserPermissionsByProfile(
-        supabase,
-        user.id,
-        profile?.role,
-      );
-      setIsAdmin(permissions?.isAdmin || false);
-      const ledMinistryIds = permissions?.ledMinistryIds || [];
+      const isAdminUser = profile?.role === "admin";
+      const ledMinistryIds = (ledMinistries || []).map((m) => m.ministry_id);
+
+      setIsAdmin(isAdminUser);
       setIsLeader(ledMinistryIds.length > 0);
       setCurrentUserId(user.id);
 
       let volunteersData: Volunteer[] = [];
 
-      if (permissions?.isAdmin) {
+      if (isAdminUser) {
         const { data } = await supabase
           .from("profiles")
           .select(
@@ -97,30 +99,19 @@ export default function VoluntariosPage() {
 
         volunteersData = data || [];
       } else if (ledMinistryIds.length > 0) {
-        const { data: ministryMembers } = await supabase
-          .from("user_ministries")
-          .select("user_id")
-          .in("ministry_id", ledMinistryIds);
-
-        const userIds = Array.from(
-          new Set((ministryMembers || []).map((member) => member.user_id)),
-        );
-
-        if (userIds.length > 0) {
-          const { data } = await supabase
-            .from("profiles")
-            .select(
-              `
+        const { data } = await supabase
+          .from("profiles")
+          .select(
+            `
               *,
-              user_ministries(ministry_id, ministries(name, color))
+              user_ministries!inner(ministry_id, ministries(name, color))
             `,
-            )
-            .eq("church_id", profile?.church_id)
-            .in("id", userIds)
-            .order("name");
+          )
+          .eq("church_id", profile?.church_id)
+          .in("user_ministries.ministry_id", ledMinistryIds)
+          .order("name");
 
-          volunteersData = data || [];
-        }
+        volunteersData = data || [];
       }
 
       setVolunteers(volunteersData);

@@ -22,6 +22,7 @@ interface VolunteerProps {
   monthlyEventsCount?: number;
   eventCountMap?: Record<string, number>;
   showEventStats?: boolean;
+  showLabel?: boolean;
 }
 
 export function VolunteerSearch({
@@ -32,6 +33,7 @@ export function VolunteerSearch({
   monthlyEventsCount = 0,
   eventCountMap = {},
   showEventStats = true,
+  showLabel = true,
 }: VolunteerProps) {
   const [open, setOpen] = useState(false);
 
@@ -46,7 +48,7 @@ export function VolunteerSearch({
 
   return (
     <div className="space-y-2">
-      <Label>Voluntário *</Label>
+      {showLabel && <Label>Voluntário *</Label>}
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>

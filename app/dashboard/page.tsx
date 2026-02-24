@@ -5,7 +5,7 @@ import {
   Church,
   Users,
   Calendar,
-  Bell,
+  // Bell,
   Plus,
   ArrowRight,
   Clock3,
@@ -82,6 +82,7 @@ export default async function DashboardPage() {
       href: "/dashboard/eventos",
       iconClass: "bg-chart-2/15 text-chart-2",
     },
+    /*
     {
       title: "Notificações",
       value: 0,
@@ -90,6 +91,7 @@ export default async function DashboardPage() {
       href: "/dashboard/notificacoes",
       iconClass: "bg-chart-3/15 text-chart-3",
     },
+    */
   ];
 
   return (

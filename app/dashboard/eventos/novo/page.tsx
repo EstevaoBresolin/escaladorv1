@@ -65,6 +65,14 @@ export default function NovoEventoPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const trimmedName = name.trim();
+    const trimmedDescription = description.trim();
+
+    if (!trimmedName || !date || !time || !trimmedDescription) {
+      setError("Preencha nome, data, horário e descrição para continuar.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -94,10 +102,10 @@ export default function NovoEventoPage() {
       .from("events")
       .insert({
         church_id: profile.church_id,
-        title: name,
-        description: description || null,
+        title: trimmedName,
+        description: trimmedDescription,
         date,
-        start_time: time || "00:00:00",
+        start_time: time.length === 5 ? `${time}:00` : time,
         location: location || null,
       })
       .select()
@@ -200,12 +208,13 @@ export default function NovoEventoPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="time">Horário</Label>
+                <Label htmlFor="time">Horário *</Label>
                 <Input
                   id="time"
                   type="time"
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
+                  required
                 />
               </div>
             </div>
@@ -221,13 +230,14 @@ export default function NovoEventoPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Descrição</Label>
+              <Label htmlFor="description">Descrição *</Label>
               <Textarea
                 id="description"
                 placeholder="Adicione detalhes sobre o evento..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
+                required
               />
             </div>
 

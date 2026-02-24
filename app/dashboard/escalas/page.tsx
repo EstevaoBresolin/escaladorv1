@@ -6,13 +6,6 @@ import { getUserPermissionsByProfile } from "@/lib/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Calendar,
   ChevronLeft,
   ChevronRight,
@@ -24,6 +17,7 @@ import {
   DashboardEmptyState,
   DashboardErrorAlert,
 } from "@/components/dashboard/dashboard-feedback";
+import { VolunteerSearch } from "@/components/dashboard/volunteer-search";
 
 interface VolunteerOption {
   id: string;
@@ -93,18 +87,6 @@ export default function EscalasPage() {
         return;
       }
 
-      if (profile.role === "volunteer") {
-        const selfOption = {
-          id: profile.id,
-          name: profile.name || user.email || "Voluntário",
-          email: profile.email || user.email || "",
-        };
-        setVolunteers([selfOption]);
-        setSelectedVolunteerId(profile.id);
-        setLoading(false);
-        return;
-      }
-
       const permissions = await getUserPermissionsByProfile(
         supabase,
         user.id,
@@ -141,20 +123,19 @@ export default function EscalasPage() {
 
       if (ledMinistryIds.length > 0) {
         const { data: ministryVolunteers } = await supabase
-          .from("user_ministries")
-          .select("user_id, profiles(id, name, email)")
-          .in("ministry_id", ledMinistryIds);
+          .from("profiles")
+          .select("id, name, email, user_ministries!inner(ministry_id)")
+          .eq("church_id", profile.church_id)
+          .in("user_ministries.ministry_id", ledMinistryIds)
+          .order("name");
 
         const map = new Map<string, VolunteerOption>();
         (ministryVolunteers || []).forEach((row: any) => {
-          const profileData = Array.isArray(row.profiles)
-            ? row.profiles[0]
-            : row.profiles;
-          if (!profileData) return;
-          map.set(profileData.id, {
-            id: profileData.id,
-            name: profileData.name || profileData.email,
-            email: profileData.email || "",
+          if (!row?.id) return;
+          map.set(row.id, {
+            id: row.id,
+            name: row.name || row.email,
+            email: row.email || "",
           });
         });
 
@@ -293,21 +274,13 @@ export default function EscalasPage() {
               {loading ? (
                 <div className="h-10 rounded-lg border border-input bg-background" />
               ) : volunteers.length > 0 ? (
-                <Select
-                  value={selectedVolunteerId}
-                  onValueChange={setSelectedVolunteerId}
-                >
-                  <SelectTrigger className="h-10">
-                    <SelectValue placeholder="Selecione um voluntário" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {volunteers.map((volunteer) => (
-                      <SelectItem key={volunteer.id} value={volunteer.id}>
-                        {volunteer.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <VolunteerSearch
+                  volunteers={volunteers}
+                  selectedVolunteerId={selectedVolunteerId}
+                  onSelectVolunteer={setSelectedVolunteerId}
+                  showEventStats={false}
+                  showLabel={false}
+                />
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Nenhum voluntário disponível.

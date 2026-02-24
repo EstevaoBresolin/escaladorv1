@@ -63,7 +63,6 @@ class BackendDbQueryBuilder {
   }
 
   select(columns = "*") {
-    this.operation.action = "select";
     this.operation.select = columns;
     return this;
   }
