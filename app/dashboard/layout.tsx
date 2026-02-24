@@ -2,6 +2,7 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { DashboardSidebar } from "../../components/dashboard/dashboard-sidebar";
 import { DashboardTopbar } from "../../components/dashboard/dashboard-topbar";
+import { DashboardLayoutClient } from "../../components/dashboard/dashboard-layout-client";
 import {
   getCachedPermissions,
   getCachedProfile,
@@ -39,7 +40,12 @@ export default async function DashboardLayout({
         <DashboardTopbar profile={profile} />
         <main className="flex-1 p-4 md:p-6">
           <div className="mx-auto w-full max-w-7xl">
-            <PageTransition>{children}</PageTransition>
+            <DashboardLayoutClient
+              profilePhone={profile?.phone || undefined}
+              profileChurchId={profile?.church_id || undefined}
+            >
+              <PageTransition>{children}</PageTransition>
+            </DashboardLayoutClient>
           </div>
         </main>
       </div>

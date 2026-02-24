@@ -53,6 +53,7 @@ export async function updateSession(request: NextRequest) {
 
   // Restrict member users to perfil/configuracoes
   if (user && request.nextUrl.pathname.startsWith("/dashboard")) {
+    const pathname = request.nextUrl.pathname;
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
@@ -61,13 +62,14 @@ export async function updateSession(request: NextRequest) {
 
     if (profile?.role === "member") {
       const allowedPaths = ["/dashboard/perfil", "/dashboard/configuracoes"];
-      const isAllowed = allowedPaths.some((path) =>
-        request.nextUrl.pathname.startsWith(path),
-      );
+      const isDashboardHome = pathname === "/dashboard";
+      const isAllowed =
+        isDashboardHome ||
+        allowedPaths.some((path) => pathname.startsWith(path));
 
       if (!isAllowed) {
         const url = request.nextUrl.clone();
-        url.pathname = "/dashboard/perfil";
+        url.pathname = "/dashboard";
         return NextResponse.redirect(url);
       }
     }

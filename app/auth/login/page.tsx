@@ -144,7 +144,7 @@ export default function LoginPage() {
       }
 
       if (profile?.role === "member") {
-        router.push("/dashboard/perfil");
+        router.push("/dashboard");
         return;
       }
 
