@@ -147,7 +147,11 @@ export function ReplicateEventButton({
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <Button className="w-full" onClick={handleReplicate} disabled={saving}>
+          <Button
+            className="w-full"
+            onClick={handleReplicate}
+            disabled={saving}
+          >
             {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

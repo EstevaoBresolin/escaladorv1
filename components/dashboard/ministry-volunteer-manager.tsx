@@ -255,16 +255,21 @@ export function MinistryVolunteerManager({
               </p>
             )}
 
-            {remoteVolunteers.length > 0 && selectableVolunteers.length === 0 && (
-              <p className="text-center text-muted-foreground py-2 text-sm">
-                Todos os resultados já fazem parte deste ministério.
-              </p>
-            )}
+            {remoteVolunteers.length > 0 &&
+              selectableVolunteers.length === 0 && (
+                <p className="text-center text-muted-foreground py-2 text-sm">
+                  Todos os resultados já fazem parte deste ministério.
+                </p>
+              )}
 
             <Button
               className="w-full"
               onClick={handleAddVolunteer}
-              disabled={!selectedVolunteer || memberIds.has(selectedVolunteer) || loading}
+              disabled={
+                !selectedVolunteer ||
+                memberIds.has(selectedVolunteer) ||
+                loading
+              }
             >
               {loading ? (
                 <>

@@ -112,20 +112,20 @@ export function VolunteerSearch({
                           </Badge>
                         )}
                         {showEventStats && (
-                        <div className="flex items-center gap-2">
-                          {monthlyEventsCount > 1 &&
-                            availabilityCountMap[v.id] === 1 && (
-                              <Badge
-                                variant="destructive"
-                                className="text-[10px]"
-                              >
-                                Só pode nesse dia
-                              </Badge>
-                            )}
-                          <Badge variant="secondary" className="text-[10px]">
-                            {eventCountMap[v.id] ?? 0} eventos
-                          </Badge>
-                        </div>
+                          <div className="flex items-center gap-2">
+                            {monthlyEventsCount > 1 &&
+                              availabilityCountMap[v.id] === 1 && (
+                                <Badge
+                                  variant="destructive"
+                                  className="text-[10px]"
+                                >
+                                  Só pode nesse dia
+                                </Badge>
+                              )}
+                            <Badge variant="secondary" className="text-[10px]">
+                              {eventCountMap[v.id] ?? 0} eventos
+                            </Badge>
+                          </div>
                         )}
                       </div>
                     </div>

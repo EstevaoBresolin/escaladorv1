@@ -162,19 +162,18 @@ export default function VoluntariosPage() {
           .limit(50);
       };
 
-      const [{ data: nameMatches }, { data: emailMatches }] = await Promise.all([
-        queryByName(),
-        queryByEmail(),
-      ]);
+      const [{ data: nameMatches }, { data: emailMatches }] = await Promise.all(
+        [queryByName(), queryByEmail()],
+      );
 
       const byId = new Map<string, Volunteer>();
-      ([...(nameMatches || []), ...(emailMatches || [])] as Volunteer[]).forEach(
-        (volunteer) => {
-          if (volunteer?.id) {
-            byId.set(volunteer.id, volunteer);
-          }
-        },
-      );
+      (
+        [...(nameMatches || []), ...(emailMatches || [])] as Volunteer[]
+      ).forEach((volunteer) => {
+        if (volunteer?.id) {
+          byId.set(volunteer.id, volunteer);
+        }
+      });
 
       const result = Array.from(byId.values()).sort((a, b) =>
         (a.name || "").localeCompare(b.name || ""),

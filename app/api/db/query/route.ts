@@ -323,7 +323,10 @@ export async function POST(request: NextRequest) {
         }
 
         if (payload.limit && payload.offset !== undefined) {
-          query = query.range(payload.offset, payload.offset + payload.limit - 1);
+          query = query.range(
+            payload.offset,
+            payload.offset + payload.limit - 1,
+          );
         } else if (payload.limit) {
           query = query.limit(payload.limit);
         }

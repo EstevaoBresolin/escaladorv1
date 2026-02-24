@@ -190,10 +190,9 @@ export default function EscalasPage() {
           .limit(50);
       };
 
-      const [{ data: nameMatches }, { data: emailMatches }] = await Promise.all([
-        buildNameQuery(),
-        buildEmailQuery(),
-      ]);
+      const [{ data: nameMatches }, { data: emailMatches }] = await Promise.all(
+        [buildNameQuery(), buildEmailQuery()],
+      );
 
       const byId = new Map<string, VolunteerOption>();
       ([...(nameMatches || []), ...(emailMatches || [])] as any[]).forEach(
@@ -350,7 +349,9 @@ export default function EscalasPage() {
                   selectedVolunteerId={selectedVolunteerId}
                   onSelectVolunteer={setSelectedVolunteerId}
                   searchTerm={isVolunteerOnly ? undefined : searchTerm}
-                  onSearchTermChange={isVolunteerOnly ? undefined : setSearchTerm}
+                  onSearchTermChange={
+                    isVolunteerOnly ? undefined : setSearchTerm
+                  }
                   loading={loadingVolunteers}
                   showEventStats={false}
                   showLabel={false}
