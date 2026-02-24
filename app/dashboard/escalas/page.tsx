@@ -233,6 +233,8 @@ export default function EscalasPage() {
     );
   }
 
+  const showSchedulesSkeleton = loadingSchedules && schedules.length === 0;
+
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm md:p-6">
@@ -252,14 +254,28 @@ export default function EscalasPage() {
             <div>
               <CardTitle className="capitalize">{monthLabel}</CardTitle>
               <p className="mt-1 text-sm text-muted-foreground">
-                Total de escalas no período: {schedules.length}
+                {loadingSchedules ? (
+                  <span className="inline-block h-4 w-40 animate-pulse rounded bg-muted" />
+                ) : (
+                  <>Total de escalas no período: {schedules.length}</>
+                )}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handlePrevMonth}
+                disabled={loadingSchedules}
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" onClick={handleNextMonth}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleNextMonth}
+                disabled={loadingSchedules}
+              >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -272,7 +288,10 @@ export default function EscalasPage() {
                 Voluntário
               </p>
               {loading ? (
-                <div className="h-10 rounded-lg border border-input bg-background" />
+                <div className="space-y-2">
+                  <div className="h-10 w-full animate-pulse rounded-lg border border-input bg-muted/40" />
+                  <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
+                </div>
               ) : volunteers.length > 0 ? (
                 <VolunteerSearch
                   volunteers={volunteers}
@@ -293,9 +312,37 @@ export default function EscalasPage() {
         <CardContent className="space-y-4">
           {error && <DashboardErrorAlert message={error} />}
 
-          {loadingSchedules ? (
-            <div className="rounded-lg border border-input bg-background p-4 text-sm text-muted-foreground">
-              Carregando escalas...
+          {showSchedulesSkeleton ? (
+            <div className="overflow-hidden rounded-xl border border-border">
+              <table className="w-full table-fixed">
+                <thead className="hidden md:table-header-group">
+                  <tr className="border-b border-border bg-muted/30 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <th className="w-[40%] px-4 py-2 text-left">Evento</th>
+                    <th className="w-[42%] px-4 py-2 text-left">
+                      Data e detalhes
+                    </th>
+                    <th className="w-[18%] px-4 py-2 text-left">Ministério</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[1, 2, 3, 4].map((row) => (
+                    <tr
+                      key={row}
+                      className="border-t border-border first:border-t-0"
+                    >
+                      <td className="px-4 py-3 align-middle">
+                        <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+                      </td>
+                      <td className="px-4 py-3 align-middle">
+                        <div className="h-4 w-full animate-pulse rounded bg-muted" />
+                      </td>
+                      <td className="px-4 py-3 align-middle">
+                        <div className="h-6 w-24 animate-pulse rounded-full bg-muted" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : schedules.length === 0 ? (
             <DashboardEmptyState

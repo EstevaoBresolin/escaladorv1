@@ -34,15 +34,32 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
     notFound();
   }
 
-  const { data: volunteersRaw } = await supabase
-    .from("user_ministries")
-    .select(
-      `
-      id,
-      profiles(id, name, email)
-    `,
-    )
-    .eq("ministry_id", id);
+  const PAGE_SIZE = 1000;
+  let from = 0;
+  const volunteersRaw: any[] = [];
+
+  while (true) {
+    const { data: batch } = await supabase
+      .from("user_ministries")
+      .select(
+        `
+        id,
+        profiles(id, name, email)
+      `,
+      )
+      .eq("ministry_id", id)
+      .order("id", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+
+    const rows = batch || [];
+    volunteersRaw.push(...rows);
+
+    if (rows.length < PAGE_SIZE) {
+      break;
+    }
+
+    from += PAGE_SIZE;
+  }
 
   const volunteers = (volunteersRaw || []).map((volunteer: any) => ({
     id: volunteer.id,
@@ -68,12 +85,6 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
   const isLeaderOfThisMinistry =
     permissions?.ledMinistryIds.includes(id) || false;
   const canManage = isAdmin || isLeaderOfThisMinistry;
-
-  const { data: allVolunteers } = await supabase
-    .from("profiles")
-    .select("id, name, email")
-    .eq("church_id", profile?.church_id)
-    .order("name");
 
   const { data: leadersRaw } = await supabase
     .from("ministry_leaders")
@@ -213,7 +224,7 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
               <MinistryLeaderManager
                 ministryId={id}
                 leaders={leaders || []}
-                availableVolunteers={allVolunteers || []}
+                churchId={profile?.church_id || ministry.church_id}
                 isAdmin={isAdmin}
               />
             </CardContent>
@@ -246,7 +257,7 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
                 <MinistryVolunteerManager
                   ministryId={id}
                   members={volunteers || []}
-                  availableVolunteers={allVolunteers || []}
+                  churchId={profile?.church_id || ministry.church_id}
                 />
               ) : (
                 <div className="space-y-2">
@@ -256,41 +267,43 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
                         <p>Nome</p>
                         <p>Contato</p>
                       </div>
-                      {(volunteers || []).map(
-                        (member: {
-                          id: string;
-                          profiles: {
+                      <div className="max-h-[440px] overflow-y-auto">
+                        {(volunteers || []).map(
+                          (member: {
                             id: string;
-                            name: string;
-                            email: string;
-                          } | null;
-                        }) => (
-                          <div
-                            key={member.id}
-                            className="grid gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)] md:items-center md:gap-4"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                                {member.profiles?.name
-                                  ? member.profiles.name
-                                      .split(" ")
-                                      .map((namePart: string) => namePart[0])
-                                      .join("")
-                                      .slice(0, 2)
-                                      .toUpperCase()
-                                  : "?"}
+                            profiles: {
+                              id: string;
+                              name: string;
+                              email: string;
+                            } | null;
+                          }) => (
+                            <div
+                              key={member.id}
+                              className="grid gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)] md:items-center md:gap-4"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                                  {member.profiles?.name
+                                    ? member.profiles.name
+                                        .split(" ")
+                                        .map((namePart: string) => namePart[0])
+                                        .join("")
+                                        .slice(0, 2)
+                                        .toUpperCase()
+                                    : "?"}
+                                </div>
+                                <p className="font-medium text-card-foreground">
+                                  {member.profiles?.name ||
+                                    "Voluntário não encontrado"}
+                                </p>
                               </div>
-                              <p className="font-medium text-card-foreground">
-                                {member.profiles?.name ||
-                                  "Voluntário não encontrado"}
+                              <p className="text-sm text-muted-foreground">
+                                {member.profiles?.email || "-"}
                               </p>
                             </div>
-                            <p className="text-sm text-muted-foreground">
-                              {member.profiles?.email || "-"}
-                            </p>
-                          </div>
-                        ),
-                      )}
+                          ),
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">

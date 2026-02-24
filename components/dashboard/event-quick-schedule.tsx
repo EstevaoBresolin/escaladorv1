@@ -278,109 +278,111 @@ export function EventQuickSchedule({
         </DialogHeader>
 
         <div className="space-y-4 pt-4">
-          {loading && (
+          {loading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Carregando dados...
             </div>
-          )}
-
-          {needsMinistrySelection && (
-            <div className="space-y-2">
-              <Label>Ministério *</Label>
-              <Select
-                value={selectedMinistryId}
-                onValueChange={(value) => {
-                  setSelectedMinistryId(value);
-                  setSelectedVolunteerId("");
-                  setSelectedFunctionId("");
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione um ministério" />
-                </SelectTrigger>
-                <SelectContent>
-                  {manageableMinistries.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="h-2 w-2 rounded-full"
-                          style={{ backgroundColor: m.color }}
-                        />
-                        {m.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {!needsMinistrySelection && autoSelectedMinistry && (
-            <div className="space-y-2">
-              <Label>Ministério</Label>
-              <div className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: autoSelectedMinistry.color }}
-                />
-                {autoSelectedMinistry.name}
-              </div>
-            </div>
-          )}
-
-          {activeMinistryId && (
-            <div className="space-y-3">
-              {volunteerLoading ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Carregando voluntários...
-                </div>
-              ) : filteredVolunteers.length > 0 ? (
-                <div className="max-h-[360px] space-y-2 overflow-auto pr-1">
-                  {filteredVolunteers.map((volunteer) => {
-                    const slot = getSlotForVolunteer(volunteer.id);
-
-                    return (
-                      <button
-                        key={volunteer.id}
-                        type="button"
-                        onClick={() => handleSelectVolunteer(volunteer.id)}
-                        className={cn(
-                          "w-full rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted",
-                          slot && "border-primary/40 bg-primary/5",
-                        )}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="font-medium text-card-foreground">
-                              {volunteer.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {volunteer.email}
-                            </p>
+          ) : (
+            <>
+              {needsMinistrySelection && (
+                <div className="space-y-2">
+                  <Label>Ministério *</Label>
+                  <Select
+                    value={selectedMinistryId}
+                    onValueChange={(value) => {
+                      setSelectedMinistryId(value);
+                      setSelectedVolunteerId("");
+                      setSelectedFunctionId("");
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione um ministério" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {manageableMinistries.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="h-2 w-2 rounded-full"
+                              style={{ backgroundColor: m.color }}
+                            />
+                            {m.name}
                           </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            {slot && (
-                              <Badge variant="secondary">
-                                Já escalado
-                                {slot.ministry_functions?.name
-                                  ? ` • ${slot.ministry_functions.name}`
-                                  : ""}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Nenhum voluntário disponível.
-                </p>
               )}
-            </div>
+
+              {!needsMinistrySelection && autoSelectedMinistry && (
+                <div className="space-y-2">
+                  <Label>Ministério</Label>
+                  <div className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: autoSelectedMinistry.color }}
+                    />
+                    {autoSelectedMinistry.name}
+                  </div>
+                </div>
+              )}
+
+              {activeMinistryId && (
+                <div className="space-y-3">
+                  {volunteerLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando voluntários...
+                    </div>
+                  ) : filteredVolunteers.length > 0 ? (
+                    <div className="max-h-[360px] space-y-2 overflow-auto pr-1">
+                      {filteredVolunteers.map((volunteer) => {
+                        const slot = getSlotForVolunteer(volunteer.id);
+
+                        return (
+                          <button
+                            key={volunteer.id}
+                            type="button"
+                            onClick={() => handleSelectVolunteer(volunteer.id)}
+                            className={cn(
+                              "w-full rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted",
+                              slot && "border-primary/40 bg-primary/5",
+                            )}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="font-medium text-card-foreground">
+                                  {volunteer.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {volunteer.email}
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                {slot && (
+                                  <Badge variant="secondary">
+                                    Já escalado
+                                    {slot.ministry_functions?.name
+                                      ? ` • ${slot.ministry_functions.name}`
+                                      : ""}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum voluntário disponível.
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </DialogContent>

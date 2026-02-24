@@ -12,6 +12,7 @@ type DbOperation = {
   orderBy?: string;
   ascending?: boolean;
   limit?: number;
+  offset?: number;
 };
 
 type DbExecuteResult = {
@@ -47,6 +48,7 @@ function buildSelectRequestKey(operation: DbOperation) {
     orderBy: operation.orderBy || null,
     ascending: operation.ascending ?? true,
     limit: operation.limit || null,
+    offset: operation.offset ?? null,
   });
 }
 
@@ -122,6 +124,19 @@ class BackendDbQueryBuilder {
 
   limit(limit: number) {
     this.operation.limit = limit;
+    return this;
+  }
+
+  offset(offset: number) {
+    this.operation.offset = Math.max(0, offset);
+    return this;
+  }
+
+  range(from: number, to: number) {
+    const start = Math.max(0, from);
+    const end = Math.max(start, to);
+    this.operation.offset = start;
+    this.operation.limit = end - start + 1;
     return this;
   }
 
@@ -219,7 +234,9 @@ export function createClient() {
   );
 
   const originalGetUser = browserClient.auth.getUser.bind(browserClient.auth);
-  browserClient.auth.getUser = (async (...args: Parameters<typeof originalGetUser>) => {
+  browserClient.auth.getUser = (async (
+    ...args: Parameters<typeof originalGetUser>
+  ) => {
     if (pendingGetUserRequest) {
       return pendingGetUserRequest;
     }

@@ -23,6 +23,11 @@ interface VolunteerProps {
   eventCountMap?: Record<string, number>;
   showEventStats?: boolean;
   showLabel?: boolean;
+  searchTerm?: string;
+  onSearchTermChange?: (value: string) => void;
+  loading?: boolean;
+  disabledVolunteerIds?: string[];
+  disabledBadgeText?: string;
 }
 
 export function VolunteerSearch({
@@ -34,8 +39,14 @@ export function VolunteerSearch({
   eventCountMap = {},
   showEventStats = true,
   showLabel = true,
+  searchTerm,
+  onSearchTermChange,
+  loading = false,
+  disabledVolunteerIds = [],
+  disabledBadgeText,
 }: VolunteerProps) {
   const [open, setOpen] = useState(false);
+  const disabledSet = new Set(disabledVolunteerIds);
 
   const selectedVolunteerObj = volunteers.find(
     (v) => v.id === selectedVolunteerId,
@@ -63,16 +74,28 @@ export function VolunteerSearch({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent>
-          <Command>
-            <CommandInput placeholder="Procure um voluntário" />
-            <CommandList>
-              <CommandEmpty>Nenhum voluntário encontrado.</CommandEmpty>
+        <PopoverContent
+          noPortal
+          className="w-[var(--radix-popover-trigger-width)] p-0"
+        >
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder="Procure um voluntário"
+              value={searchTerm}
+              onValueChange={onSearchTermChange}
+            />
+            <CommandList className="max-h-72 overflow-y-auto overscroll-contain touch-pan-y [webkit-overflow-scrolling:touch]">
+              <CommandEmpty>
+                {loading
+                  ? "Carregando voluntários..."
+                  : "Nenhum voluntário encontrado."}
+              </CommandEmpty>
               <CommandGroup heading="Voluntários Disponíveis">
                 {volunteers.map((v) => (
                   <CommandItem
                     key={v.id}
-                    value={v.name}
+                    value={`${v.name} ${v.email}`}
+                    disabled={disabledSet.has(v.id)}
                     onSelect={() => handleSelectVolunteer(v.id)}
                   >
                     <div className="flex w-full items-center justify-between gap-3">
@@ -82,7 +105,13 @@ export function VolunteerSearch({
                           {v.email}
                         </span>
                       </div>
-                      {showEventStats && (
+                      <div className="flex items-center gap-2">
+                        {disabledSet.has(v.id) && disabledBadgeText && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {disabledBadgeText}
+                          </Badge>
+                        )}
+                        {showEventStats && (
                         <div className="flex items-center gap-2">
                           {monthlyEventsCount > 1 &&
                             availabilityCountMap[v.id] === 1 && (
@@ -97,7 +126,8 @@ export function VolunteerSearch({
                             {eventCountMap[v.id] ?? 0} eventos
                           </Badge>
                         </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </CommandItem>
                 ))}

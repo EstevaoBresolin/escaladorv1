@@ -57,7 +57,12 @@ export default function NovoEventoPage() {
         .eq("church_id", profile.church_id)
         .order("name");
 
-      if (data) setMinistries(data);
+      if (data) {
+        setMinistries(data);
+        setSelectedMinistries((prev) =>
+          prev.length > 0 ? prev : data.map((ministry) => ministry.id),
+        );
+      }
     }
 
     loadMinistries();

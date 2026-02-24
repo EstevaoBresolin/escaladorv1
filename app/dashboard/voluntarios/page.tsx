@@ -44,6 +44,7 @@ interface Volunteer {
 }
 
 export default function VoluntariosPage() {
+  const PAGE_SIZE = 1000;
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLeader, setIsLeader] = useState(false);
@@ -86,32 +87,66 @@ export default function VoluntariosPage() {
       let volunteersData: Volunteer[] = [];
 
       if (isAdminUser) {
-        const { data } = await supabase
-          .from("profiles")
-          .select(
-            `
-            *,
-            user_ministries(ministry_id, ministries(name, color))
-          `,
-          )
-          .eq("church_id", profile?.church_id)
-          .order("name");
+        let offset = 0;
 
-        volunteersData = data || [];
+        while (true) {
+          const { data } = await supabase
+            .from("profiles")
+            .select(
+              `
+                *,
+                user_ministries(ministry_id, ministries(name, color))
+              `,
+            )
+            .eq("church_id", profile?.church_id)
+            .order("name")
+            .range(offset, offset + PAGE_SIZE - 1);
+
+          const batch = (data || []) as Volunteer[];
+          volunteersData = volunteersData.concat(batch);
+
+          if (batch.length < PAGE_SIZE) {
+            break;
+          }
+
+          offset += PAGE_SIZE;
+        }
       } else if (ledMinistryIds.length > 0) {
-        const { data } = await supabase
-          .from("profiles")
-          .select(
-            `
-              *,
-              user_ministries!inner(ministry_id, ministries(name, color))
-            `,
-          )
-          .eq("church_id", profile?.church_id)
-          .in("user_ministries.ministry_id", ledMinistryIds)
-          .order("name");
+        let offset = 0;
+        const byId = new Map<string, Volunteer>();
 
-        volunteersData = data || [];
+        while (true) {
+          const { data } = await supabase
+            .from("profiles")
+            .select(
+              `
+                *,
+                user_ministries!inner(ministry_id, ministries(name, color))
+              `,
+            )
+            .eq("church_id", profile?.church_id)
+            .in("user_ministries.ministry_id", ledMinistryIds)
+            .order("name")
+            .range(offset, offset + PAGE_SIZE - 1);
+
+          const batch = (data || []) as Volunteer[];
+
+          batch.forEach((volunteer) => {
+            if (volunteer?.id) {
+              byId.set(volunteer.id, volunteer);
+            }
+          });
+
+          if (batch.length < PAGE_SIZE) {
+            break;
+          }
+
+          offset += PAGE_SIZE;
+        }
+
+        volunteersData = Array.from(byId.values()).sort((a, b) =>
+          (a.name || "").localeCompare(b.name || ""),
+        );
       }
 
       setVolunteers(volunteersData);

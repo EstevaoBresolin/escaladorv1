@@ -32,6 +32,7 @@ const requestSchema = z.object({
   orderBy: z.string().optional(),
   ascending: z.boolean().optional(),
   limit: z.number().int().positive().max(1000).optional(),
+  offset: z.number().int().min(0).max(1000000).optional(),
 });
 
 function isNullLike(value: unknown) {
@@ -293,6 +294,7 @@ export async function POST(request: NextRequest) {
         orderBy: payload.orderBy,
         ascending: payload.ascending,
         limit: payload.limit,
+        offset: payload.offset,
         single: payload.single,
       };
 
@@ -320,7 +322,9 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        if (payload.limit) {
+        if (payload.limit && payload.offset !== undefined) {
+          query = query.range(payload.offset, payload.offset + payload.limit - 1);
+        } else if (payload.limit) {
           query = query.limit(payload.limit);
         }
 
@@ -345,7 +349,9 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      if (payload.limit) {
+      if (payload.limit && payload.offset !== undefined) {
+        query = query.range(payload.offset, payload.offset + payload.limit - 1);
+      } else if (payload.limit) {
         query = query.limit(payload.limit);
       }
 

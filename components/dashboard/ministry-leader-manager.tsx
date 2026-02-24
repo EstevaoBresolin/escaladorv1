@@ -1,16 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { dbQuery } from "@/lib/api/db-client";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Loader2, Trash2, Crown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { VolunteerSearch } from "./volunteer-search";
 
 interface Leader {
   id: string;
@@ -36,26 +30,66 @@ interface Volunteer {
 interface MinistryLeaderManagerProps {
   ministryId: string;
   leaders: Leader[];
-  availableVolunteers: Volunteer[];
+  churchId: string;
   isAdmin: boolean;
 }
 
 export function MinistryLeaderManager({
   ministryId,
   leaders,
-  availableVolunteers,
+  churchId,
   isAdmin,
 }: MinistryLeaderManagerProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingVolunteers, setLoadingVolunteers] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [selectedVolunteer, setSelectedVolunteer] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [remoteVolunteers, setRemoteVolunteers] = useState<Volunteer[]>([]);
+  const supabase = useMemo(() => createClient(), []);
 
-  // Filter out people who are already leaders
-  const leaderIds = leaders.map((l) => l.profiles?.id).filter(Boolean);
-  const filteredVolunteers = availableVolunteers.filter(
-    (v) => !leaderIds.includes(v.id),
+  const leaderIds = useMemo(
+    () => new Set(leaders.map((l) => l.profiles?.id).filter(Boolean)),
+    [leaders],
   );
+
+  const selectableVolunteers = useMemo(
+    () => remoteVolunteers.filter((v) => !leaderIds.has(v.id)),
+    [remoteVolunteers, leaderIds],
+  );
+
+  useEffect(() => {
+    if (!open) return;
+
+    const timeoutId = window.setTimeout(async () => {
+      setLoadingVolunteers(true);
+
+      let query = supabase
+        .from("profiles")
+        .select("id, name, email")
+        .eq("church_id", churchId)
+        .order("name")
+        .limit(30);
+
+      const term = searchTerm.trim();
+      if (term) {
+        query = query.ilike("name", `%${term}%`);
+      }
+
+      const { data } = await query;
+      const volunteers = (data || []).map((v: any) => ({
+        id: v.id,
+        name: v.name || v.email,
+        email: v.email || "",
+      }));
+
+      setRemoteVolunteers(volunteers);
+      setLoadingVolunteers(false);
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [open, searchTerm, churchId, supabase]);
 
   async function handleAddLeader() {
     if (!selectedVolunteer) return;
@@ -73,6 +107,8 @@ export function MinistryLeaderManager({
 
       setOpen(false);
       setSelectedVolunteer("");
+      setSearchTerm("");
+      setRemoteVolunteers([]);
       window.location.reload();
     } catch {
       // mantém UX atual sem toast adicional
@@ -226,57 +262,51 @@ export function MinistryLeaderManager({
             <DialogTitle>Adicionar Lider ao Ministerio</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            {filteredVolunteers.length > 0 ? (
-              <>
-                <div className="space-y-2">
-                  <Label>Pessoa *</Label>
-                  <Select
-                    value={selectedVolunteer}
-                    onValueChange={setSelectedVolunteer}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma pessoa" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredVolunteers.map((v) => (
-                        <SelectItem key={v.id} value={v.id}>
-                          <div className="flex flex-col">
-                            <span>{v.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {v.email}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            <VolunteerSearch
+              volunteers={remoteVolunteers}
+              selectedVolunteerId={selectedVolunteer}
+              onSelectVolunteer={setSelectedVolunteer}
+              searchTerm={searchTerm}
+              onSearchTermChange={setSearchTerm}
+              loading={loadingVolunteers}
+              showEventStats={false}
+              disabledVolunteerIds={Array.from(leaderIds) as string[]}
+              disabledBadgeText="Já é líder"
+            />
 
-                <p className="text-sm text-muted-foreground">
-                  Lideres podem adicionar e remover voluntarios do ministerio e
-                  escalar voluntarios para eventos.
-                </p>
-
-                <Button
-                  className="w-full"
-                  onClick={handleAddLeader}
-                  disabled={!selectedVolunteer || loading}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Adicionando...
-                    </>
-                  ) : (
-                    "Adicionar como Lider"
-                  )}
-                </Button>
-              </>
-            ) : (
+            {remoteVolunteers.length === 0 && (
               <p className="text-center text-muted-foreground py-4">
-                Nao ha pessoas disponiveis para serem lideres.
+                {loadingVolunteers
+                  ? "Carregando voluntários..."
+                  : "Nenhum voluntário encontrado com os filtros atuais."}
               </p>
             )}
+
+            {remoteVolunteers.length > 0 && selectableVolunteers.length === 0 && (
+              <p className="text-center text-muted-foreground py-2 text-sm">
+                Todos os resultados já são líderes deste ministério.
+              </p>
+            )}
+
+            <p className="text-sm text-muted-foreground">
+              Lideres podem adicionar e remover voluntarios do ministerio e
+              escalar voluntarios para eventos.
+            </p>
+
+            <Button
+              className="w-full"
+              onClick={handleAddLeader}
+              disabled={!selectedVolunteer || leaderIds.has(selectedVolunteer) || loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adicionando...
+                </>
+              ) : (
+                "Adicionar como Lider"
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
