@@ -21,6 +21,7 @@ interface ReplicateEventButtonProps {
   location?: string | null;
   churchId: string;
   ministryIds: string[];
+  data: string;
   hasSchedules: boolean;
   triggerSize?: "default" | "sm" | "lg";
   triggerClassName?: string;
@@ -34,11 +35,12 @@ export function ReplicateEventButton({
   churchId,
   ministryIds,
   hasSchedules,
+  data,
   triggerSize = "default",
   triggerClassName,
 }: ReplicateEventButtonProps) {
   const [open, setOpen] = useState(false);
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(data);
   const [time, setTime] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

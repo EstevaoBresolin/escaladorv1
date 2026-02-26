@@ -128,7 +128,19 @@ export default function NovoEventoPage() {
         ministry_id: ministryId,
       }));
 
-      await supabase.from("event_ministries").insert(eventMinistries);
+      console.log("Associando ministérios:", eventMinistries);
+
+      for (const ministry of eventMinistries) {
+        const { error: ministryError } = await supabase
+          .from("event_ministries")
+          .insert(ministry);
+
+        if (ministryError) {
+          setError("Erro ao associar ministérios ao evento. Tente novamente.");
+          setLoading(false);
+          return;
+        }
+      }
     }
 
     router.push(
@@ -139,11 +151,13 @@ export default function NovoEventoPage() {
   }
 
   function toggleMinistry(ministryId: string) {
-    setSelectedMinistries((prev) =>
-      prev.includes(ministryId)
+    setSelectedMinistries((prev) => {
+      const updated = prev.includes(ministryId)
         ? prev.filter((id) => id !== ministryId)
-        : [...prev, ministryId],
-    );
+        : [...prev, ministryId];
+
+      return updated;
+    });
   }
 
   function handleBackNavigation() {

@@ -285,6 +285,7 @@ export function EventsPageClient({
                               ministryIds={event.event_ministries.map(
                                 (em) => em.ministry_id,
                               )}
+                              data={event.date}
                               hasSchedules={event.has_schedules}
                               triggerSize="sm"
                             />

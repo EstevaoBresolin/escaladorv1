@@ -135,7 +135,18 @@ export default function EditarEventoPage() {
         event_id: eventId,
         ministry_id: ministryId,
       }));
-      await supabase.from("event_ministries").insert(eventMinistries);
+
+      for (const ministry of eventMinistries) {
+        const { error: ministryError } = await supabase
+          .from("event_ministries")
+          .insert(ministry);
+
+        if (ministryError) {
+          setError("Erro ao associar ministérios ao evento. Tente novamente.");
+          setSaving(false);
+          return;
+        }
+      }
     }
 
     router.push(`/dashboard/eventos/${eventId}`);

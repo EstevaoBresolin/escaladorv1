@@ -214,6 +214,7 @@ export default async function EventPage({ params }: EventPageProps) {
                   description={event.description}
                   location={event.location}
                   churchId={event.church_id}
+                  data={event.date}
                   ministryIds={(event.event_ministries || []).map(
                     (em: { ministry_id: string }) => em.ministry_id,
                   )}
