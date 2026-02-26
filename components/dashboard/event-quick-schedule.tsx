@@ -37,6 +37,8 @@ interface Volunteer {
   id: string;
   name: string;
   email: string;
+  event_count?: number;
+  only_available_on_event_day?: boolean;
 }
 
 interface Slot {
@@ -71,6 +73,7 @@ export function EventQuickSchedule({
   const [selectMinistryOpen, setSelectMinistryOpen] = useState(false);
   const [selectedMinistryId, setSelectedMinistryId] = useState<string>("");
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+  const [search, setSearch] = useState("");
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(false);
   const [volunteerLoading, setVolunteerLoading] = useState(false);
@@ -137,7 +140,15 @@ export function EventQuickSchedule({
     loadVolunteersForMinistry(activeMinistryId);
     loadFunctionsForMinistry(activeMinistryId);
   }, [open, activeMinistryId]);
-  const filteredVolunteers = volunteers;
+  const filteredVolunteers = useMemo(() => {
+    if (!search.trim()) return volunteers;
+    const s = search.trim().toLowerCase();
+    return volunteers.filter(
+      (v) =>
+        v.name.toLowerCase().includes(s) ||
+        (v.email && v.email.toLowerCase().includes(s)),
+    );
+  }, [volunteers, search]);
 
   async function loadEventSlotsAndUnavailability() {
     setLoading(true);
@@ -165,17 +176,28 @@ export function EventQuickSchedule({
 
   async function loadVolunteersForMinistry(ministryId: string) {
     setVolunteerLoading(true);
-    const { data } = await supabase
-      .from("user_ministries")
-      .select("user_id, profiles(id, name, email)")
-      .eq("ministry_id", ministryId);
-
-    const list = (data || [])
-      .map((item: any) => item.profiles)
-      .filter(Boolean)
-      .map((p: any) => ({ id: p.id, name: p.name, email: p.email }));
-
-    setVolunteers(list);
+    // Chama a função do Supabase para obter voluntários disponíveis, ordenados e com contagem de eventos
+    const { data, error } = await supabase.rpc(
+      "get_available_volunteers_for_event",
+      {
+        p_event_id: event.id,
+        p_ministry_id: ministryId,
+      },
+    );
+    if (error) {
+      console.error(error);
+      setVolunteers([]);
+    } else {
+      // Espera-se que data venha com event_count
+      const list = (data || []).map((p: any) => ({
+        id: p.user_id,
+        name: p.name,
+        email: p.email,
+        event_count: p.monthly_signed_events,
+        only_available_on_event_day: p.only_available_on_event_day,
+      }));
+      setVolunteers(list);
+    }
     setVolunteerLoading(false);
   }
 
@@ -331,6 +353,13 @@ export function EventQuickSchedule({
 
               {activeMinistryId && (
                 <div className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Pesquisar voluntário..."
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm mb-2"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
                   {volunteerLoading ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -355,6 +384,24 @@ export function EventQuickSchedule({
                               <div>
                                 <p className="font-medium text-card-foreground">
                                   {volunteer.name}
+                                  {volunteer.only_available_on_event_day && (
+                                    <span
+                                      className="text-base font-extrabold text-red-600 align-middle font-mono"
+                                      style={{
+                                        letterSpacing: 1,
+                                        marginLeft: 5,
+                                      }}
+                                    >
+                                      !
+                                    </span>
+                                  )}
+
+                                  {typeof volunteer.event_count ===
+                                    "number" && (
+                                    <span className="ml-2 text-xs bg-muted text-muted-foreground rounded px-2 py-0.5 border border-border">
+                                      {volunteer.event_count}
+                                    </span>
+                                  )}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                   {volunteer.email}

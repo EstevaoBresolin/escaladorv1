@@ -66,7 +66,8 @@ export default function LoginPage() {
   }, [isBlocked, blockedUntil]);
 
   function blockLoginForSeconds(seconds: number) {
-    const validSeconds = Number.isFinite(seconds) && seconds > 0 ? seconds : 10 * 60;
+    const validSeconds =
+      Number.isFinite(seconds) && seconds > 0 ? seconds : 10 * 60;
     const until = Date.now() + validSeconds * 1000;
 
     setBlockedUntil(until);
@@ -107,12 +108,15 @@ export default function LoginPage() {
           const remainingAttempts = Number(body?.remainingAttempts);
 
           if (Number.isFinite(remainingAttempts) && remainingAttempts > 0) {
-            const tentativaLabel = remainingAttempts === 1 ? "tentativa" : "tentativas";
+            const tentativaLabel =
+              remainingAttempts === 1 ? "tentativa" : "tentativas";
             setError(
               `Email ou senha incorretos. Restam ${remainingAttempts} ${tentativaLabel}.`,
             );
           } else {
-            setError(body?.error || "Email ou senha incorretos. Tente novamente.");
+            setError(
+              body?.error || "Email ou senha incorretos. Tente novamente.",
+            );
           }
         }
       }
@@ -176,10 +180,16 @@ export default function LoginPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
               <CalendarCheck className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-semibold text-foreground">Conecte Escalas</span>
+            <span className="text-2xl font-semibold text-foreground">
+              Conecte Escalas
+            </span>
           </Link>
-          <h1 className="mt-6 text-2xl font-bold text-foreground">Bem-vindo de volta</h1>
-          <p className="mt-2 text-muted-foreground">Entre na sua conta para continuar</p>
+          <h1 className="mt-6 text-2xl font-bold text-foreground">
+            Bem-vindo de volta
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            Entre na sua conta para continuar
+          </p>
         </div>
 
         <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-sm">
@@ -206,7 +216,10 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Senha</Label>
-                <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-sm text-primary hover:underline"
+                >
                   Esqueceu a senha?
                 </Link>
               </div>
@@ -226,12 +239,20 @@ export default function LoginPage() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading || isBlocked}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading || isBlocked}
+            >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

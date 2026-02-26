@@ -181,8 +181,22 @@ export function EventsPageClient({
 
       <section className="grid gap-6 xl:grid-cols-[2fr_1fr]">
         <Card className="rounded-2xl">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle>Calendário</CardTitle>
+            {isAdmin && (
+              <Button asChild size="sm" className="ml-2">
+                <Link
+                  href={
+                    selectedDate
+                      ? `/dashboard/eventos/novo?date=${selectedDate}`
+                      : "/dashboard/eventos/novo"
+                  }
+                >
+                  <Plus className="mr-1 h-4 w-4" />
+                  Novo Evento
+                </Link>
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             <EventCalendar
