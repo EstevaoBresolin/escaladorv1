@@ -196,31 +196,32 @@ export default async function EventPage({ params }: EventPageProps) {
               </Button>
             )}
             {canManageEvent && (
-              <>
-                <EventQuickSchedule
-                  event={{
-                    id: event.id,
-                    title: event.title,
-                    date: event.date,
-                    start_time: event.start_time,
-                    event_ministries: event.event_ministries || [],
-                  }}
-                  isAdmin={isAdmin}
-                  ledMinistryIds={permissions?.ledMinistryIds || []}
-                />
-                <ReplicateEventButton
-                  eventId={event.id}
-                  title={event.title}
-                  description={event.description}
-                  location={event.location}
-                  churchId={event.church_id}
-                  data={event.date}
-                  ministryIds={(event.event_ministries || []).map(
-                    (em: { ministry_id: string }) => em.ministry_id,
-                  )}
-                  hasSchedules={(event.volunteer_slots || []).length > 0}
-                />
-              </>
+              <EventQuickSchedule
+                event={{
+                  id: event.id,
+                  title: event.title,
+                  date: event.date,
+                  start_time: event.start_time,
+                  event_ministries: event.event_ministries || [],
+                }}
+                isAdmin={isAdmin}
+                ledMinistryIds={permissions?.ledMinistryIds || []}
+              />
+            )}
+            {/* Botão Replicar Evento só para quem NÃO é admin nem líder */}
+            {isAdmin && (
+              <ReplicateEventButton
+                eventId={event.id}
+                title={event.title}
+                description={event.description}
+                location={event.location}
+                churchId={event.church_id}
+                data={event.date}
+                ministryIds={(event.event_ministries || []).map(
+                  (em: { ministry_id: string }) => em.ministry_id,
+                )}
+                hasSchedules={(event.volunteer_slots || []).length > 0}
+              />
             )}
           </div>
         </div>

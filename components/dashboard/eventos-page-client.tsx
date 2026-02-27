@@ -268,7 +268,7 @@ export function EventsPageClient({
                           </div>
                         )}
 
-                        {(isAdmin || ledMinistryIds.length > 0) && (
+                        {isAdmin && (
                           <div className="mt-3 flex flex-wrap gap-2">
                             <EventQuickSchedule
                               event={event}

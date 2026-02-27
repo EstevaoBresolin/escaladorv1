@@ -188,12 +188,12 @@ export function EventQuickSchedule({
       console.error(error);
       setVolunteers([]);
     } else {
-      // Espera-se que data venha com event_count
+      // Corrigido: agora pega o campo correto event_count
       const list = (data || []).map((p: any) => ({
         id: p.user_id,
         name: p.name,
         email: p.email,
-        event_count: p.monthly_signed_events,
+        event_count: p.signed_event_count,
         only_available_on_event_day: p.only_available_on_event_day,
       }));
       setVolunteers(list);
