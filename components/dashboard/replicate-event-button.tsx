@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -45,6 +46,7 @@ export function ReplicateEventButton({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
 
   async function handleReplicate() {
     if (!date || !time) {
@@ -77,19 +79,15 @@ export function ReplicateEventButton({
     }
 
     if (ministryIds.length > 0) {
-      const rows = ministryIds.map((ministryId) => ({
-        event_id: newEvent.id,
-        ministry_id: ministryId,
-      }));
-
-      const { error: insertMinistriesError } = await supabase
-        .from("event_ministries")
-        .insert(rows);
-
-      if (insertMinistriesError) {
-        setError("Evento replicado, mas houve erro ao copiar ministérios.");
-        setSaving(false);
-        return;
+      for (const ministryId of ministryIds) {
+        const { error: insertMinistryError } = await supabase
+          .from("event_ministries")
+          .insert({ event_id: newEvent.id, ministry_id: ministryId });
+        if (insertMinistryError) {
+          setError("Evento replicado, mas houve erro ao copiar ministérios.");
+          setSaving(false);
+          return;
+        }
       }
     }
 
@@ -97,7 +95,7 @@ export function ReplicateEventButton({
     setDate("");
     setTime("");
     setSaving(false);
-    window.location.reload();
+    router.push(date ? `/dashboard/eventos?date=${encodeURIComponent(date)}` : "/dashboard/eventos");
   }
 
   return (
