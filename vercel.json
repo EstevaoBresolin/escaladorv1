@@ -2,7 +2,7 @@
   "buildCommand": "next build",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "installCommand": "pnpm install",
+  "installCommand": "npm install",
   "crons": [
     {
       "path": "/api/cron/send-reminders",

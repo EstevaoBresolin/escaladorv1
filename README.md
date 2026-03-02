@@ -32,7 +32,7 @@ cd escaladorv1
 
 # Instale as dependências
 
-pnpm install
+npm install
 
 # ou
 
@@ -44,7 +44,7 @@ cp .env.example .env.local
 
 # Execute o projeto em desenvolvimento
 
-pnpm dev
+npm dev
 
 # ou
 
