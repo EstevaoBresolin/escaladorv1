@@ -1,6 +1,6 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowRight } from "lucide-react"
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 
 export function CTASection() {
   return (
@@ -15,7 +15,7 @@ export function CTASection() {
             com o Conecte Escalas. Comece gratuitamente hoje.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button
+            {/* <Button
               size="lg"
               variant="secondary"
               asChild
@@ -25,18 +25,24 @@ export function CTASection() {
                 Criar Conta Grátis
                 <ArrowRight className="h-4 w-4" />
               </Link>
-            </Button>
+            </Button> */}
             <Button
               size="lg"
               variant="outline"
               asChild
               className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
             >
-              <Link href="/contato">Falar com Especialista</Link>
+              <Link
+                href="https://wa.me/555493098475"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Falar com Especialista
+              </Link>
             </Button>
           </div>
         </div>
       </div>
     </section>
-  )
+  );
 }

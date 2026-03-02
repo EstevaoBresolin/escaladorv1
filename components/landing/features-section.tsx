@@ -7,32 +7,14 @@ import {
   BarChart3,
   Clock,
   Repeat,
-} from "lucide-react"
+} from "lucide-react";
 
 const features = [
-  {
-    icon: CalendarDays,
-    title: "Calendário Integrado",
-    description:
-      "Visualize todas as escalas e eventos em um calendário intuitivo. Sincronize com Google Calendar e outros serviços.",
-  },
-  {
-    icon: Users,
-    title: "Gestão de Ministérios",
-    description:
-      "Organize voluntários por ministério, função e disponibilidade. Controle permissões de acesso facilmente.",
-  },
   {
     icon: Bell,
     title: "Notificações Inteligentes",
     description:
       "Envie lembretes automáticos por email ou WhatsApp. Confirme presença com um clique.",
-  },
-  {
-    icon: Repeat,
-    title: "Escalas Recorrentes",
-    description:
-      "Crie padrões de escala que se repetem automaticamente. Economize tempo na organização semanal.",
   },
   {
     icon: Clock,
@@ -41,8 +23,26 @@ const features = [
       "Voluntários podem informar sua disponibilidade diretamente no sistema. Evite conflitos de agenda.",
   },
   {
+    icon: CalendarDays,
+    title: "Calendário Integrado",
+    description:
+      "Visualize todas as escalas e eventos em um calendário intuitivo.",
+  },
+  {
+    icon: Users,
+    title: "Gestão de Ministérios",
+    description:
+      "Organize voluntários por ministério, função e disponibilidade. Controle permissões de acesso facilmente.",
+  },
+  {
+    icon: Repeat,
+    title: "Eventos Recorrentes",
+    description:
+      "Replique eventos que ocorrem periodicamente. Economize tempo na organização semanal.",
+  },
+  {
     icon: BarChart3,
-    title: "Relatórios Detalhados",
+    title: "Dashboards Detalhados",
     description:
       "Acompanhe participação, frequência e métricas dos ministérios. Tome decisões baseadas em dados.",
   },
@@ -58,11 +58,11 @@ const features = [
     description:
       "Dados protegidos com criptografia. Controle quem pode ver e editar informações.",
   },
-]
+];
 
 export function FeaturesSection() {
   return (
-    <section id="funcionalidades" className="py-20 md:py-28">
+    <section id="funcionalidades" className="py-20 md:py-24">
       <div className="container mx-auto px-4">
         <div className="mx-auto mb-16 max-w-2xl text-center">
           <h2 className="mb-4 text-balance text-3xl font-bold text-foreground md:text-4xl">
@@ -94,5 +94,5 @@ export function FeaturesSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

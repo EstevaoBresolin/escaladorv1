@@ -1,9 +1,9 @@
 const steps = [
   {
     number: "01",
-    title: "Crie sua conta",
+    title: "Crie ministérios",
     description:
-      "Cadastre sua igreja em minutos. Configure os ministérios e convide líderes para colaborar.",
+      "Crie os ministérios da sua igreja. Configure os ministérios e convide líderes para colaborar.",
   },
   {
     number: "02",

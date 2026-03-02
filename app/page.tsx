@@ -21,12 +21,12 @@ export default function LandingPage() {
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150">
           <HowItWorksSection />
         </div>
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200">
+        {/* <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200">
           <TestimonialsSection />
-        </div>
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-300">
+        </div> */}
+        {/* <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-300">
           <PricingSection />
-        </div>
+        </div> */}
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 delay-500">
           <CTASection />
         </div>

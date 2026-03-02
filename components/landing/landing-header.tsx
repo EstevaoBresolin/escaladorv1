@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { CalendarCheck, Menu, X } from "lucide-react"
-import { useState } from "react"
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { CalendarCheck, Menu, X } from "lucide-react";
+import { useState } from "react";
 
 const navLinks = [
   { href: "#funcionalidades", label: "Funcionalidades" },
   { href: "#como-funciona", label: "Como Funciona" },
-  { href: "#depoimentos", label: "Depoimentos" },
-  { href: "#precos", label: "Preços" },
-]
+  // { href: "#depoimentos", label: "Depoimentos" },
+  // { href: "#precos", label: "Preços" },
+];
 
 export function LandingHeader() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -87,5 +87,5 @@ export function LandingHeader() {
         </div>
       )}
     </header>
-  )
+  );
 }
