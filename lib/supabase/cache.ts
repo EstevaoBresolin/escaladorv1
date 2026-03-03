@@ -32,6 +32,7 @@ export const getCachedPermissions = cache(async (userId: string) => {
     .single();
 
   const isAdmin = profile?.role === "admin";
+  const isMember = profile?.role === "member";
 
   // Buscar ministérios que o usuário lidera
   const { data: ledMinistries } = await supabase
@@ -45,6 +46,7 @@ export const getCachedPermissions = cache(async (userId: string) => {
   return {
     isAdmin,
     isLeader,
+    isMember,
     ledMinistryIds,
     churchId: profile?.church_id || null,
   };
