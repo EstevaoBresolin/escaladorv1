@@ -48,8 +48,8 @@ export default async function EventosPage() {
     start_time: event.start_time,
     location: event.location,
     has_schedules:
-      ((event.volunteer_slots || [])[0] as { count?: number } | undefined)
-        ?.count > 0,
+      (((event.volunteer_slots || [])[0] as { count?: number } | undefined)
+        ?.count ?? 0) > 0,
     event_ministries: (event.event_ministries || []).map((em: any) => ({
       ministry_id: em.ministry_id,
       ministries: Array.isArray(em.ministries)

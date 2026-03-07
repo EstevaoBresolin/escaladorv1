@@ -285,6 +285,19 @@ export async function POST(request: NextRequest) {
       };
     }
 
+    if (
+      payload.table === "ministry_functions" &&
+      (payload.action === "insert" || payload.action === "update")
+    ) {
+      const name = safeValues.name;
+      if (name && typeof name === "string" && name.length > 50) {
+        return jsonWithCookies(
+          { error: "O nome da função deve ter no máximo 50 caracteres." },
+          { status: 400 },
+        );
+      }
+    }
+
     if (payload.action === "select") {
       const selectPayload = {
         table: payload.table,

@@ -15,6 +15,7 @@ import Link from "next/link";
 import { VolunteerSlotManager } from "@/components/dashboard/volunteer-slot-manager";
 import { EventQuickSchedule } from "@/components/dashboard/event-quick-schedule";
 import { ReplicateEventButton } from "@/components/dashboard/replicate-event-button";
+import { ExportEventPdfButton } from "@/components/dashboard/export-event-pdf-button";
 import {
   getUserPermissionsByProfile,
   getAssignableVolunteers,
@@ -195,6 +196,7 @@ export default async function EventPage({ params }: EventPageProps) {
                 </Link>
               </Button>
             )}
+            {/* Botão Exportar PDF: apenas para admin ou líder */}
             {canManageEvent && (
               <EventQuickSchedule
                 event={{
@@ -388,6 +390,13 @@ export default async function EventPage({ params }: EventPageProps) {
                 <Users className="h-5 w-5" />
                 Escala de Voluntários
               </CardTitle>
+              {canManageEvent && (
+                <ExportEventPdfButton
+                  event={event}
+                  manageableMinistries={manageableMinistries}
+                  volunteerSlots={event.volunteer_slots || []}
+                />
+              )}
             </CardHeader>
             <CardContent>
               <VolunteerSlotManager

@@ -145,31 +145,33 @@ export function MinistryLeaderManager({
             {leaders.map((leader) => (
               <div
                 key={leader.id}
-                className="grid gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_auto] md:items-center md:gap-4"
+                className="grid grid-cols-[1fr_auto] items-center gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_auto] md:gap-4 overflow-hidden"
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/10 text-sm font-medium text-amber-600">
-                    <Crown className="h-4 w-4" />
+                <div className="flex flex-col gap-2 md:contents overflow-hidden">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-sm font-medium text-amber-600">
+                      <Crown className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-card-foreground truncate">
+                        {leader.profiles?.name || "Lider nao encontrado"}
+                      </p>
+                    </div>
                   </div>
+
                   <div className="min-w-0">
-                    <p className="font-medium text-card-foreground">
-                      {leader.profiles?.name || "Lider nao encontrado"}
+                    <p className="truncate text-sm text-muted-foreground">
+                      {leader.profiles?.email || "-"}
                     </p>
                   </div>
-                </div>
 
-                <div className="min-w-0">
-                  <p className="truncate text-sm text-muted-foreground">
-                    {leader.profiles?.email || "-"}
-                  </p>
+                  <Badge
+                    variant="secondary"
+                    className="w-fit shrink-0 bg-amber-500/10 text-amber-600"
+                  >
+                    Lider
+                  </Badge>
                 </div>
-
-                <Badge
-                  variant="secondary"
-                  className="w-fit shrink-0 bg-amber-500/10 text-amber-600"
-                >
-                  Lider
-                </Badge>
               </div>
             ))}
           </div>
@@ -198,31 +200,33 @@ export function MinistryLeaderManager({
           {leaders.map((leader) => (
             <div
               key={leader.id}
-              className="grid gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_auto_auto] md:items-center md:gap-4"
+              className="grid grid-cols-[1fr_auto] items-center gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_auto_auto] md:gap-4 overflow-hidden"
             >
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/10 text-sm font-medium text-amber-600">
-                  <Crown className="h-4 w-4" />
+              <div className="flex flex-col gap-2 md:contents overflow-hidden">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-sm font-medium text-amber-600">
+                    <Crown className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-card-foreground truncate">
+                      {leader.profiles?.name || "Lider nao encontrado"}
+                    </p>
+                  </div>
                 </div>
+
                 <div className="min-w-0">
-                  <p className="font-medium text-card-foreground">
-                    {leader.profiles?.name || "Lider nao encontrado"}
+                  <p className="truncate text-sm text-muted-foreground">
+                    {leader.profiles?.email || "-"}
                   </p>
                 </div>
-              </div>
 
-              <div className="min-w-0">
-                <p className="truncate text-sm text-muted-foreground">
-                  {leader.profiles?.email || "-"}
-                </p>
+                <Badge
+                  variant="secondary"
+                  className="w-fit shrink-0 bg-amber-500/10 text-amber-600"
+                >
+                  Lider
+                </Badge>
               </div>
-
-              <Badge
-                variant="secondary"
-                className="w-fit shrink-0 bg-amber-500/10 text-amber-600"
-              >
-                Lider
-              </Badge>
 
               <Button
                 variant="ghost"

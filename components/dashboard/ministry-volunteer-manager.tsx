@@ -161,29 +161,31 @@ export function MinistryVolunteerManager({
             {filteredMembers.map((member) => (
               <div
                 key={member.id}
-                className="grid gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_auto] md:items-center md:gap-4"
+                className="grid grid-cols-[1fr_auto] items-center gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_auto] md:gap-4 overflow-hidden"
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                    {member.profiles?.name
-                      ? member.profiles.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .slice(0, 2)
-                          .toUpperCase()
-                      : "?"}
+                <div className="flex flex-col gap-2 md:contents overflow-hidden">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                      {member.profiles?.name
+                        ? member.profiles.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()
+                        : "?"}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-card-foreground truncate">
+                        {member.profiles?.name || "Voluntário não encontrado"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-medium text-card-foreground">
-                      {member.profiles?.name || "Voluntário não encontrado"}
-                    </p>
-                  </div>
-                </div>
 
-                <p className="text-sm text-muted-foreground">
-                  {member.profiles?.email || "-"}
-                </p>
+                  <p className="text-sm text-muted-foreground truncate min-w-0">
+                    {member.profiles?.email || "-"}
+                  </p>
+                </div>
 
                 <Button
                   variant="ghost"

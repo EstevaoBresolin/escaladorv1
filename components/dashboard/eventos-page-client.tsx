@@ -55,6 +55,14 @@ export function EventsPageClient({
   const [selectedDate, setSelectedDate] = useState<string>("");
   const searchParams = useSearchParams();
 
+  // Helper function to check if user can manage an event
+  const canManageEvent = (event: EventWithMinistries) => {
+    if (isAdmin) return true;
+    return event.event_ministries.some((em) =>
+      ledMinistryIds.includes(em.ministry_id)
+    );
+  };
+
   useEffect(() => {
     const paramDate = searchParams.get("date");
     if (paramDate) {
@@ -268,14 +276,16 @@ export function EventsPageClient({
                           </div>
                         )}
 
-                        {isAdmin && (
-                          <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {canManageEvent(event) && (
                             <EventQuickSchedule
                               event={event}
                               isAdmin={isAdmin}
                               ledMinistryIds={ledMinistryIds}
                               triggerSize="sm"
                             />
+                          )}
+                          {isAdmin && (
                             <ReplicateEventButton
                               eventId={event.id}
                               title={event.title}
@@ -289,8 +299,8 @@ export function EventsPageClient({
                               hasSchedules={event.has_schedules}
                               triggerSize="sm"
                             />
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
 
                       <DropdownMenu>

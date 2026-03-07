@@ -177,7 +177,7 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
 
       <section className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-1">
-          <Card className="rounded-2xl">
+          {/* <Card className="rounded-2xl">
             <CardHeader>
               <CardTitle>Informações</CardTitle>
             </CardHeader>
@@ -211,7 +211,7 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
                 </div>
               )}
             </CardContent>
-          </Card>
+          </Card> */}
 
           <Card className="rounded-2xl">
             <CardHeader>
@@ -279,10 +279,10 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
                           }) => (
                             <div
                               key={member.id}
-                              className="grid gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)] md:items-center md:gap-4"
+                              className="grid gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)] md:items-center md:gap-4 overflow-hidden"
                             >
-                              <div className="flex items-center gap-3">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
                                   {member.profiles?.name
                                     ? member.profiles.name
                                         .split(" ")
@@ -292,12 +292,12 @@ export default async function MinistryPage({ params }: MinistryPageProps) {
                                         .toUpperCase()
                                     : "?"}
                                 </div>
-                                <p className="font-medium text-card-foreground">
+                                <p className="font-medium text-card-foreground truncate">
                                   {member.profiles?.name ||
                                     "Voluntário não encontrado"}
                                 </p>
                               </div>
-                              <p className="text-sm text-muted-foreground">
+                              <p className="text-sm text-muted-foreground truncate">
                                 {member.profiles?.email || "-"}
                               </p>
                             </div>

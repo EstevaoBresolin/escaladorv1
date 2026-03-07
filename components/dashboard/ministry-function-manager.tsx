@@ -40,6 +40,11 @@ export function MinistryFunctionManager({
       return;
     }
 
+    if (trimmed.length > 50) {
+      setError("O nome da função deve ter no máximo 50 caracteres.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -101,7 +106,11 @@ export function MinistryFunctionManager({
               placeholder="Escreva o nome da função"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              maxLength={50}
             />
+            <p className="text-xs text-muted-foreground">
+              {name.length}/50 caracteres
+            </p>
           </div>
           <Button type="submit" disabled={loading}>
             {loading ? (
@@ -134,9 +143,9 @@ export function MinistryFunctionManager({
           {functions.map((fn) => (
             <div
               key={fn.id}
-              className="grid gap-3 border-t border-border px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
+              className="grid grid-cols-[1fr_auto] items-center gap-3 border-t border-border px-4 py-3 first:border-t-0 overflow-hidden"
             >
-              <span className="text-sm font-medium text-card-foreground">
+              <span className="text-sm font-medium text-card-foreground truncate">
                 {fn.name}
               </span>
               {canManage && (
