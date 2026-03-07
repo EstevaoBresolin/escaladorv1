@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getUserPermissionsByProfile } from "@/lib/permissions";
 import { Loader2, Building2 } from "lucide-react";
-import { ReminderManager } from "@/components/dashboard/reminder-manager";
+// import { ReminderManager } from "@/components/dashboard/reminder-manager";
 
 export default function ConfiguracoesPage() {
   const [churchName, setChurchName] = useState("");
@@ -312,9 +312,9 @@ export default function ConfiguracoesPage() {
                 </form>
               </CardContent>
             </Card>
-            <div className="rounded-2xl border border-border/70 bg-card p-4">
+            {/* <div className="rounded-2xl border border-border/70 bg-card p-4">
               <ReminderManager />
-            </div>
+            </div> */}
           </>
         )}
 
