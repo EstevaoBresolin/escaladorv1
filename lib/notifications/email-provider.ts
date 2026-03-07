@@ -126,7 +126,7 @@ export function formatEmailHtml(
         
         <div style="background-color: #fafafa; padding: 16px; text-align: center; border-top: 1px solid #e4e4e7;">
           <p style="color: #a1a1aa; font-size: 12px; margin: 0;">
-            Conecte Escalas - Sistema de Gerenciamento de Voluntarios
+            Go Ministry - Sistema de Gerenciamento de Voluntarios
           </p>
         </div>
       </div>
@@ -159,7 +159,7 @@ export function formatEmailText(
 
   message += `MINISTERIO: ${reminder.ministryName}\n`;
   message += `\nContamos com voce! Deus abencoe.\n`;
-  message += `\n---\nConecte Escalas`;
+  message += `\n---\nGo Ministry`;
 
   return message;
 }
@@ -171,7 +171,7 @@ export class EmailNotificationProvider implements NotificationProvider {
     // IMPORTANT: Use 'onboarding@resend.dev' for testing before verifying a domain
     // Once you verify your domain in Resend, set RESEND_FROM_EMAIL to your verified email
     // For now, always use the test email to avoid "Domain not verified" errors
-    this.fromEmail = "Conecte Escalas <contato@openhelp.com.br>";
+    this.fromEmail = "Go Ministry <contato@openhelp.com.br>";
   }
 
   canSend(recipient: NotificationRecipient): boolean {

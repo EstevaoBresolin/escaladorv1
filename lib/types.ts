@@ -1,4 +1,4 @@
-// Database types for Conecte Escalas
+// Database types for Go Ministry
 
 export type UserRole = "admin" | "leader" | "volunteer" | "member";
 

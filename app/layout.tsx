@@ -9,7 +9,7 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Conecte Escalas - Gestão de Escalas para Igrejas",
+  title: "Go Ministry - Gestão de Escalas para Igrejas",
   description:
     "Simplifique a gestão de escalas e ministérios da sua igreja. Organize voluntários, eventos e comunicação em um só lugar.",
   generator: "v0.app",

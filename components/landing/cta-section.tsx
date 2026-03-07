@@ -12,7 +12,7 @@ export function CTASection() {
           </h2>
           <p className="mb-8 text-pretty text-primary-foreground/90">
             Junte-se a centenas de igrejas que já simplificaram sua organização
-            com o Conecte Escalas. Comece gratuitamente hoje.
+            com o Go Ministry. Comece gratuitamente hoje.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             {/* <Button

@@ -93,7 +93,7 @@ function SignUpSuccessContent() {
             <CalendarCheck className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="text-2xl font-semibold text-foreground">
-            Conecte Escalas
+            Go Ministry
           </span>
         </Link>
 
@@ -107,7 +107,7 @@ function SignUpSuccessContent() {
           <p className="mt-4 text-muted-foreground">
             Enviamos um link de confirmação para{" "}
             {email && <strong>{email}</strong>}. Clique no link para ativar sua
-            conta e começar a usar o Conecte Escalas.
+            conta e começar a usar o Go Ministry.
           </p>
         </div>
 

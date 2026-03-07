@@ -38,7 +38,7 @@ export function LandingFooter() {
                 <CalendarCheck className="h-5 w-5 text-primary-foreground" />
               </div>
               <span className="text-xl font-semibold text-card-foreground">
-                Conecte Escalas
+                Go Ministry
               </span>
             </Link>
             <p className="mb-4 max-w-xs text-sm text-muted-foreground">
@@ -117,7 +117,7 @@ export function LandingFooter() {
         {/* <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row"> */}
         <div className="flex flex-col items-center justify-between gap-4  md:flex-row">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} Conecte Escalas. Todos os direitos
+            &copy; {new Date().getFullYear()} Go Ministry. Todos os direitos
             reservados. <strong>By OpenHelp</strong>
           </p>
           <div className="flex gap-4">

@@ -111,7 +111,7 @@ export function DashboardSidebar({
             </div>
             <div className="flex min-w-0 flex-col">
               <span className="truncate text-base font-semibold text-sidebar-foreground">
-                Conecte Escalas
+                Go Ministry
               </span>
               <span className="truncate text-xs text-muted-foreground">
                 {profile?.churches?.name || "Minha Igreja"}

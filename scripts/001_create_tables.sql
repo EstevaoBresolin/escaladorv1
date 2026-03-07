@@ -1,4 +1,4 @@
--- Conecte Escalas Database Schema
+-- Go Ministry Database Schema
 -- This script creates all necessary tables for the church ministry scheduling SaaS
 
 -- Enable UUID extension if not already enabled
