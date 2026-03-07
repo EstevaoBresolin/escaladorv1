@@ -5,7 +5,7 @@ const testimonials = [
     name: "Pastor Ricardo Silva",
     role: "Igreja Batista Central",
     content:
-      "O Go Ministry transformou a forma como organizamos nossos ministérios. Antes, passávamos horas no WhatsApp tentando montar escalas. Agora, tudo é feito em minutos.",
+      "O GoMinistry transformou a forma como organizamos nossos ministérios. Antes, passávamos horas no WhatsApp tentando montar escalas. Agora, tudo é feito em minutos.",
     rating: 5,
   },
   {
@@ -19,7 +19,7 @@ const testimonials = [
     name: "Carlos Oliveira",
     role: "Coordenador Geral - Igreja Presbiteriana",
     content:
-      "Gerenciamos 12 ministérios com mais de 200 voluntários. O Go Ministry nos deu a visibilidade que precisávamos para coordenar tudo de forma eficiente.",
+      "Gerenciamos 12 ministérios com mais de 200 voluntários. O GoMinistry nos deu a visibilidade que precisávamos para coordenar tudo de forma eficiente.",
     rating: 5,
   },
 ]
@@ -30,7 +30,7 @@ export function TestimonialsSection() {
       <div className="container mx-auto px-4">
         <div className="mx-auto mb-16 max-w-2xl text-center">
           <h2 className="mb-4 text-balance text-3xl font-bold text-foreground md:text-4xl">
-            Igrejas que confiam no Go Ministry
+            Igrejas que confiam no GoMinistry
           </h2>
           <p className="text-pretty text-lg text-muted-foreground">
             Veja como outras comunidades estão transformando sua gestão de

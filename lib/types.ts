@@ -1,4 +1,4 @@
-// Database types for Go Ministry
+// Database types for GoMinistry
 
 export type UserRole = "admin" | "leader" | "volunteer" | "member";
 

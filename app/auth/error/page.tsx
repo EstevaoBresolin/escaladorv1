@@ -1,6 +1,7 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { CalendarCheck, AlertTriangle } from "lucide-react"
+import Link from "next/link";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle } from "lucide-react";
 
 export default function AuthErrorPage() {
   return (
@@ -8,10 +9,15 @@ export default function AuthErrorPage() {
       <div className="w-full max-w-sm text-center">
         <Link href="/" className="mb-6 inline-flex items-center gap-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-            <CalendarCheck className="h-5 w-5 text-primary-foreground" />
+            <Image
+              src="/icon-dark-32x32.png"
+              alt="GoMinistry"
+              width={40}
+              height={40}
+            />
           </div>
           <span className="text-2xl font-semibold text-foreground">
-            Go Ministry
+            GoMinistry
           </span>
         </Link>
 
@@ -38,5 +44,5 @@ export default function AuthErrorPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

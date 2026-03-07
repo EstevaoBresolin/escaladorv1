@@ -3,11 +3,12 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CalendarCheck, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 const LOGIN_BLOCKED_UNTIL_KEY = "login-blocked-until";
 
@@ -177,11 +178,11 @@ export default function LoginPage() {
       <div className="w-full max-w-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="mb-8 text-center">
           <Link href="/" className="mb-6 inline-flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <CalendarCheck className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg">
+              <Image src="/icon-dark-32x32.png" alt="GoMinistry" width={40} height={40} />
             </div>
             <span className="text-2xl font-semibold text-foreground">
-              Go Ministry
+              GoMinistry
             </span>
           </Link>
           <h1 className="mt-6 text-2xl font-bold text-foreground">

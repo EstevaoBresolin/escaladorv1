@@ -202,7 +202,7 @@ export default function PerfilPage() {
 
     const { error: errorResetPassword } =
       await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: "https://escaladorv1.vercel.app/auth/reset-password",
+        redirectTo: "https://goministry.com.br/auth/reset-password",
       });
 
     if (errorResetPassword) {

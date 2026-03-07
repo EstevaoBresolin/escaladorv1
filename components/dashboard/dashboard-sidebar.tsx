@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
-  CalendarCheck,
   LayoutDashboard,
   Users,
   Calendar,
@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   CalendarOff,
+  CalendarClock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,7 @@ const navItems = [
   { label: "Ministérios", href: "/dashboard/ministerios", icon: Church },
   { label: "Voluntários", href: "/dashboard/voluntarios", icon: Users },
   { label: "Eventos", href: "/dashboard/eventos", icon: Calendar },
-  { label: "Escalas", href: "/dashboard/escalas", icon: CalendarCheck },
+  { label: "Escalas", href: "/dashboard/escalas", icon: CalendarClock },
 ];
 
 const accountItems = [
@@ -106,12 +107,12 @@ export function DashboardSidebar({
       >
         <div className="space-y-4 border-b border-sidebar-border/80 px-5 py-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-primary shadow-sm">
-              <CalendarCheck className="h-5 w-5 text-sidebar-primary-foreground" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl shadow-sm">
+              <Image src="/icon-dark-32x32.png" alt="GoMinistry" width={40} height={40} />
             </div>
             <div className="flex min-w-0 flex-col">
               <span className="truncate text-base font-semibold text-sidebar-foreground">
-                Go Ministry
+                GoMinistry
               </span>
               <span className="truncate text-xs text-muted-foreground">
                 {profile?.churches?.name || "Minha Igreja"}

@@ -9,14 +9,14 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Go Ministry - Gestão de Escalas para Igrejas",
+  title: "GoMinistry - Gestão de Escalas para Igrejas",
   description:
     "Simplifique a gestão de escalas e ministérios da sua igreja. Organize voluntários, eventos e comunicação em um só lugar.",
   generator: "v0.app",
   icons: {
     icon: [
       {
-        url: "/icon-light-32x32.png",
+        url: "/icon-dark-32x32.png",
         media: "(prefers-color-scheme: light)",
       },
       {
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
         media: "(prefers-color-scheme: dark)",
       },
       {
-        url: "/icon.svg",
+        url: "/icon-dark-32x32.png",
         type: "image/svg+xml",
       },
     ],

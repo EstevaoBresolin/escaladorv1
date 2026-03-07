@@ -2,10 +2,11 @@
 
 import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { CalendarCheck, Mail, Loader2, CheckCircle } from "lucide-react";
+import { Mail, Loader2, CheckCircle } from "lucide-react";
 
 export default function SignUpSuccessPage() {
   return (
@@ -70,7 +71,7 @@ function SignUpSuccessContent() {
       type: "signup",
       email: email,
       options: {
-        emailRedirectTo: "https://escaladorv1.vercel.app/auth/login",
+        emailRedirectTo: "https://goministry.com.br/auth/login",
       },
     });
 
@@ -89,11 +90,11 @@ function SignUpSuccessContent() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm text-center">
         <Link href="/" className="mb-6 inline-flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-            <CalendarCheck className="h-5 w-5 text-primary-foreground" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg">
+            <Image src="/icon-dark-32x32.png" alt="GoMinistry" width={40} height={40} />
           </div>
           <span className="text-2xl font-semibold text-foreground">
-            Go Ministry
+            GoMinistry
           </span>
         </Link>
 
@@ -107,7 +108,7 @@ function SignUpSuccessContent() {
           <p className="mt-4 text-muted-foreground">
             Enviamos um link de confirmação para{" "}
             {email && <strong>{email}</strong>}. Clique no link para ativar sua
-            conta e começar a usar o Go Ministry.
+            conta e começar a usar o GoMinistry.
           </p>
         </div>
 
