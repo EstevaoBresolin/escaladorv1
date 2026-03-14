@@ -52,7 +52,9 @@ export default function EditarVoluntarioPage() {
         .eq("id", user?.id)
         .single();
 
-      const isAdmin = currentProfile?.role === "admin";
+      const isAdmin =
+        currentProfile?.role === "admin" ||
+        currentProfile?.role === "superadmin";
       const isOwnProfile = user?.id === volunteerId;
 
       if (!isAdmin && !isOwnProfile) {

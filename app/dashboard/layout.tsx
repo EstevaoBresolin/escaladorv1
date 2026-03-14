@@ -26,6 +26,7 @@ export default async function DashboardLayout({
 
   const profile = await getCachedProfile(user.id);
   const permissions = await getCachedPermissions(user.id);
+  const requireProfileCompletion = !permissions?.isSuperAdmin;
   const canViewVolunteers =
     Boolean(permissions?.isAdmin) ||
     (permissions?.ledMinistryIds?.length || 0) > 0;
@@ -43,6 +44,7 @@ export default async function DashboardLayout({
             <DashboardLayoutClient
               profilePhone={profile?.phone || undefined}
               profileChurchId={profile?.church_id || undefined}
+              requireProfileCompletion={requireProfileCompletion}
             >
               <PageTransition>{children}</PageTransition>
             </DashboardLayoutClient>

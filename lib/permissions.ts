@@ -1,12 +1,21 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { UserPermissions } from "./types";
 
+export function isSuperAdminRole(role: string | null | undefined) {
+  return role === "superadmin";
+}
+
+export function isAdminLikeRole(role: string | null | undefined) {
+  return role === "admin" || role === "superadmin";
+}
+
 export async function getUserPermissionsByProfile(
   supabase: SupabaseClient,
   userId: string,
   role: string | null | undefined,
 ): Promise<UserPermissions> {
-  const isAdmin = role === "admin";
+  const isSuperAdmin = isSuperAdminRole(role);
+  const isAdmin = isAdminLikeRole(role);
 
   const { data: ledMinistries } = await supabase
     .from("ministry_leaders")
@@ -16,8 +25,11 @@ export async function getUserPermissionsByProfile(
   const ledMinistryIds = ledMinistries?.map((m) => m.ministry_id) || [];
 
   return {
+    isSuperAdmin,
     isAdmin,
+    isMember: role === "member",
     isLeader: ledMinistryIds.length > 0,
+    churchId: null,
     ledMinistryIds,
   };
 }

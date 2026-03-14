@@ -21,7 +21,12 @@ export function LandingHeader() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg">
-            <Image src="/icon-dark-32x32.png" alt="GoMinistry" width={40} height={40} />
+            <Image
+              src="/icon-dark-32x32.png"
+              alt="GoMinistry"
+              width={40}
+              height={40}
+            />
           </div>
           <span className="text-xl font-semibold text-foreground">
             GoMinistry

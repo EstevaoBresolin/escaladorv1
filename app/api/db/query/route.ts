@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { DB_TABLE_POLICIES, IMMUTABLE_FIELDS } from "@/lib/db/policies";
+import { isAdminLikeRole, isSuperAdminRole } from "@/lib/permissions";
 import {
   getUpstashJson,
   hasUpstashConfig,
@@ -162,7 +163,8 @@ export async function POST(request: NextRequest) {
       .single();
 
     const userRole = currentProfile?.role || "member";
-    const isAdmin = userRole === "admin";
+    const isAdmin = isAdminLikeRole(userRole);
+    const isSuperAdmin = isSuperAdminRole(userRole);
 
     if (payload.table === "profiles") {
       if (payload.action === "delete") {
@@ -177,7 +179,7 @@ export async function POST(request: NextRequest) {
         payload.values && "role" in payload.values,
       );
 
-      if (hasRoleInValues) {
+      if (hasRoleInValues && !isSuperAdmin) {
         console.warn("Blocked profile role update attempt", {
           actorUserId: user.id,
           role: userRole,
