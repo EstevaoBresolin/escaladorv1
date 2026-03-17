@@ -35,7 +35,12 @@ export async function PATCH(_request: NextRequest, { params }: Params) {
     );
   }
 
-  if (!targetProfile.church_id) {
+  const body = (await _request.json().catch(() => ({}))) as {
+    role?: string;
+  };
+  const requestedRole = body.role === "member" ? "member" : "admin";
+
+  if (requestedRole === "admin" && !targetProfile.church_id) {
     return NextResponse.json(
       { error: "O usuario precisa pertencer a uma igreja para virar admin." },
       { status: 400 },
@@ -44,14 +49,20 @@ export async function PATCH(_request: NextRequest, { params }: Params) {
 
   const { data: updatedProfile, error } = await supabase
     .from("profiles")
-    .update({ role: "admin" })
+    .update({ role: requestedRole })
     .eq("id", userId)
     .select("id, role, church_id")
     .single();
 
   if (error || !updatedProfile) {
     return NextResponse.json(
-      { error: error?.message || "Erro ao promover usuario." },
+      {
+        error:
+          error?.message ||
+          (requestedRole === "admin"
+            ? "Erro ao promover usuario."
+            : "Erro ao remover permissao de admin."),
+      },
       { status: 400 },
     );
   }

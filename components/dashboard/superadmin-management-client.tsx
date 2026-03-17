@@ -9,6 +9,7 @@ import {
   Search,
   Shield,
   UserCheck,
+  UserX,
   Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -206,13 +207,17 @@ export function SuperadminManagementClient({
     });
   }
 
-  async function handlePromoteUser(userId: string) {
+  async function handleChangeUserRole(userId: string, targetRole: "admin" | "member") {
     setPromotingUserId(userId);
     setError(null);
     setFeedback(null);
 
     const response = await fetch(`/api/superadmin/users/${userId}/role`, {
       method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ role: targetRole }),
     });
 
     const body = (await response.json()) as {
@@ -228,10 +233,16 @@ export function SuperadminManagementClient({
 
     setUsers((current) =>
       current.map((user) =>
-        user.id === userId ? { ...user, role: body.profile?.role || "admin" } : user,
+        user.id === userId
+          ? { ...user, role: body.profile?.role || targetRole }
+          : user,
       ),
     );
-    setFeedback("Usuário promovido para administrador da igreja.");
+    setFeedback(
+      targetRole === "admin"
+        ? "Usuário promovido para administrador da igreja."
+        : "Permissão de administrador removida com sucesso.",
+    );
     setPromotingUserId(null);
   }
 
@@ -421,7 +432,7 @@ export function SuperadminManagementClient({
                 Ação disponível
               </p>
               <p className="mt-2 font-medium text-foreground">
-                Promover usuários a administrador da igreja
+                Promover e remover administradores da igreja
               </p>
             </div>
           </CardContent>
@@ -500,24 +511,31 @@ export function SuperadminManagementClient({
                             size="sm"
                             variant={isAdmin ? "outline" : "default"}
                             disabled={
-                              isAdmin ||
                               isSuperAdmin ||
-                              !user.churchId ||
+                              (!user.churchId && !isAdmin) ||
                               promotingUserId === user.id
                             }
-                            onClick={() => handlePromoteUser(user.id)}
+                            onClick={() =>
+                              handleChangeUserRole(
+                                user.id,
+                                isAdmin ? "member" : "admin",
+                              )
+                            }
                           >
                             {promotingUserId === user.id ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Promovendo...
+                                Salvando...
                               </>
                             ) : isSuperAdmin ? (
                               "Protegido"
-                            ) : isAdmin ? (
-                              "Já é admin"
                             ) : !user.churchId ? (
                               "Sem igreja"
+                            ) : isAdmin ? (
+                              <>
+                                <UserX className="mr-2 h-4 w-4" />
+                                Remover admin
+                              </>
                             ) : (
                               <>
                                 <UserCheck className="mr-2 h-4 w-4" />
