@@ -1,38 +1,38 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Loader2, ArrowLeft, Mail } from "lucide-react"
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, ArrowLeft, Mail } from "lucide-react";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const supabase = createClient()
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const supabase = createClient();
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: "https://goministry.com.br/auth/reset-password",
-    })
+    });
 
     if (error) {
-      setError("Erro ao enviar email de recuperacao. Tente novamente.")
-      setLoading(false)
-      return
+      setError("Erro ao enviar email de recuperacao. Tente novamente.");
+      setLoading(false);
+      return;
     }
 
-    setSuccess(true)
-    setLoading(false)
+    setSuccess(true);
+    setLoading(false);
   }
 
   if (success) {
@@ -42,12 +42,11 @@ export default function ForgotPasswordPage() {
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Mail className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Email enviado!
-          </h1>
+          <h1 className="text-2xl font-bold text-foreground">Email enviado!</h1>
           <p className="mt-4 text-muted-foreground">
-            Enviamos um link de recuperacao para <strong>{email}</strong>. 
-            Verifique sua caixa de entrada e siga as instrucoes para redefinir sua senha.
+            Enviamos um link de recuperacao para <strong>{email}</strong>.
+            Verifique sua caixa de entrada e siga as instrucoes para redefinir
+            sua senha.
           </p>
           <p className="mt-4 text-sm text-muted-foreground">
             Nao recebeu o email? Verifique sua pasta de spam ou{" "}
@@ -66,7 +65,7 @@ export default function ForgotPasswordPage() {
           </Link>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -75,7 +74,12 @@ export default function ForgotPasswordPage() {
         <div className="mb-8 text-center">
           <Link href="/" className="mb-6 inline-flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg">
-              <Image src="/icon-dark-32x32.png" alt="GoMinistry" width={40} height={40} />
+              <Image
+                src="/icon-dark-32x32.png"
+                alt="GoMinistry"
+                width={40}
+                height={40}
+              />
             </div>
             <span className="text-2xl font-semibold text-foreground">
               GoMinistry
@@ -129,5 +133,5 @@ export default function ForgotPasswordPage() {
         </Link>
       </div>
     </div>
-  )
+  );
 }

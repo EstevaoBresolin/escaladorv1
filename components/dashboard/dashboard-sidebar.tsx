@@ -9,11 +9,13 @@ import {
   Calendar,
   Settings,
   Church,
+  Building2,
   UserCircle,
   Menu,
   X,
   CalendarOff,
   CalendarClock,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -52,8 +54,18 @@ export function DashboardSidebar({
 
   const isVolunteerOnly = profile?.role === "volunteer";
   const isMemberOnly = profile?.role === "member";
+  const isSuperAdmin = profile?.role === "superadmin";
 
-  const visibleNavItems = isMemberOnly
+  const visibleNavItems = isSuperAdmin
+    ? [
+        { label: "Superadmin", href: "/dashboard/superadmin", icon: Shield },
+        {
+          label: "Gestão Global",
+          href: "/dashboard/superadmin/igrejas",
+          icon: Building2,
+        },
+      ]
+    : isMemberOnly
     ? []
     : isVolunteerOnly
       ? canViewVolunteers
@@ -68,7 +80,9 @@ export function DashboardSidebar({
     : accountItems;
 
   const roleLabel =
-    profile?.role === "admin"
+    profile?.role === "superadmin"
+      ? "Superadmin"
+      : profile?.role === "admin"
       ? "Administrador"
       : profile?.role === "leader"
         ? "Líder"
@@ -108,14 +122,20 @@ export function DashboardSidebar({
         <div className="space-y-4 border-b border-sidebar-border/80 px-5 py-5">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl shadow-sm">
-              <Image src="/icon-dark-32x32.png" alt="GoMinistry" width={40} height={40} />
+              <Image
+                src="/icon-dark-32x32.png"
+                alt="GoMinistry"
+                width={40}
+                height={40}
+              />
             </div>
             <div className="flex min-w-0 flex-col">
               <span className="truncate text-base font-semibold text-sidebar-foreground">
                 GoMinistry
               </span>
               <span className="truncate text-xs text-muted-foreground">
-                {profile?.churches?.name || "Minha Igreja"}
+                {profile?.churches?.name ||
+                  (isSuperAdmin ? "Controle global" : "Minha Igreja")}
               </span>
             </div>
           </div>

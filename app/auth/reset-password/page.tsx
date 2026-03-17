@@ -8,14 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Loader2,
-  CheckCircle,
-  Eye,
-  EyeOff,
-  Check,
-  X,
-} from "lucide-react";
+import { Loader2, CheckCircle, Eye, EyeOff, Check, X } from "lucide-react";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -171,7 +164,12 @@ export default function ResetPasswordPage() {
         <div className="mb-8 text-center">
           <Link href="/" className="mb-6 inline-flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg">
-              <Image src="/icon-dark-32x32.png" alt="GoMinistry" width={40} height={40} />
+              <Image
+                src="/icon-dark-32x32.png"
+                alt="GoMinistry"
+                width={40}
+                height={40}
+              />
             </div>
             <span className="text-2xl font-semibold text-foreground">
               GoMinistry

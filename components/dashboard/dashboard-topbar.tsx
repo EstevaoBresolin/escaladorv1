@@ -57,6 +57,7 @@ export function DashboardTopbar({ profile }: DashboardTopbarProps) {
     configuracoes: "Configurações",
     disponibilidade: "Disponibilidade",
     notificacoes: "Notificações",
+    superadmin: "Superadmin",
   };
 
   const currentSegment = pathname.split("/").filter(Boolean)[1];
@@ -140,7 +141,10 @@ export function DashboardTopbar({ profile }: DashboardTopbarProps) {
                   {profile?.name || "Usuário"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {profile?.churches?.name || "Minha Igreja"}
+                  {profile?.churches?.name ||
+                    (profile?.role === "superadmin"
+                      ? "Controle global"
+                      : "Minha Igreja")}
                 </p>
               </div>
               <DropdownMenuSeparator />

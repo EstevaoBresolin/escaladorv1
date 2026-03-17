@@ -137,6 +137,11 @@ export default function LoginPage() {
         .eq("id", user.id)
         .single();
 
+      if (profile?.role === "superadmin") {
+        router.push("/dashboard/superadmin");
+        return;
+      }
+
       if (!profile?.phone || !profile?.church_id) {
         router.push("/complete-profile");
         router.refresh();
@@ -179,7 +184,12 @@ export default function LoginPage() {
         <div className="mb-8 text-center">
           <Link href="/" className="mb-6 inline-flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg">
-              <Image src="/icon-dark-32x32.png" alt="GoMinistry" width={40} height={40} />
+              <Image
+                src="/icon-dark-32x32.png"
+                alt="GoMinistry"
+                width={40}
+                height={40}
+              />
             </div>
             <span className="text-2xl font-semibold text-foreground">
               GoMinistry

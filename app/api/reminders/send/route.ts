@@ -24,7 +24,7 @@ export async function POST(request: Request) {
       .eq("id", user.id)
       .single()
 
-    if (profile?.role !== "admin") {
+    if (profile?.role !== "admin" && profile?.role !== "superadmin") {
       return NextResponse.json(
         { error: "Only admins can send reminders" },
         { status: 403 }

@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "./server";
+import { isAdminLikeRole, isSuperAdminRole } from "../permissions";
 
 // Cache da sessão do usuário para evitar múltiplas chamadas
 export const getCachedUser = cache(async () => {
@@ -31,7 +32,8 @@ export const getCachedPermissions = cache(async (userId: string) => {
     .eq("id", userId)
     .single();
 
-  const isAdmin = profile?.role === "admin";
+  const isSuperAdmin = isSuperAdminRole(profile?.role);
+  const isAdmin = isAdminLikeRole(profile?.role);
   const isMember = profile?.role === "member";
 
   // Buscar ministérios que o usuário lidera
@@ -44,6 +46,7 @@ export const getCachedPermissions = cache(async (userId: string) => {
   const isLeader = ledMinistryIds.length > 0;
 
   return {
+    isSuperAdmin,
     isAdmin,
     isLeader,
     isMember,

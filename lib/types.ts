@@ -1,6 +1,11 @@
 // Database types for GoMinistry
 
-export type UserRole = "admin" | "leader" | "volunteer" | "member";
+export type UserRole =
+  | "superadmin"
+  | "admin"
+  | "leader"
+  | "volunteer"
+  | "member";
 
 export type VolunteerStatus = "scheduled" | "declined" | "absent";
 
@@ -10,6 +15,9 @@ export interface Church {
   id: string;
   name: string;
   address?: string;
+  cnpj?: string;
+  logo_url?: string;
+  plan?: number;
   phone?: string;
   created_at: string;
   updated_at: string;
@@ -141,8 +149,11 @@ export interface MinistryLeader {
 
 // User permissions context
 export interface UserPermissions {
+  isSuperAdmin: boolean;
   isAdmin: boolean;
+  isMember?: boolean;
   isLeader: boolean;
+  churchId?: string | null;
   ledMinistryIds: string[];
 }
 

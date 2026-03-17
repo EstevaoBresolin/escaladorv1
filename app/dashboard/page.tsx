@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,11 @@ export default async function DashboardPage() {
 
   const profile = await getCachedProfile(user.id);
   const permissions = await getCachedPermissions(user.id);
+
+  if (permissions?.isSuperAdmin) {
+    redirect("/dashboard/superadmin");
+  }
+
   const isAdmin = permissions?.isAdmin || false;
   const isMember = permissions?.isMember || false;
 

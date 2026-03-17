@@ -78,7 +78,8 @@ export default function VoluntariosPage() {
           .eq("user_id", user.id),
       ]);
 
-      const isAdminUser = profile?.role === "admin";
+      const isAdminUser =
+        profile?.role === "admin" || profile?.role === "superadmin";
       const ministryIds = (ledMinistries || []).map((m) => m.ministry_id);
 
       setIsAdmin(isAdminUser);
