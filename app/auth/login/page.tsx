@@ -67,8 +67,7 @@ export default function LoginPage() {
   }, [isBlocked, blockedUntil]);
 
   function blockLoginForSeconds(seconds: number) {
-    const validSeconds =
-      Number.isFinite(seconds) && seconds > 0 ? seconds : 10 * 60;
+    const validSeconds = Number.isFinite(seconds) && seconds > 0 ? seconds : 60;
     const until = Date.now() + validSeconds * 1000;
 
     setBlockedUntil(until);

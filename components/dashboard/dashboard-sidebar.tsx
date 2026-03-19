@@ -66,12 +66,12 @@ export function DashboardSidebar({
         },
       ]
     : isMemberOnly
-    ? []
-    : isVolunteerOnly
-      ? canViewVolunteers
-        ? navItems
-        : navItems.filter((item) => item.label !== "Voluntários")
-      : navItems;
+      ? []
+      : isVolunteerOnly
+        ? canViewVolunteers
+          ? navItems
+          : navItems.filter((item) => item.label !== "Voluntários")
+        : navItems;
 
   const visibleAccountItems = isMemberOnly
     ? accountItems.filter(
@@ -83,12 +83,12 @@ export function DashboardSidebar({
     profile?.role === "superadmin"
       ? "Superadmin"
       : profile?.role === "admin"
-      ? "Administrador"
-      : profile?.role === "leader"
-        ? "Líder"
-        : profile?.role === "volunteer"
-          ? "Voluntário"
-          : "Membro";
+        ? "Administrador"
+        : profile?.role === "leader"
+          ? "Líder"
+          : profile?.role === "volunteer"
+            ? "Voluntário"
+            : "Membro";
 
   return (
     <>

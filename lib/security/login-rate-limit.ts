@@ -1,6 +1,6 @@
 import { hasUpstashConfig, upstashCommand } from "@/lib/security/upstash";
 
-const WINDOW_SECONDS = 10 * 60; // 10 minutes
+const WINDOW_SECONDS = 60; // 1 minute
 const MAX_ATTEMPTS_PER_WINDOW = 5;
 
 export type LoginRateLimitStatus = {
