@@ -3,13 +3,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getUserPermissionsByProfile } from "@/lib/permissions";
+import { generateMinistryMonthlySchedulesPdf } from "@/lib/pdf-export";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Building2,
   Calendar,
   ChevronLeft,
   ChevronRight,
   Clock,
+  Download,
   MapPin,
   UserRound,
 } from "lucide-react";
@@ -30,17 +40,33 @@ interface VolunteerScheduleItem {
   eventId: string;
   title: string;
   date: string;
+  volunteerName?: string | null;
+  volunteerEmail?: string | null;
   startTime?: string | null;
   location?: string | null;
   ministryName?: string | null;
   ministryColor?: string | null;
 }
 
+interface MinistryOption {
+  id: string;
+  name: string;
+  color?: string | null;
+}
+
+type SelectionMode = "volunteer" | "ministry";
+
 export default function EscalasPage() {
   const [volunteers, setVolunteers] = useState<VolunteerOption[]>([]);
+  const [ministries, setMinistries] = useState<MinistryOption[]>([]);
   const [selectedVolunteerId, setSelectedVolunteerId] = useState<string>("");
+  const [selectedMinistryId, setSelectedMinistryId] = useState<string>("");
+  const [selectionMode, setSelectionMode] =
+    useState<SelectionMode>("volunteer");
   const [searchTerm, setSearchTerm] = useState("");
   const [loadingVolunteers, setLoadingVolunteers] = useState(false);
+  const [loadingMinistries, setLoadingMinistries] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState(false);
   const [churchId, setChurchId] = useState<string>("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [ledMinistryIds, setLedMinistryIds] = useState<string[]>([]);
@@ -66,6 +92,8 @@ export default function EscalasPage() {
     const endStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
     return { startStr, endStr };
   }, [currentMonth]);
+
+  const canChooseMinistry = !isVolunteerOnly && (isAdmin || ledMinistryIds.length > 0);
 
   useEffect(() => {
     async function loadVolunteers() {
@@ -110,6 +138,7 @@ export default function EscalasPage() {
         setVolunteers([]);
         setSelectedVolunteerId("");
         setIsVolunteerOnly(false);
+        setSelectionMode("volunteer");
         setLoading(false);
         return;
       }
@@ -123,6 +152,7 @@ export default function EscalasPage() {
         setVolunteers([selfOption]);
         setSelectedVolunteerId(selfOption.id);
         setIsVolunteerOnly(true);
+        setSelectionMode("volunteer");
         setLoading(false);
         return;
       }
@@ -137,6 +167,7 @@ export default function EscalasPage() {
 
   useEffect(() => {
     if (!churchId) return;
+    if (selectionMode !== "volunteer") return;
     if (isVolunteerOnly) return;
 
     const term = searchTerm.trim();
@@ -217,6 +248,7 @@ export default function EscalasPage() {
     return () => window.clearTimeout(timeoutId);
   }, [
     churchId,
+    selectionMode,
     isVolunteerOnly,
     searchTerm,
     isAdmin,
@@ -225,20 +257,92 @@ export default function EscalasPage() {
   ]);
 
   useEffect(() => {
+    async function loadMinistries() {
+      if (!churchId || isVolunteerOnly) {
+        setMinistries([]);
+        setSelectedMinistryId("");
+        return;
+      }
+
+      if (!isAdmin && ledMinistryIds.length === 0) {
+        setMinistries([]);
+        setSelectedMinistryId("");
+        return;
+      }
+
+      setLoadingMinistries(true);
+
+      let query = supabase
+        .from("ministries")
+        .select("id, name, color")
+        .eq("church_id", churchId)
+        .order("name");
+
+      if (!isAdmin) {
+        query = query.in("id", ledMinistryIds);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        setError("Erro ao carregar ministérios. Tente novamente.");
+        setLoadingMinistries(false);
+        return;
+      }
+
+      const options = (data || []).map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        color: row.color,
+      }));
+
+      setMinistries(options);
+      if (!options.some((item) => item.id === selectedMinistryId)) {
+        setSelectedMinistryId(options[0]?.id || "");
+      }
+
+      setLoadingMinistries(false);
+    }
+
+    loadMinistries();
+  }, [
+    churchId,
+    isVolunteerOnly,
+    isAdmin,
+    ledMinistryIds,
+    selectedMinistryId,
+    supabase,
+  ]);
+
+  useEffect(() => {
     async function loadSchedules() {
-      if (!selectedVolunteerId) return;
+      const shouldLoadVolunteer =
+        selectionMode === "volunteer" && Boolean(selectedVolunteerId);
+      const shouldLoadMinistry =
+        selectionMode === "ministry" && Boolean(selectedMinistryId);
+
+      if (!shouldLoadVolunteer && !shouldLoadMinistry) {
+        setSchedules([]);
+        return;
+      }
 
       setLoadingSchedules(true);
       setError(null);
 
-      const { data, error } = await supabase
+      const baseQuery = supabase
         .from("volunteer_slots")
         .select(
-          "id, events!inner(id, title, date, start_time, location), ministries(id, name, color)",
+          "id, events!inner(id, title, date, start_time, location), ministries(id, name, color), profiles(name, email)",
         )
-        .eq("user_id", selectedVolunteerId)
         .gte("events.date", monthRange.startStr)
         .lte("events.date", monthRange.endStr);
+
+      const query =
+        selectionMode === "volunteer"
+          ? baseQuery.eq("user_id", selectedVolunteerId)
+          : baseQuery.eq("ministry_id", selectedMinistryId);
+
+      const { data, error } = await query;
 
       if (error) {
         setError("Erro ao carregar escalas. Tente novamente.");
@@ -251,6 +355,8 @@ export default function EscalasPage() {
         eventId: row.events?.id,
         title: row.events?.title,
         date: row.events?.date,
+        volunteerName: row.profiles?.name || null,
+        volunteerEmail: row.profiles?.email || null,
         startTime: row.events?.start_time,
         location: row.events?.location,
         ministryName: row.ministries?.name || null,
@@ -270,7 +376,85 @@ export default function EscalasPage() {
     }
 
     loadSchedules();
-  }, [supabase, selectedVolunteerId, monthRange]);
+  }, [
+    supabase,
+    selectionMode,
+    selectedVolunteerId,
+    selectedMinistryId,
+    monthRange,
+  ]);
+
+  async function handleGenerateMinistryReport() {
+    if (!selectedMinistryId) {
+      setError("Selecione um ministério para gerar o relatório.");
+      return;
+    }
+
+    setGeneratingReport(true);
+    setError(null);
+
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+    const endStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
+
+    const { data, error } = await supabase
+      .from("volunteer_slots")
+      .select(
+        "id, events!inner(title, date, start_time, location), profiles(name, email), ministries(name)",
+      )
+      .eq("ministry_id", selectedMinistryId)
+      .gte("events.date", startStr)
+      .lte("events.date", endStr);
+
+    if (error) {
+      setError("Erro ao gerar relatório. Tente novamente.");
+      setGeneratingReport(false);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      setError("Nenhuma escala encontrada para esse ministério no mês atual.");
+      setGeneratingReport(false);
+      return;
+    }
+
+    const firstRowMinistry = Array.isArray(data[0]?.ministries)
+      ? data[0]?.ministries[0]?.name
+      : (data[0] as any)?.ministries?.name;
+
+    const ministryName =
+      ministries.find((item) => item.id === selectedMinistryId)?.name ||
+      firstRowMinistry ||
+      "Ministério";
+
+    const monthLabel = now.toLocaleDateString("pt-BR", {
+      month: "long",
+      year: "numeric",
+    });
+
+    generateMinistryMonthlySchedulesPdf({
+      ministryName,
+      monthLabel,
+      items: data.map((row: any) => ({
+        volunteerName: row.profiles?.name || "Voluntário sem nome",
+        volunteerEmail: row.profiles?.email || "-",
+        eventTitle: row.events?.title || "Evento sem título",
+        eventDate: row.events?.date || "",
+        eventStartTime: row.events?.start_time,
+        eventLocation: row.events?.location,
+      })),
+    });
+
+    setGeneratingReport(false);
+  }
+
+  function handleSelectionModeChange(value: SelectionMode) {
+    setSelectionMode(value);
+    setError(null);
+    setSchedules([]);
+  }
 
   function handlePrevMonth() {
     setCurrentMonth(
@@ -333,17 +517,46 @@ export default function EscalasPage() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
+            {canChooseMinistry && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">Exibir por</p>
+                <Select
+                  value={selectionMode}
+                  onValueChange={(value) =>
+                    handleSelectionModeChange(value as SelectionMode)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="volunteer">Voluntário</SelectItem>
+                    <SelectItem value="ministry">Ministério</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-2">
               <p className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
-                <UserRound className="h-4 w-4 text-primary" />
-                Voluntário
+                {selectionMode === "volunteer" ? (
+                  <>
+                    <UserRound className="h-4 w-4 text-primary" />
+                    Voluntário
+                  </>
+                ) : (
+                  <>
+                    <Building2 className="h-4 w-4 text-primary" />
+                    Ministério
+                  </>
+                )}
               </p>
               {loading ? (
                 <div className="space-y-2">
                   <div className="h-10 w-full animate-pulse rounded-lg border border-input bg-muted/40" />
                   <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
                 </div>
-              ) : isVolunteerOnly || isAdmin || ledMinistryIds.length > 0 ? (
+              ) : selectionMode === "volunteer" ? (
                 <VolunteerSearch
                   volunteers={volunteers}
                   selectedVolunteerId={selectedVolunteerId}
@@ -356,15 +569,34 @@ export default function EscalasPage() {
                   showEventStats={false}
                   showLabel={false}
                 />
+              ) : loadingMinistries ? (
+                <div className="h-10 w-full animate-pulse rounded-lg border border-input bg-muted/40" />
+              ) : ministries.length > 0 ? (
+                <Select
+                  value={selectedMinistryId}
+                  onValueChange={setSelectedMinistryId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o ministério" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ministries.map((ministry) => (
+                      <SelectItem key={ministry.id} value={ministry.id}>
+                        {ministry.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Nenhum voluntário disponível.
+                  Nenhum ministério disponível.
                 </p>
               )}
 
               {!loading &&
+                selectionMode === "volunteer" &&
                 !isVolunteerOnly &&
-                (isAdmin || ledMinistryIds.length > 0) &&
+                canChooseMinistry &&
                 volunteers.length === 0 && (
                   <p className="text-sm text-muted-foreground">
                     {searchTerm.trim()
@@ -374,6 +606,21 @@ export default function EscalasPage() {
                 )}
             </div>
           </div>
+
+          {selectionMode === "ministry" && selectedMinistryId && (
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                onClick={handleGenerateMinistryReport}
+                disabled={generatingReport || loadingSchedules}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {generatingReport
+                  ? "Gerando relatório..."
+                  : "Gerar relatório do mês atual"}
+              </Button>
+            </div>
+          )}
         </CardHeader>
 
         <CardContent className="space-y-4">
@@ -415,7 +662,11 @@ export default function EscalasPage() {
             <DashboardEmptyState
               icon={Calendar}
               title="Nenhuma escala encontrada"
-              description="Não há escalas para o voluntário selecionado neste mês."
+              description={
+                selectionMode === "volunteer"
+                  ? "Não há escalas para o voluntário selecionado neste mês."
+                  : "Não há escalas para o ministério selecionado neste mês."
+              }
               className="bg-background"
             />
           ) : (

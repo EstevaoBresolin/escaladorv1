@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Building2,
+  Download,
   Loader2,
   Search,
   Shield,
@@ -38,6 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { generateChurchMembersPdf } from "@/lib/pdf-export";
 
 type ChurchOption = {
   id: string;
@@ -71,6 +73,25 @@ type ManagedUser = {
   hasMinistry: boolean;
 };
 
+type ChurchMemberReportItem = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  hasMinistry: boolean;
+  ministryCount: number;
+  ministries: string[];
+};
+
+type ChurchMembersReportResponse = {
+  church?: {
+    id: string;
+    name: string;
+  };
+  members?: ChurchMemberReportItem[];
+  error?: string;
+};
+
 interface SuperadminManagementClientProps {
   initialChurches: ChurchOption[];
 }
@@ -98,6 +119,7 @@ export function SuperadminManagementClient({
   const [isSavingPlan, startPlanTransition] = useTransition();
   const [isLoadingUsers, startUsersTransition] = useTransition();
   const [promotingUserId, setPromotingUserId] = useState<string | null>(null);
+  const [isExportingReport, setIsExportingReport] = useState(false);
 
   const deferredSearchTerm = useDeferredValue(searchTerm.trim());
 
@@ -244,6 +266,36 @@ export function SuperadminManagementClient({
         : "Permissão de administrador removida com sucesso.",
     );
     setPromotingUserId(null);
+  }
+
+  async function handleExportMembersReport() {
+    if (!selectedChurchId) {
+      setError("Selecione uma igreja para exportar o relatório.");
+      return;
+    }
+
+    setIsExportingReport(true);
+    setError(null);
+    setFeedback(null);
+
+    const response = await fetch(
+      `/api/superadmin/churches/${selectedChurchId}/members-report`,
+    );
+    const body = (await response.json()) as ChurchMembersReportResponse;
+
+    if (!response.ok) {
+      setError(body.error || "Erro ao gerar relatório de membros.");
+      setIsExportingReport(false);
+      return;
+    }
+
+    generateChurchMembersPdf({
+      churchName: body.church?.name || selectedChurch?.name || "igreja",
+      members: body.members || [],
+    });
+
+    setFeedback("Relatório de membros exportado com sucesso.");
+    setIsExportingReport(false);
   }
 
   return (
@@ -433,6 +485,34 @@ export function SuperadminManagementClient({
               </p>
               <p className="mt-2 font-medium text-foreground">
                 Promover e remover administradores da igreja
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-muted/30 p-4">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                Relatório de membros
+              </p>
+              <div className="mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportMembersReport}
+                  disabled={!selectedChurchId || isExportingReport}
+                >
+                  {isExportingReport ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Baixar relatório
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Inclui todos os membros da igreja e destaca quem está sem ministério.
               </p>
             </div>
           </CardContent>

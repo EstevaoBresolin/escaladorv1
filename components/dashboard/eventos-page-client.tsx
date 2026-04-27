@@ -59,7 +59,7 @@ export function EventsPageClient({
   const canManageEvent = (event: EventWithMinistries) => {
     if (isAdmin) return true;
     return event.event_ministries.some((em) =>
-      ledMinistryIds.includes(em.ministry_id)
+      ledMinistryIds.includes(em.ministry_id),
     );
   };
 
