@@ -2,6 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSuperAdminRole } from "../permissions";
 
+type ProfileWithChurch = {
+  role: string | null;
+  church: { active: boolean } | null;
+};
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -57,9 +62,18 @@ export async function updateSession(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, church:churches(active)")
       .eq("id", user.id)
-      .single();
+      .single() as { data: ProfileWithChurch | null };
+
+    const isChurchInactive = profile?.church?.active === false;
+
+    // Allow perfil page even with inactive church - don't redirect
+    if (isChurchInactive && !isSuperAdminRole(profile?.role) && pathname !== "/dashboard/perfil") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard/perfil";
+      return NextResponse.redirect(url);
+    }
 
     if (
       pathname.startsWith("/dashboard/superadmin") &&
@@ -79,7 +93,7 @@ export async function updateSession(request: NextRequest) {
 
       if (!isAllowed) {
         const url = request.nextUrl.clone();
-        url.pathname = "/dashboard";
+        url.pathname = "/dashboard/perfil";
         return NextResponse.redirect(url);
       }
     }

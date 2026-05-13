@@ -393,9 +393,13 @@ export default function EscalasPage() {
     setGeneratingReport(true);
     setError(null);
 
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const reportMonth = currentMonth;
+    const start = new Date(reportMonth.getFullYear(), reportMonth.getMonth(), 1);
+    const end = new Date(
+      reportMonth.getFullYear(),
+      reportMonth.getMonth() + 1,
+      0,
+    );
     const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
     const endStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
 
@@ -415,7 +419,7 @@ export default function EscalasPage() {
     }
 
     if (!data || data.length === 0) {
-      setError("Nenhuma escala encontrada para esse ministério no mês atual.");
+      setError("Nenhuma escala encontrada para esse ministério no mês selecionado.");
       setGeneratingReport(false);
       return;
     }
@@ -429,7 +433,7 @@ export default function EscalasPage() {
       firstRowMinistry ||
       "Ministério";
 
-    const monthLabel = now.toLocaleDateString("pt-BR", {
+    const monthLabel = reportMonth.toLocaleDateString("pt-BR", {
       month: "long",
       year: "numeric",
     });

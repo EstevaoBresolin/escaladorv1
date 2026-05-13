@@ -1,6 +1,12 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useState, useTransition } from "react";
+import {
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -45,6 +51,7 @@ type ChurchOption = {
   id: string;
   name: string;
   plan: number;
+  active: boolean;
 };
 
 type ChurchDetails = {
@@ -52,6 +59,7 @@ type ChurchDetails = {
     id: string;
     name: string;
     plan: number;
+    active: boolean;
   };
   stats: {
     totalUsers: number;
@@ -107,16 +115,21 @@ export function SuperadminManagementClient({
   const [selectedChurchId, setSelectedChurchId] = useState(
     initialChurches[0]?.id || "",
   );
+  const [churches, setChurches] = useState(initialChurches);
+
   const [selectedPlan, setSelectedPlan] = useState(
     String(initialChurches[0]?.plan ?? 0),
   );
-  const [churchDetails, setChurchDetails] = useState<ChurchDetails | null>(null);
+  const [churchDetails, setChurchDetails] = useState<ChurchDetails | null>(
+    null,
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingDetails, startDetailsTransition] = useTransition();
   const [isSavingPlan, startPlanTransition] = useTransition();
+  const [isSavingChurchStatus, startChurchStatusTransition] = useTransition();
   const [isLoadingUsers, startUsersTransition] = useTransition();
   const [promotingUserId, setPromotingUserId] = useState<string | null>(null);
   const [isExportingReport, setIsExportingReport] = useState(false);
@@ -124,8 +137,8 @@ export function SuperadminManagementClient({
   const deferredSearchTerm = useDeferredValue(searchTerm.trim());
 
   const selectedChurch = useMemo(
-    () => initialChurches.find((church) => church.id === selectedChurchId) || null,
-    [initialChurches, selectedChurchId],
+    () => churches.find((church) => church.id === selectedChurchId) || null,
+    [churches, selectedChurchId],
   );
 
   useEffect(() => {
@@ -137,12 +150,20 @@ export function SuperadminManagementClient({
     startDetailsTransition(async () => {
       setError(null);
 
-      const response = await fetch(`/api/superadmin/churches/${selectedChurchId}`);
-      const body = (await response.json()) as ChurchDetails | { error?: string };
+      const response = await fetch(
+        `/api/superadmin/churches/${selectedChurchId}`,
+      );
+      const body = (await response.json()) as
+        | ChurchDetails
+        | { error?: string };
 
       if (!response.ok || !("church" in body)) {
         setChurchDetails(null);
-        setError(body && "error" in body ? body.error || "Erro ao carregar igreja." : "Erro ao carregar igreja.");
+        setError(
+          body && "error" in body
+            ? body.error || "Erro ao carregar igreja."
+            : "Erro ao carregar igreja.",
+        );
         return;
       }
 
@@ -152,7 +173,8 @@ export function SuperadminManagementClient({
   }, [selectedChurchId]);
 
   useEffect(() => {
-    const shouldSearch = deferredSearchTerm.length >= 2 || Boolean(selectedChurchId);
+    const shouldSearch =
+      deferredSearchTerm.length >= 2 || Boolean(selectedChurchId);
 
     if (!shouldSearch) {
       setUsers([]);
@@ -170,9 +192,13 @@ export function SuperadminManagementClient({
         params.set("q", deferredSearchTerm);
       }
 
-      const response = await fetch(`/api/superadmin/users?${params.toString()}`);
-      const body =
-        (await response.json()) as { users?: ManagedUser[]; error?: string };
+      const response = await fetch(
+        `/api/superadmin/users?${params.toString()}`,
+      );
+      const body = (await response.json()) as {
+        users?: ManagedUser[];
+        error?: string;
+      };
 
       if (!response.ok) {
         setUsers([]);
@@ -229,7 +255,64 @@ export function SuperadminManagementClient({
     });
   }
 
-  async function handleChangeUserRole(userId: string, targetRole: "admin" | "member") {
+  async function handleToggleChurchStatus() {
+    if (!selectedChurchId || !churchDetails) return;
+
+    startChurchStatusTransition(async () => {
+      setError(null);
+      setFeedback(null);
+
+      const nextActive = !churchDetails.church.active;
+      const response = await fetch(
+        `/api/superadmin/churches/${selectedChurchId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ active: nextActive }),
+        },
+      );
+
+      const body = (await response.json()) as {
+        church?: { id: string; name: string; plan: number; active: boolean };
+        error?: string;
+      };
+
+      if (!response.ok) {
+        setError(body.error || "Erro ao atualizar status da igreja.");
+        return;
+      }
+
+      if (body.church) {
+        setChurchDetails((current) =>
+          current
+            ? {
+                ...current,
+                church: { ...current.church, active: body.church?.active ?? current.church.active },
+              }
+            : current,
+        );
+
+        setChurches((current) =>
+          current.map((church) =>
+            church.id === body.church?.id
+              ? { ...church, active: body.church.active }
+              : church,
+          ),
+        );
+      }
+
+      setFeedback(
+        nextActive
+          ? "Igreja reativada com sucesso."
+          : "Igreja inativada com sucesso.",
+      );
+    });
+  }
+
+  async function handleChangeUserRole(
+    userId: string,
+    targetRole: "admin" | "member",
+  ) {
     setPromotingUserId(userId);
     setError(null);
     setFeedback(null);
@@ -308,8 +391,8 @@ export function SuperadminManagementClient({
               Gestão de igrejas e usuários
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Selecione uma igreja para analisar métricas, ajustar plano e pesquisar
-              usuários com contexto administrativo.
+              Selecione uma igreja para analisar métricas, ajustar plano e
+              pesquisar usuários com contexto administrativo.
             </p>
           </div>
 
@@ -348,7 +431,10 @@ export function SuperadminManagementClient({
           <CardContent className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="church-select">Igreja</Label>
-              <Select value={selectedChurchId} onValueChange={setSelectedChurchId}>
+              <Select
+                value={selectedChurchId}
+                onValueChange={setSelectedChurchId}
+              >
                 <SelectTrigger id="church-select">
                   <SelectValue placeholder="Selecione uma igreja" />
                 </SelectTrigger>
@@ -410,19 +496,37 @@ export function SuperadminManagementClient({
                       {churchDetails.stats.usersWithoutMinistry}
                     </p>
                   </div>
+                  <div className="rounded-xl border border-border/70 bg-muted/30 p-4">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Status
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Badge variant={churchDetails.church.active ? "default" : "secondary"}>
+                        {churchDetails.church.active ? "Ativa" : "Inativa"}
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="rounded-xl border border-border/70 bg-background p-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                     <div className="space-y-2">
                       <Label htmlFor="church-plan">Plano da igreja</Label>
-                      <Select value={selectedPlan} onValueChange={setSelectedPlan}>
-                        <SelectTrigger id="church-plan" className="w-full md:w-72">
+                      <Select
+                        value={selectedPlan}
+                        onValueChange={setSelectedPlan}
+                      >
+                        <SelectTrigger
+                          id="church-plan"
+                          className="w-full md:w-72"
+                        >
                           <SelectValue placeholder="Selecione o plano" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="0">0 - Somente email</SelectItem>
-                          <SelectItem value="1">1 - WhatsApp + notificações</SelectItem>
+                          <SelectItem value="1">
+                            1 - WhatsApp + notificações
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -435,6 +539,23 @@ export function SuperadminManagementClient({
                         </>
                       ) : (
                         "Salvar plano"
+                      )}
+                    </Button>
+
+                    <Button
+                      onClick={handleToggleChurchStatus}
+                      disabled={isSavingChurchStatus}
+                      variant={churchDetails.church.active ? "outline" : "destructive"}
+                    >
+                      {isSavingChurchStatus ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Atualizando...
+                        </>
+                      ) : churchDetails.church.active ? (
+                        "Inativar"
+                      ) : (
+                        "Reativar"
                       )}
                     </Button>
                   </div>
@@ -512,7 +633,8 @@ export function SuperadminManagementClient({
                 </Button>
               </div>
               <p className="mt-3 text-xs text-muted-foreground">
-                Inclui todos os membros da igreja e destaca quem está sem ministério.
+                Inclui todos os membros da igreja e destaca quem está sem
+                ministério.
               </p>
             </div>
           </CardContent>
@@ -526,7 +648,8 @@ export function SuperadminManagementClient({
             Pesquisar usuários
           </CardTitle>
           <CardDescription>
-            Busque por nome ou email. Se uma igreja estiver selecionada, o filtro será aplicado nela.
+            Busque por nome ou email. Se uma igreja estiver selecionada, o
+            filtro será aplicado nela.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -565,21 +688,37 @@ export function SuperadminManagementClient({
                       <TableRow key={user.id}>
                         <TableCell>
                           <div>
-                            <p className="font-medium text-foreground">{user.name}</p>
-                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                            <p className="font-medium text-foreground">
+                              {user.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {user.email}
+                            </p>
                           </div>
                         </TableCell>
                         <TableCell>{user.churchName || "Sem igreja"}</TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-2">
-                            <Badge variant={isSuperAdmin ? "destructive" : isAdmin ? "default" : "outline"}>
+                            <Badge
+                              variant={
+                                isSuperAdmin
+                                  ? "destructive"
+                                  : isAdmin
+                                    ? "default"
+                                    : "outline"
+                              }
+                            >
                               {isSuperAdmin
                                 ? "Superadmin"
                                 : isAdmin
                                   ? "Admin"
                                   : user.role}
                             </Badge>
-                            <Badge variant={user.hasMinistry ? "secondary" : "outline"}>
+                            <Badge
+                              variant={
+                                user.hasMinistry ? "secondary" : "outline"
+                              }
+                            >
                               {user.hasMinistry
                                 ? `${user.ministryCount} ministério(s)`
                                 : "Sem ministério"}
@@ -629,7 +768,10 @@ export function SuperadminManagementClient({
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={4}
+                      className="py-8 text-center text-muted-foreground"
+                    >
                       {searchTerm.trim().length < 2 && !selectedChurchId
                         ? "Digite ao menos 2 caracteres para pesquisar usuários."
                         : "Nenhum usuário encontrado com os filtros atuais."}

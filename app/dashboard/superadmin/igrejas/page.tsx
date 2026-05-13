@@ -5,6 +5,7 @@ type ChurchOption = {
   id: string;
   name: string;
   plan: number | null;
+  active: boolean | null;
 };
 
 export default async function SuperadminChurchManagementPage() {
@@ -12,7 +13,7 @@ export default async function SuperadminChurchManagementPage() {
 
   const { data: churches } = await supabase
     .from("churches")
-    .select("id, name, plan")
+    .select("id, name, plan, active")
     .order("name");
 
   return (
@@ -21,6 +22,7 @@ export default async function SuperadminChurchManagementPage() {
         id: church.id,
         name: church.name,
         plan: church.plan ?? 0,
+        active: church.active ?? true,
       }))}
     />
   );

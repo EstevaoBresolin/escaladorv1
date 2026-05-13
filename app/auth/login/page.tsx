@@ -12,6 +12,13 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 const LOGIN_BLOCKED_UNTIL_KEY = "login-blocked-until";
 
+type ProfileWithChurch = {
+  phone: string | null;
+  church_id: string | null;
+  role: string | null;
+  church: { active: boolean } | null;
+};
+
 function formatRemainingMinutes(seconds: number) {
   const minutes = Math.max(Math.ceil(seconds / 60), 1);
   const minuteLabel = minutes === 1 ? "minuto" : "minutos";
@@ -132,12 +139,17 @@ export default function LoginPage() {
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("phone, church_id, role")
+        .select("phone, church_id, role, church:churches(active)")
         .eq("id", user.id)
-        .single();
+        .single() as { data: ProfileWithChurch | null };
 
       if (profile?.role === "superadmin") {
         router.push("/dashboard/superadmin");
+        return;
+      }
+
+      if (profile?.church?.active === false) {
+        router.push("/dashboard/perfil");
         return;
       }
 

@@ -11,7 +11,7 @@ export async function GET() {
   const { supabase } = context;
   const { data: churches, error } = await supabase
     .from("churches")
-    .select("id, name, plan")
+    .select("id, name, plan, active")
     .order("name");
 
   if (error) {

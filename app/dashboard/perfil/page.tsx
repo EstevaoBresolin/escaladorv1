@@ -25,7 +25,7 @@ export default function PerfilPage() {
   const [phone, setPhone] = useState("");
   const [churchId, setChurchId] = useState<string | null>(null);
   const [originalChurchId, setOriginalChurchId] = useState<string | null>(null);
-  const [churches, setChurches] = useState<{ id: string; name: string }[]>([]);
+  const [churches, setChurches] = useState<{ id: string; name: string; active: boolean }[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -58,7 +58,7 @@ export default function PerfilPage() {
       // Carregar perfil do usuário
       const { data: profile } = await supabase
         .from("profiles")
-        .select("*")
+        .select("*, church:churches(active)")
         .eq("id", user.id)
         .single();
 
@@ -73,7 +73,7 @@ export default function PerfilPage() {
       // Carregar todas as igrejas
       const { data: churchesData } = await supabase
         .from("churches")
-        .select("id, name")
+        .select("id, name, active")
         .order("name");
 
       if (churchesData) {
@@ -88,6 +88,7 @@ export default function PerfilPage() {
 
   async function handleCreateChurch(e: React.FormEvent) {
     e.preventDefault();
+
     setCreatingChurch(true);
     setError(null);
 
@@ -119,7 +120,10 @@ export default function PerfilPage() {
     }
 
     if (newChurch) {
-      setChurches([...churches, { id: newChurch.id, name: newChurch.name }]);
+      setChurches([
+        ...churches,
+        { id: newChurch.id, name: newChurch.name, active: newChurch.active ?? true },
+      ]);
       setChurchId(newChurch.id);
       setNewChurchName("");
       setNewChurchAddress("");
@@ -157,12 +161,14 @@ export default function PerfilPage() {
       return;
     }
 
+    const effectiveChurchId = churchId;
+
     const { error: updateError } = await supabase
       .from("profiles")
       .update({
         name: fullName,
         phone: normalizedPhone,
-        church_id: churchId,
+        church_id: effectiveChurchId,
       })
       .eq("id", user.id);
 
@@ -172,13 +178,13 @@ export default function PerfilPage() {
       return;
     }
 
-    if (originalChurchId && churchId && originalChurchId !== churchId) {
+    if (originalChurchId && effectiveChurchId && originalChurchId !== effectiveChurchId) {
       await Promise.all([
         supabase.from("user_ministries").delete().eq("user_id", user.id),
         supabase.from("volunteer_slots").delete().eq("user_id", user.id),
         supabase.from("ministry_leaders").delete().eq("user_id", user.id),
       ]);
-      setOriginalChurchId(churchId);
+      setOriginalChurchId(effectiveChurchId);
     }
 
     setSuccess(true);
@@ -317,13 +323,10 @@ export default function PerfilPage() {
                   <option value="">Selecione uma igreja</option>
                   {churches.map((church) => (
                     <option key={church.id} value={church.id}>
-                      {church.name}
+                      {church.name}{church.active ? "" : " (inativa)"}
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-muted-foreground">
-                  Selecione a igreja à qual você pertence.
-                </p>
               </div>
 
               <div className="space-y-2">

@@ -18,7 +18,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
   const [churchResult, profilesResult, ministriesResult] = await Promise.all([
     supabase
       .from("churches")
-      .select("id, name, plan")
+      .select("id, name, plan, active")
       .eq("id", churchId)
       .single(),
     supabase
@@ -73,6 +73,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
       id: churchResult.data.id,
       name: churchResult.data.name,
       plan: churchResult.data.plan ?? 0,
+      active: churchResult.data.active ?? true,
     },
     stats: {
       totalUsers: profiles.length,
@@ -84,4 +85,42 @@ export async function GET(_request: NextRequest, { params }: Params) {
       ).length,
     },
   });
+}
+
+export async function PATCH(request: NextRequest, { params }: Params) {
+  const context = await requireSuperAdminRoute();
+
+  if ("error" in context) {
+    return context.error;
+  }
+
+  const { churchId } = await params;
+
+  const body = (await request.json().catch(() => null)) as
+    | { active?: boolean }
+    | null;
+
+  if (typeof body?.active !== "boolean") {
+    return NextResponse.json(
+      { error: "Campo active e obrigatorio." },
+      { status: 400 },
+    );
+  }
+
+  const { supabase } = context;
+  const { data: church, error } = await supabase
+    .from("churches")
+    .update({ active: body.active, updated_at: new Date().toISOString() })
+    .eq("id", churchId)
+    .select("id, name, plan, active")
+    .single();
+
+  if (error || !church) {
+    return NextResponse.json(
+      { error: error?.message || "Erro ao atualizar igreja." },
+      { status: 400 },
+    );
+  }
+
+  return NextResponse.json({ church });
 }

@@ -8,6 +8,7 @@ create extension if not exists "uuid-ossp";
 create table if not exists public.churches (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  active boolean not null default true,
   address text,
   phone text,
   created_at timestamp with time zone default now(),
