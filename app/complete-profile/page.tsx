@@ -19,7 +19,7 @@ export default async function CompleteProfilePage() {
     .single();
 
   // If profile is already complete, redirect to dashboard
-  if (profile?.phone && profile?.church_id) {
+  if (profile?.phone && profile?.church_id && profile?.birth_date) {
     redirect("/dashboard");
   }
 
@@ -37,6 +37,7 @@ export default async function CompleteProfilePage() {
 
         <CompleteProfileForm
           initialPhone={profile?.phone || ""}
+          initialBirthDate={profile?.birth_date || ""}
           initialChurchId={profile?.church_id || ""}
         />
       </div>

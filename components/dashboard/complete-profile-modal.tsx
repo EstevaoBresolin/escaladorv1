@@ -22,6 +22,11 @@ import {
 } from "@/components/ui/select";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { normalizeBrazilianPhone } from "@/lib/phone";
+import {
+  formatBrazilianDateInput,
+  formatISODateToBrazilian,
+  normalizeBrazilianDate,
+} from "@/lib/date";
 
 interface Church {
   id: string;
@@ -31,6 +36,7 @@ interface Church {
 interface CompleteProfileModalProps {
   isOpen: boolean;
   userPhone?: string;
+  userBirthDate?: string;
   userChurchId?: string;
   onComplete?: () => void;
 }
@@ -38,10 +44,14 @@ interface CompleteProfileModalProps {
 export function CompleteProfileModal({
   isOpen,
   userPhone = "",
+  userBirthDate = "",
   userChurchId = "",
   onComplete,
 }: CompleteProfileModalProps) {
   const [phone, setPhone] = useState(userPhone);
+  const [birthDate, setBirthDate] = useState(
+    formatISODateToBrazilian(userBirthDate),
+  );
   const [churchId, setChurchId] = useState(userChurchId);
   const [churches, setChurches] = useState<Church[]>([]);
   const [loading, setLoading] = useState(false);
@@ -75,10 +85,15 @@ export function CompleteProfileModal({
     e.preventDefault();
     setError(null);
 
-    // Validate inputs
     const normalizedPhone = normalizeBrazilianPhone(phone);
     if (normalizedPhone.error || !normalizedPhone.value) {
       setError(normalizedPhone.error || "Número de telefone inválido");
+      return;
+    }
+
+    const normalizedBirthDate = normalizeBrazilianDate(birthDate);
+    if (normalizedBirthDate.error || !normalizedBirthDate.value) {
+      setError(normalizedBirthDate.error || "Data de nascimento inválida");
       return;
     }
 
@@ -103,6 +118,7 @@ export function CompleteProfileModal({
       .from("profiles")
       .update({
         phone: normalizedPhone.value,
+        birth_date: normalizedBirthDate.value,
         church_id: churchId,
       })
       .eq("id", user.id);
@@ -147,6 +163,22 @@ export function CompleteProfileModal({
               placeholder="(00) 00000-0000"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="birthDate">Data de Nascimento *</Label>
+            <Input
+              id="birthDate"
+              type="text"
+              inputMode="numeric"
+              placeholder="DD/MM/AAAA"
+              maxLength={10}
+              value={birthDate}
+              onChange={(e) =>
+                setBirthDate(formatBrazilianDateInput(e.target.value))
+              }
               disabled={loading}
             />
           </div>

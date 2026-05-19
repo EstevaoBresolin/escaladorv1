@@ -15,6 +15,11 @@ import {
 } from "@/components/ui/select";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { normalizeBrazilianPhone } from "@/lib/phone";
+import {
+  formatBrazilianDateInput,
+  formatISODateToBrazilian,
+  normalizeBrazilianDate,
+} from "@/lib/date";
 
 interface Church {
   id: string;
@@ -23,14 +28,19 @@ interface Church {
 
 interface CompleteProfileFormProps {
   initialPhone?: string;
+  initialBirthDate?: string;
   initialChurchId?: string;
 }
 
 export function CompleteProfileForm({
   initialPhone = "",
+  initialBirthDate = "",
   initialChurchId = "",
 }: CompleteProfileFormProps) {
   const [phone, setPhone] = useState(initialPhone);
+  const [birthDate, setBirthDate] = useState(
+    formatISODateToBrazilian(initialBirthDate),
+  );
   const [churchId, setChurchId] = useState(initialChurchId);
   const [churches, setChurches] = useState<Church[]>([]);
   const [loading, setLoading] = useState(false);
@@ -62,10 +72,15 @@ export function CompleteProfileForm({
     e.preventDefault();
     setError(null);
 
-    // Validate inputs
     const normalizedPhone = normalizeBrazilianPhone(phone);
     if (normalizedPhone.error || !normalizedPhone.value) {
       setError(normalizedPhone.error || "Número de telefone inválido");
+      return;
+    }
+
+    const normalizedBirthDate = normalizeBrazilianDate(birthDate);
+    if (normalizedBirthDate.error || !normalizedBirthDate.value) {
+      setError(normalizedBirthDate.error || "Data de nascimento inválida");
       return;
     }
 
@@ -90,6 +105,7 @@ export function CompleteProfileForm({
       .from("profiles")
       .update({
         phone: normalizedPhone.value,
+        birth_date: normalizedBirthDate.value,
         church_id: churchId,
       })
       .eq("id", user.id);
@@ -121,6 +137,24 @@ export function CompleteProfileForm({
         />
         <p className="text-xs text-muted-foreground">
           Seu número será usado para contato sobre os eventos
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="birthDate">Data de Nascimento *</Label>
+        <Input
+          id="birthDate"
+          type="text"
+          inputMode="numeric"
+          placeholder="DD/MM/AAAA"
+          maxLength={10}
+          value={birthDate}
+          onChange={(e) => setBirthDate(formatBrazilianDateInput(e.target.value))}
+          disabled={loading}
+          className="h-11"
+        />
+        <p className="text-xs text-muted-foreground">
+          A data será salva no formato oficial do sistema.
         </p>
       </div>
 

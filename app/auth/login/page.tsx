@@ -14,6 +14,7 @@ const LOGIN_BLOCKED_UNTIL_KEY = "login-blocked-until";
 
 type ProfileWithChurch = {
   phone: string | null;
+  birth_date: string | null;
   church_id: string | null;
   role: string | null;
   church: { active: boolean } | null;
@@ -137,11 +138,11 @@ export default function LoginPage() {
     } = await supabase.auth.getUser();
 
     if (user) {
-      const { data: profile } = await supabase
+      const { data: profile } = (await supabase
         .from("profiles")
-        .select("phone, church_id, role, church:churches(active)")
+        .select("phone, birth_date, church_id, role, church:churches(active)")
         .eq("id", user.id)
-        .single() as { data: ProfileWithChurch | null };
+        .single()) as { data: ProfileWithChurch | null };
 
       if (profile?.role === "superadmin") {
         router.push("/dashboard/superadmin");
@@ -153,7 +154,7 @@ export default function LoginPage() {
         return;
       }
 
-      if (!profile?.phone || !profile?.church_id) {
+      if (!profile?.phone || !profile?.church_id || !profile?.birth_date) {
         router.push("/complete-profile");
         router.refresh();
         return;

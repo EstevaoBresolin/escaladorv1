@@ -28,6 +28,7 @@ export interface Profile {
   name: string;
   email: string;
   phone?: string;
+  birth_date?: string;
   church_id?: string;
   role: UserRole;
   created_at: string;

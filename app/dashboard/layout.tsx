@@ -43,6 +43,7 @@ export default async function DashboardLayout({
           <div className="mx-auto w-full max-w-7xl">
             <DashboardLayoutClient
               profilePhone={profile?.phone || undefined}
+              profileBirthDate={profile?.birth_date || undefined}
               profileChurchId={profile?.church_id || undefined}
               requireProfileCompletion={requireProfileCompletion}
             >

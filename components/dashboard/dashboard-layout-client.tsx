@@ -6,6 +6,7 @@ import { CompleteProfileModal } from "./complete-profile-modal";
 interface DashboardLayoutClientProps {
   children: React.ReactNode;
   profilePhone?: string;
+  profileBirthDate?: string;
   profileChurchId?: string;
   requireProfileCompletion?: boolean;
 }
@@ -13,6 +14,7 @@ interface DashboardLayoutClientProps {
 export function DashboardLayoutClient({
   children,
   profilePhone,
+  profileBirthDate,
   profileChurchId,
   requireProfileCompletion = true,
 }: DashboardLayoutClientProps) {
@@ -24,11 +26,15 @@ export function DashboardLayoutClient({
       return;
     }
 
-    // Show modal if phone or church_id is missing
-    if (!profilePhone || !profileChurchId) {
+    if (!profilePhone || !profileBirthDate || !profileChurchId) {
       setShowModal(true);
     }
-  }, [profilePhone, profileChurchId, requireProfileCompletion]);
+  }, [
+    profilePhone,
+    profileBirthDate,
+    profileChurchId,
+    requireProfileCompletion,
+  ]);
 
   return (
     <>
@@ -36,6 +42,7 @@ export function DashboardLayoutClient({
       <CompleteProfileModal
         isOpen={showModal}
         userPhone={profilePhone}
+        userBirthDate={profileBirthDate}
         userChurchId={profileChurchId}
         onComplete={() => setShowModal(false)}
       />
