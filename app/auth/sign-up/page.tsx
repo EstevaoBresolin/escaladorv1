@@ -149,12 +149,12 @@ export default function SignUpPage() {
                 {error}
                 {error.includes("já está cadastrado") && (
                   <div className="mt-2">
-                    <Link
+                    <a
                       href="/auth/login"
                       className="font-medium underline hover:text-destructive/80"
                     >
                       Ir para página de login →
-                    </Link>
+                    </a>
                   </div>
                 )}
               </div>
@@ -260,9 +260,9 @@ export default function SignUpPage() {
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Já tem uma conta?{" "}
-          <Link href="/auth/login" className="text-primary hover:underline">
+          <a href="/auth/login" className="text-primary hover:underline">
             Fazer login
-          </Link>
+          </a>
         </p>
 
         <p className="mt-4 text-center text-xs text-muted-foreground">

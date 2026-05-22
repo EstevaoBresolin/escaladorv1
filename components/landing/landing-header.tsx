@@ -47,14 +47,14 @@ export function LandingHeader() {
 
         <div className="hidden items-center gap-3 md:flex">
           <Button variant="ghost" asChild>
-            <Link href="/auth/login" prefetch={false}>
+            <a href="/auth/login">
               Entrar
-            </Link>
+            </a>
           </Button>
           <Button asChild>
-            <Link href="/auth/sign-up" prefetch={false}>
+            <a href="/auth/sign-up">
               Começar Grátis
-            </Link>
+            </a>
           </Button>
         </div>
 
@@ -87,14 +87,14 @@ export function LandingHeader() {
             ))}
             <div className="mt-2 flex flex-col gap-2 border-t border-border pt-4">
               <Button variant="ghost" asChild className="justify-start">
-                <Link href="/auth/login" prefetch={false}>
+                <a href="/auth/login">
                   Entrar
-                </Link>
+                </a>
               </Button>
               <Button asChild>
-                <Link href="/auth/sign-up" prefetch={false}>
+                <a href="/auth/sign-up">
                   Começar Grátis
-                </Link>
+                </a>
               </Button>
             </div>
           </nav>

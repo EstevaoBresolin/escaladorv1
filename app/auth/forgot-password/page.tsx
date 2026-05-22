@@ -57,12 +57,12 @@ export default function ForgotPasswordPage() {
               tente novamente
             </button>
           </p>
-          <Link href="/auth/login">
-            <Button variant="outline" className="mt-6 w-full">
+          <Button asChild variant="outline" className="mt-6 w-full">
+            <a href="/auth/login">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Voltar para o login
-            </Button>
-          </Link>
+            </a>
+          </Button>
         </div>
       </div>
     );
@@ -125,12 +125,12 @@ export default function ForgotPasswordPage() {
           </Button>
         </form>
 
-        <Link href="/auth/login">
-          <Button variant="ghost" className="mt-4 w-full">
+        <Button asChild variant="ghost" className="mt-4 w-full">
+          <a href="/auth/login">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar para o login
-          </Button>
-        </Link>
+          </a>
+        </Button>
       </div>
     </div>
   );

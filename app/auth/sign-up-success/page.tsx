@@ -136,7 +136,7 @@ function SignUpSuccessContent() {
             perfil.
           </p>
           <Button asChild className="w-full">
-            <Link href="/auth/login">Ir para Login</Link>
+            <a href="/auth/login">Ir para Login</a>
           </Button>
           <p className="text-sm text-muted-foreground">
             Não recebeu o email?{" "}
