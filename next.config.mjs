@@ -14,16 +14,36 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Otimizações de performance
   experimental: {
     optimizePackageImports: ["lucide-react", "@supabase/supabase-js"],
   },
-  // Configuração de cache
   onDemandEntries: {
-    // Período em ms que uma página fica em cache após ser acessada
-    maxInactiveAge: 60 * 1000, // 1 minuto
-    // Número de páginas que devem ser mantidas simultaneamente
+    maxInactiveAge: 60 * 1000,
     pagesBufferLength: 5,
+  },
+  async headers() {
+    return [
+      {
+        // Impede que o HTML seja cacheado por proxies/CDN para evitar chunks desatualizados
+        source: "/(.*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, must-revalidate",
+          },
+        ],
+      },
+      {
+        // Chunks JS com hash podem ser cacheados por longo período (imutáveis)
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+    ];
   },
 };
 
