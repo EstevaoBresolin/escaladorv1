@@ -54,10 +54,14 @@ function buildCacheHash(payload: unknown) {
 function applyFilters(
   query: any,
   filters: z.infer<typeof filterSchema>[] = [],
+  allowedFields?: string[],
 ) {
   let next = query;
 
   for (const filter of filters) {
+    if (allowedFields && !allowedFields.includes(filter.field)) {
+      throw new Error(`Campo de filtro não permitido: ${filter.field}`);
+    }
     switch (filter.operator) {
       case "eq":
         next = next.eq(filter.field, filter.value);
@@ -203,15 +207,15 @@ export async function POST(request: NextRequest) {
         }
 
         if (payload.action === "select") {
-          const selectingOwnProfile =
-            !targetProfileId || targetProfileId === user.id;
-
-          if (!selectingOwnProfile) {
-            return jsonWithCookies(
-              { error: "Consulta de profiles restrita para este usuario." },
-              { status: 403 },
-            );
-          }
+          // Inject a mandatory server-side id filter so non-admins can only
+          // ever receive their own row, regardless of other filters provided.
+          const otherFilters = (payload.filters || []).filter(
+            (f) => f.field !== "id",
+          );
+          payload.filters = [
+            ...otherFilters,
+            { field: "id", operator: "eq" as const, value: user.id },
+          ];
         }
       }
     }
@@ -329,7 +333,7 @@ export async function POST(request: NextRequest) {
         }
 
         let query = supabase.from(payload.table).select(payload.select || "*");
-        query = applyFilters(query, payload.filters);
+        query = applyFilters(query, payload.filters, policy.filterableFields);
 
         if (payload.orderBy) {
           query = query.order(payload.orderBy, {
@@ -359,7 +363,7 @@ export async function POST(request: NextRequest) {
       }
 
       let query = supabase.from(payload.table).select(payload.select || "*");
-      query = applyFilters(query, payload.filters);
+      query = applyFilters(query, payload.filters, policy.filterableFields);
 
       if (payload.orderBy) {
         query = query.order(payload.orderBy, {
@@ -411,7 +415,7 @@ export async function POST(request: NextRequest) {
 
     if (payload.action === "update") {
       let query: any = supabase.from(payload.table).update(safeValues);
-      query = applyFilters(query, payload.filters);
+      query = applyFilters(query, payload.filters, policy.filterableFields);
 
       if (payload.select) {
         query = query.select(payload.select);
@@ -436,7 +440,7 @@ export async function POST(request: NextRequest) {
     }
 
     let query = supabase.from(payload.table).delete();
-    query = applyFilters(query, payload.filters);
+    query = applyFilters(query, payload.filters, policy.filterableFields);
     const { error } = await query;
 
     if (error) {

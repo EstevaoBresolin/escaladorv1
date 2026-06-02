@@ -38,31 +38,32 @@ export class RateLimiter {
 
     this.processing = true;
 
-    while (this.queue.length > 0) {
-      // Pega até 2 requisições para processar em paralelo
-      const batch: Array<() => Promise<any>> = [];
-      for (
-        let i = 0;
-        i < this.maxRequestsPerSecond && this.queue.length > 0;
-        i++
-      ) {
-        const fn = this.queue.shift();
-        if (fn) batch.push(fn);
-      }
+    try {
+      while (this.queue.length > 0) {
+        const batch: Array<() => Promise<any>> = [];
+        for (
+          let i = 0;
+          i < this.maxRequestsPerSecond && this.queue.length > 0;
+          i++
+        ) {
+          const fn = this.queue.shift();
+          if (fn) batch.push(fn);
+        }
 
-      // Executa todas as requisições do lote em paralelo
-      if (batch.length > 0) {
-        await Promise.all(batch.map((fn) => fn()));
+        if (batch.length > 0) {
+          // Each task already resolves/rejects its own promise internally;
+          // allSettled prevents one failure from halting the rest of the batch.
+          await Promise.allSettled(batch.map((fn) => fn()));
 
-        // Aguarda 1 segundo SEMPRE após completar um lote
-        // Isso garante que respeita o limite de 2 req/s mesmo com requisições em paralelo
-        if (this.queue.length > 0) {
-          await this.sleep(this.delayBetweenBatches);
+          if (this.queue.length > 0) {
+            await this.sleep(this.delayBetweenBatches);
+          }
         }
       }
+    } finally {
+      // Always release the lock so future tasks are not stranded.
+      this.processing = false;
     }
-
-    this.processing = false;
   }
 
   private sleep(ms: number): Promise<void> {

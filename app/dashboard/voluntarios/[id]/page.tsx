@@ -31,9 +31,15 @@ export default async function VolunteerPage({ params }: VolunteerPageProps) {
   const canEdit = isAdmin || isOwnProfile;
   const canViewPhone = isAdmin || isOwnProfile;
 
+  // Permission check happens before the data fetch so sensitive columns
+  // (phone) are only requested when the caller is actually authorised.
+  const selectColumns = canViewPhone
+    ? "id, name, role, email, phone"
+    : "id, name, role, email";
+
   const { data: volunteer } = await supabase
     .from("profiles")
-    .select("*")
+    .select(selectColumns)
     .eq("id", id)
     .single();
 

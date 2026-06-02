@@ -36,18 +36,26 @@ export class WhatsAppNotificationProvider implements NotificationProvider {
       reminder.ministryName
     )
 
-    const result = await sendWhatsAppMessage(recipient.phone, message)
+    try {
+      const result = await sendWhatsAppMessage(recipient.phone, message)
 
-    if (result.success) {
-      return {
-        success: true,
-        messageId: result.sid,
+      if (result.success) {
+        return {
+          success: true,
+          messageId: result.sid,
+        }
       }
-    }
 
-    return {
-      success: false,
-      error: result.error,
+      return {
+        success: false,
+        error: result.error,
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      return {
+        success: false,
+        error: `Twilio error: ${message}`,
+      }
     }
   }
 }

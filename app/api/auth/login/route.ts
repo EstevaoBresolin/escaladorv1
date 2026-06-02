@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     const ip = getClientIp(request.headers);
     const fingerprint = buildRequestFingerprint(request.headers);
-    const rateLimitKey = buildLoginKey(ip, normalizedEmail, fingerprint);
+    const rateLimitKey = buildLoginKey(normalizedEmail, fingerprint);
 
     const preCheckStatus = await getLoginFailureStatus(rateLimitKey);
     if (preCheckStatus.blocked) {
