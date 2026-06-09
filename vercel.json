@@ -2,11 +2,5 @@
   "buildCommand": "next build",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "installCommand": "npm install",
-  "crons": [
-    {
-      "path": "/api/cron/send-reminders",
-      "schedule": "0 13 * * *"
-    }
-  ]
+  "installCommand": "npm install"
 }

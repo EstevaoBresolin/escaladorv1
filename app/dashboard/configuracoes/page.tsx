@@ -17,7 +17,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getUserPermissionsByProfile } from "@/lib/permissions";
 import { Loader2, Building2 } from "lucide-react";
-// import { ReminderManager } from "@/components/dashboard/reminder-manager";
 
 export default function ConfiguracoesPage() {
   const [churchName, setChurchName] = useState("");

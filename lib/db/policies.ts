@@ -25,7 +25,7 @@ export const DB_TABLE_POLICIES: Record<string, TablePolicy> = {
       "is_profile_complete",
     ],
     nonNullableFields: ["name"],
-    filterableFields: ["id", "email", "church_id", "role"],
+    filterableFields: ["id", "name", "email", "church_id", "role"],
     cacheTtlSeconds: 60,
     invalidateTables: [
       "user_ministries",

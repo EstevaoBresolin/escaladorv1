@@ -10,6 +10,14 @@ interface VolunteerPageProps {
   params: Promise<{ id: string }>;
 }
 
+interface VolunteerProfile {
+  id: string
+  name: string
+  role: string
+  email: string
+  phone?: string | null
+}
+
 export default async function VolunteerPage({ params }: VolunteerPageProps) {
   const { id } = await params;
   const supabase = await createClient();
@@ -41,7 +49,7 @@ export default async function VolunteerPage({ params }: VolunteerPageProps) {
     .from("profiles")
     .select(selectColumns)
     .eq("id", id)
-    .single();
+    .single() as unknown as { data: VolunteerProfile | null };
 
   if (!volunteer) {
     notFound();
