@@ -7,10 +7,11 @@ import { Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const navLinks = [
-  { href: "#funcionalidades", label: "Funcionalidades" },
-  { href: "#como-funciona", label: "Como Funciona" },
-  // { href: "#depoimentos", label: "Depoimentos" },
-  // { href: "#precos", label: "Preços" },
+  { href: "#funcionalidades", label: "Funcionalidades", highlight: false },
+  { href: "#como-funciona", label: "Como Funciona", highlight: false },
+  // { href: "#depoimentos", label: "Depoimentos", highlight: false },
+  // { href: "#precos", label: "Preços", highlight: false },
+  { href: "/apresentacao", label: "▶ Apresentação", highlight: true },
 ];
 
 export function LandingHeader() {
@@ -38,7 +39,11 @@ export function LandingHeader() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className={
+                link.highlight
+                  ? "text-sm font-medium text-primary transition-colors hover:text-primary/80"
+                  : "text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              }
             >
               {link.label}
             </Link>

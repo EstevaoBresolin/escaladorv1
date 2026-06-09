@@ -43,14 +43,13 @@ export function HeroSection() {
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            {/* <Button size="lg" asChild className="gap-2">
-              <Link href="/auth/sign-up">
-                Começar Gratuitamente
-                <ArrowRight className="h-4 w-4" />
+            <Button size="lg" asChild className="gap-2">
+              <Link href="/apresentacao">
+                ▶ Ver Apresentação
               </Link>
-            </Button> */}
+            </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="#como-funciona">Ver Demonstração</Link>
+              <Link href="#como-funciona">Como Funciona</Link>
             </Button>
           </div>
 
